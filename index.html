@@ -909,7 +909,7 @@
                   </div>
                   <div
                     id="table-grid-container"
-                    class="grid grid-cols-10 gap-1 p-1 bg-black/5 dark:bg-white/5 rounded"
+                    class="grid grid-cols-10 gap-1 p-1 bg-black/10 dark:bg-white/10 rounded"
                   ></div>
                 </div>
               </div>
@@ -1334,7 +1334,7 @@
           for (let c = 1; c <= 10; c++) {
             const cell = document.createElement("div");
             cell.className =
-              "w-4 h-4 border border-black/10 dark:border-white/10 rounded-sm cursor-pointer transition-colors";
+              "w-4 h-4 border border-black/20 dark:border-white/20 bg-apple-secondary/10 dark:bg-apple-secondary/20 rounded-sm cursor-pointer transition-colors hover:border-apple-accent";
             cell.dataset.row = r;
             cell.dataset.col = c;
             cell.onmouseover = (e) => {
@@ -1358,9 +1358,9 @@
           const r = parseInt(cell.dataset.row);
           const c = parseInt(cell.dataset.col);
           if (r <= rows && c <= cols) {
-            cell.classList.add("bg-apple-accent/40", "border-apple-accent");
+            cell.classList.add("bg-apple-accent/60", "border-apple-accent");
           } else {
-            cell.classList.remove("bg-apple-accent/40", "border-apple-accent");
+            cell.classList.remove("bg-apple-accent/60", "border-apple-accent");
           }
         });
         document.getElementById("table-grid-label").textContent =
