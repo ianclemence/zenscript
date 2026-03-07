@@ -83,6 +83,21 @@
           --md-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
           --md-radius: 16px;
           --md-heading: #0f172a;
+          --modal-bg: #ffffff;
+          --modal-overlay: rgba(10, 10, 12, 0.08);
+          --modal-input-bg: #f7f7f8;
+          --modal-input-border: rgba(0, 0, 0, 0.12);
+          --modal-input-text: #1d1d1f;
+          --modal-btn-bg: #0a84ff;
+          --modal-btn-text: #ffffff;
+          --modal-btn-hover-bg: #066dd3;
+          --modal-btn-border: transparent;
+          --modal-toggle-bg: #f1f5f9;
+          --modal-toggle-border: rgba(0, 0, 0, 0.12);
+          --modal-hint-text: #6b7280;
+          --modal-counter-text: #6b7280;
+          --modal-close-color: #6b7280;
+          --modal-focus-ring: #0a84ff;
         }
         .theme-dark {
           --md-paper: #0f1115;
@@ -117,6 +132,53 @@
           --md-shadow: 0 10px 28px rgba(139, 107, 61, 0.15);
           --md-radius: 16px;
           --md-heading: #2b2222;
+          --modal-bg: #f7f1e3;
+          --modal-overlay: rgba(139, 107, 61, 0.12);
+          --modal-input-bg: #efe7d8;
+          --modal-input-border: rgba(59, 47, 47, 0.18);
+          --modal-input-text: #3b2f2f;
+          --modal-btn-bg: #8b6b3d;
+          --modal-btn-text: #ffffff;
+          --modal-btn-hover-bg: #72582f;
+          --modal-btn-border: transparent;
+          --modal-toggle-bg: #efe7d8;
+          --modal-toggle-border: rgba(59, 47, 47, 0.18);
+          --modal-hint-text: #7a6a5e;
+          --modal-counter-text: #7a6a5e;
+          --modal-close-color: #7a6a5e;
+          --modal-focus-ring: #8b6b3d;
+        }
+        .theme-savanna {
+          --md-paper: #f7f3e8;
+          --md-text: #2f3a2f;
+          --md-secondary: #6b7a6b;
+          --md-accent: #c9643b;
+          --md-border: rgba(47, 58, 47, 0.18);
+          --md-border-faint: rgba(47, 58, 47, 0.1);
+          --md-code-bg: #efe9d9;
+          --md-code-sep: rgba(47, 58, 47, 0.12);
+          --md-quote-bg: rgba(201, 100, 59, 0.12);
+          --md-row-alt: rgba(47, 58, 47, 0.06);
+          --md-selection-bg: rgba(201, 100, 59, 0.22);
+          --md-selection-text: #2f3a2f;
+          --md-shadow: 0 10px 28px rgba(47, 58, 47, 0.12);
+          --md-radius: 16px;
+          --md-heading: #2f3a2f;
+          --modal-bg: #f7f3e8;
+          --modal-overlay: rgba(118, 131, 113, 0.14);
+          --modal-input-bg: #efe9d9;
+          --modal-input-border: rgba(47, 58, 47, 0.18);
+          --modal-input-text: #2f3a2f;
+          --modal-btn-bg: #c9643b;
+          --modal-btn-text: #ffffff;
+          --modal-btn-hover-bg: #a85433;
+          --modal-btn-border: transparent;
+          --modal-toggle-bg: #efe9d9;
+          --modal-toggle-border: rgba(47, 58, 47, 0.18);
+          --modal-hint-text: #6b7a6b;
+          --modal-counter-text: #6b7a6b;
+          --modal-close-color: #6b7a6b;
+          --modal-focus-ring: #c9643b;
         }
         .theme-nord {
           --md-paper: #3b4252;
@@ -530,6 +592,119 @@
       .theme-dark .attachment-chip {
         @apply bg-white/5 border-white/10;
       }
+      .find-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: var(--modal-overlay);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        transition:
+          opacity 200ms ease,
+          background-color 200ms ease;
+      }
+      .find-overlay.active {
+        opacity: 1;
+      }
+      #find-replace-panel {
+        background: var(--modal-bg);
+        border-color: var(--modal-border);
+        transition:
+          background-color 200ms ease,
+          border-color 200ms ease,
+          color 200ms ease;
+      }
+      #find-replace-panel .modal-title {
+        color: var(--md-heading);
+      }
+      #find-replace-panel input[type="text"] {
+        background: var(--modal-input-bg);
+        color: var(--modal-input-text);
+        border-color: var(--modal-input-border);
+        transition:
+          background-color 200ms ease,
+          border-color 200ms ease,
+          color 200ms ease;
+      }
+      #find-replace-panel input[type="text"]:focus {
+        outline: 2px solid var(--modal-focus-ring);
+        outline-offset: 2px;
+      }
+      #find-replace-panel .toggle {
+        @apply flex items-center gap-2 text-[10px];
+        color: var(--md-secondary);
+      }
+      #find-replace-panel .toggle input {
+        accent-color: var(--modal-focus-ring);
+      }
+      #find-replace-panel .btn {
+        background: var(--modal-btn-bg);
+        color: var(--modal-btn-text);
+        border-color: var(--modal-btn-border);
+        transition:
+          background-color 200ms ease,
+          border-color 200ms ease,
+          color 200ms ease;
+      }
+      #find-replace-panel .btn:hover {
+        background: var(--modal-btn-hover-bg);
+      }
+      #find-replace-panel .counter {
+        color: var(--modal-counter-text);
+      }
+      #find-replace-panel .hints {
+        color: var(--modal-hint-text);
+      }
+      #find-replace-panel .close-btn {
+        color: var(--modal-close-color);
+      }
+      .callout {
+        @apply rounded-xl border px-4 py-3 my-3;
+        border-color: var(--md-border);
+        background: var(--md-paper);
+      }
+      .callout-header {
+        @apply flex items-center gap-2 mb-2 text-sm font-semibold;
+        color: var(--md-heading);
+      }
+      .callout-body {
+        @apply text-sm;
+        color: var(--md-text);
+      }
+      .callout-info {
+        @apply border-apple-accent/30 bg-black/5;
+      }
+      .callout-success {
+        @apply border-green-500/30 bg-black/5;
+      }
+      .callout-warning {
+        @apply border-yellow-500/30 bg-black/5;
+      }
+      .callout-note {
+        @apply border-blue-500/30 bg-black/5;
+      }
+      .theme-dark .callout-info {
+        @apply bg-white/5 border-apple-accent/30;
+      }
+      .theme-dark .callout-success {
+        @apply bg-white/5 border-green-400/30;
+      }
+      .theme-dark .callout-warning {
+        @apply bg-white/5 border-yellow-400/30;
+      }
+      .theme-dark .callout-note {
+        @apply bg-white/5 border-blue-400/30;
+      }
+      #command-palette {
+        @apply absolute top-24 right-4 w-72 rounded-xl border shadow-2xl bg-white dark:bg-black/90 border-black/10 dark:border-white/10 p-2 z-50 hidden;
+      }
+      #command-palette .item {
+        @apply flex items-center justify-between px-2 py-1 rounded-md cursor-pointer text-xs;
+      }
+      #command-palette .item:hover,
+      #command-palette .item.active {
+        @apply bg-apple-accent text-white;
+      }
 
       @media print {
         .no-print {
@@ -754,19 +929,17 @@
             </div>
           </div>
         </header>
+        <div id="find-overlay" class="find-overlay hidden"></div>
         <div
           id="find-replace-panel"
-          class="absolute top-16 right-4 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 z-50 hidden w-96 transition-all duration-300"
+          class="absolute top-16 right-4 rounded-xl shadow-2xl p-4 z-50 hidden w-96 transition-all duration-300"
         >
           <div class="flex items-center justify-between mb-3">
             <span
-              class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+              class="modal-title text-[10px] font-bold uppercase tracking-widest"
               >Find & Replace</span
             >
-            <button
-              onclick="toggleFind()"
-              class="text-apple-secondary hover:text-apple-accent transition-colors"
-            >
+            <button onclick="toggleFind()" class="close-btn transition-colors">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -775,34 +948,56 @@
               type="text"
               id="find-input"
               placeholder="Find..."
-              class="flex-1 text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
+              class="flex-1 text-xs p-2 rounded-md border outline-none"
             />
             <input
               type="text"
               id="replace-input"
               placeholder="Replace..."
-              class="flex-1 text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
+              class="flex-1 text-xs p-2 rounded-md border outline-none"
             />
+          </div>
+          <div class="mt-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <label class="toggle">
+                <input type="checkbox" id="match-case" />
+                <span>Match case</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="use-regex" />
+                <span>Regex</span>
+              </label>
+            </div>
+            <span id="find-counter" class="counter text-[10px]">0 of 0</span>
           </div>
           <div class="mt-3 flex gap-2">
             <button
+              id="find-prev"
+              class="flex-1 text-[10px] btn py-1.5 rounded-md transition-colors"
+            >
+              Previous
+            </button>
+            <button
               id="find-next"
-              class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+              class="flex-1 text-[10px] btn py-1.5 rounded-md transition-colors"
             >
               Next
             </button>
             <button
               id="replace-btn"
-              class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+              class="flex-1 text-[10px] btn py-1.5 rounded-md transition-colors"
             >
               Replace
             </button>
             <button
               id="replace-all-btn"
-              class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+              class="flex-1 text-[10px] btn py-1.5 rounded-md transition-colors"
             >
               All
             </button>
+          </div>
+          <div class="mt-2 hints text-[10px]">
+            Enter: Next • Shift+Enter: Previous • Esc: Close
           </div>
         </div>
         <textarea
@@ -812,6 +1007,9 @@
           spellcheck="true"
           autocomplete="off"
         ></textarea>
+        <div id="command-palette" class="hidden">
+          <ul id="command-palette-list" class="space-y-1"></ul>
+        </div>
         <footer
           class="h-6 px-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] text-apple-secondary"
         >
@@ -842,6 +1040,9 @@
             >
               <i class="fas fa-list-ul"></i>
             </button>
+            <button id="toggle-graph" class="header-btn" title="Vault Graph">
+              <i class="fas fa-project-diagram"></i>
+            </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <select
               id="theme-select"
@@ -854,6 +1055,7 @@
               <option value="midnight">Midnight</option>
               <option value="retro">Retro</option>
               <option value="sepia">Sepia</option>
+              <option value="savanna">Savanna</option>
             </select>
             <input
               type="number"
@@ -888,6 +1090,25 @@
             </button>
           </div>
           <div id="toc-list" class="space-y-2 text-xs"></div>
+        </div>
+        <div
+          id="graph-panel"
+          class="hidden absolute top-14 right-4 w-80 max-h-[70%] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 overflow-hidden z-10 transition-all duration-300"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <h3
+              class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+            >
+              Graph
+            </h3>
+            <button
+              onclick="toggleGraph()"
+              class="text-apple-secondary hover:text-apple-accent transition-colors"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <svg id="graph-svg" class="w-full h-[280px]"></svg>
         </div>
       </aside>
     </div>
@@ -982,8 +1203,15 @@
       const zenModeBtn = document.getElementById("zen-mode");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
+      const toggleGraphBtn = document.getElementById("toggle-graph");
       const tocPanel = document.getElementById("toc-panel");
       const tocList = document.getElementById("toc-list");
+      const graphPanel = document.getElementById("graph-panel");
+      const graphSvg = document.getElementById("graph-svg");
+      const commandPalette = document.getElementById("command-palette");
+      const commandPaletteList = document.getElementById(
+        "command-palette-list",
+      );
       const explorer = document.getElementById("explorer");
       const viewer = document.getElementById("viewer");
       const resizer1 = document.getElementById("resizer-1");
@@ -1202,6 +1430,7 @@
           markAsUnsaved(true);
           handleAutosave();
           updateToolbarState();
+          if (paletteOpen) updateSlashPaletteFilter();
 
           // Debounced history push for normal typing
           clearTimeout(historyTimeout);
@@ -1244,7 +1473,22 @@
             idbKeyval.set("md-autosave", e.target.checked);
           }
         });
-
+        toggleGraphBtn.addEventListener("click", toggleGraph);
+        document
+          .getElementById("find-prev")
+          .addEventListener("click", findPrev);
+        findInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && e.shiftKey) {
+            e.preventDefault();
+            findPrev();
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            findNext();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            toggleFind();
+          }
+        });
         window.addEventListener("click", (e) => {
           if (
             !e.target.closest("#btn-table") &&
@@ -1337,6 +1581,20 @@
 
         // Auto-pairing & Tab support & Paste Link
         editor.addEventListener("keydown", (e) => {
+          if (e.key === "/" && !paletteOpen) {
+            openCommandPalette();
+            return;
+          }
+          if (paletteOpen) {
+            if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
+              e.preventDefault();
+              if (e.key === "ArrowDown") movePaletteSelection(1);
+              if (e.key === "ArrowUp") movePaletteSelection(-1);
+              if (e.key === "Enter") applySelectedPaletteCommand();
+              if (e.key === "Escape") closeCommandPalette();
+              return;
+            }
+          }
           if (e.key === "Tab") {
             e.preventDefault();
             const start = editor.selectionStart;
@@ -1440,6 +1698,7 @@
           // Table of Contents
           generateTOC();
           stylePreviewAttachments();
+          applyCallouts();
         }
       }
 
@@ -1467,6 +1726,42 @@
           tocList.appendChild(link);
         });
       }
+      function applyCallouts() {
+        const blocks = previewContent.querySelectorAll("blockquote");
+        blocks.forEach((bq) => {
+          const first = bq.querySelector("p");
+          if (!first) return;
+          const txt = first.textContent || "";
+          const m = txt.match(/^\s*\[\!(INFO|WARNING|SUCCESS|NOTE)\]\s*(.*)$/i);
+          if (!m) return;
+          const type = m[1].toLowerCase();
+          const title = m[2] || m[1].charAt(0) + m[1].slice(1).toLowerCase();
+          const contentNodes = Array.from(bq.childNodes).slice(1);
+          const wrap = document.createElement("div");
+          wrap.className = `callout callout-${type}`;
+          const header = document.createElement("div");
+          header.className = "callout-header";
+          const icon = document.createElement("i");
+          icon.className =
+            type === "warning"
+              ? "fas fa-exclamation-triangle"
+              : type === "success"
+                ? "fas fa-check-circle"
+                : type === "note"
+                  ? "fas fa-info-circle"
+                  : "fas fa-lightbulb";
+          const label = document.createElement("span");
+          label.textContent = title || type;
+          header.appendChild(icon);
+          header.appendChild(label);
+          const body = document.createElement("div");
+          body.className = "callout-body";
+          contentNodes.forEach((n) => body.appendChild(n));
+          wrap.appendChild(header);
+          wrap.appendChild(body);
+          bq.replaceWith(wrap);
+        });
+      }
 
       function toggleZenMode() {
         const isZen = explorer.classList.toggle("hidden");
@@ -1486,6 +1781,66 @@
         tocPanel.classList.toggle("hidden");
         toggleTocBtn.classList.toggle("text-apple-accent");
       }
+      function toggleGraph() {
+        graphPanel.classList.toggle("hidden");
+        toggleGraphBtn.classList.toggle("text-apple-accent");
+        if (!graphPanel.classList.contains("hidden")) {
+          buildVaultGraph();
+        }
+      }
+      async function buildVaultGraph() {
+        if (!directoryHandle) {
+          graphSvg.innerHTML =
+            '<text x="10" y="20" class="text-[10px] fill-current">Open a directory first</text>';
+          return;
+        }
+        const nodes = [];
+        const edges = [];
+        const nameToIndex = new Map();
+        let idx = 0;
+        for await (const entry of directoryHandle.values()) {
+          if (entry.kind === "file" && entry.name.endsWith(".md")) {
+            nameToIndex.set(entry.name.replace(/\.md$/i, ""), idx++);
+            nodes.push({ name: entry.name.replace(/\.md$/i, "") });
+          }
+        }
+        for await (const entry of directoryHandle.values()) {
+          if (entry.kind === "file" && entry.name.endsWith(".md")) {
+            const file = await entry.getFile();
+            const text = await file.text();
+            const from = entry.name.replace(/\.md$/i, "");
+            const re = /\[\[([^\]]+)\]\]/g;
+            let m;
+            while ((m = re.exec(text))) {
+              const to = m[1].trim();
+              if (nameToIndex.has(to)) {
+                edges.push({ from, to });
+              }
+            }
+          }
+        }
+        const w = graphSvg.clientWidth || 320;
+        const h = graphSvg.clientHeight || 240;
+        const r = Math.min(w, h) / 2 - 20;
+        const cx = w / 2;
+        const cy = h / 2;
+        let svg = "";
+        nodes.forEach((n, i) => {
+          const angle = (i / nodes.length) * Math.PI * 2;
+          n.x = Math.round(cx + r * Math.cos(angle));
+          n.y = Math.round(cy + r * Math.sin(angle));
+        });
+        edges.forEach((e) => {
+          const a = nodes[nameToIndex.get(e.from)];
+          const b = nodes[nameToIndex.get(e.to)];
+          svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="currentColor" stroke-opacity="0.2" />`;
+        });
+        nodes.forEach((n) => {
+          svg += `<circle cx="${n.x}" cy="${n.y}" r="8" fill="currentColor" fill-opacity="0.8" />`;
+          svg += `<text x="${n.x + 10}" y="${n.y + 4}" class="text-[10px]" fill="currentColor">${n.name}</text>`;
+        });
+        graphSvg.innerHTML = svg;
+      }
 
       function toggleHelp() {
         helpModal.classList.toggle("hidden");
@@ -1494,6 +1849,8 @@
 
       function toggleFind() {
         const isHidden = findReplacePanel.classList.toggle("hidden");
+        const overlay = document.getElementById("find-overlay");
+        if (overlay) overlay.classList.toggle("active", !isHidden);
         if (!isHidden) {
           findInput.focus();
         }
@@ -1556,6 +1913,153 @@
           .classList.toggle("active", isQuote);
         document.getElementById("btn-list").classList.toggle("active", isList);
         document.getElementById("btn-task").classList.toggle("active", isTask);
+      }
+      let paletteOpen = false;
+      let paletteItems = [];
+      let paletteFiltered = [];
+      let paletteSelected = 0;
+      let slashStart = null;
+      function openCommandPalette() {
+        paletteOpen = true;
+        slashStart = editor.selectionStart;
+        commandPalette.classList.remove("hidden");
+        renderCommandPalette();
+      }
+      function closeCommandPalette() {
+        paletteOpen = false;
+        commandPalette.classList.add("hidden");
+      }
+      function updateSlashPaletteFilter() {
+        if (!paletteOpen) return;
+        const pos = editor.selectionStart;
+        const text = editor.value;
+        const lineStart = text.lastIndexOf("\n", pos - 1) + 1;
+        const qStart = Math.max(lineStart, slashStart);
+        const query = text
+          .substring(qStart + 1, pos)
+          .trim()
+          .toLowerCase();
+        paletteFiltered = paletteItems.filter((it) =>
+          it.label.toLowerCase().includes(query),
+        );
+        paletteSelected = 0;
+        renderCommandPalette();
+      }
+      function renderCommandPalette() {
+        paletteItems = [
+          { id: "h1", label: "Heading 1" },
+          { id: "bold", label: "Bold" },
+          { id: "italic", label: "Italic" },
+          { id: "quote", label: "Quote" },
+          { id: "list", label: "List" },
+          { id: "task", label: "Task" },
+          { id: "link", label: "Link" },
+          { id: "code", label: "Inline Code" },
+          { id: "table", label: "Table" },
+          { id: "attach", label: "Attach File" },
+          { id: "callout-info", label: "Callout · Info" },
+          { id: "callout-warning", label: "Callout · Warning" },
+          { id: "callout-success", label: "Callout · Success" },
+          { id: "callout-note", label: "Callout · Note" },
+          { id: "toc", label: "Toggle Outline" },
+          { id: "zen", label: "Toggle Zen Mode" },
+        ];
+        if (!paletteFiltered.length) paletteFiltered = paletteItems.slice(0, 8);
+        commandPaletteList.innerHTML = "";
+        paletteFiltered.forEach((it, idx) => {
+          const li = document.createElement("li");
+          li.className = `item ${idx === paletteSelected ? "active" : ""}`;
+          li.textContent = it.label;
+          li.onclick = () => {
+            paletteSelected = idx;
+            applySelectedPaletteCommand();
+          };
+          commandPaletteList.appendChild(li);
+        });
+      }
+      function movePaletteSelection(delta) {
+        const len = paletteFiltered.length;
+        paletteSelected = (paletteSelected + delta + len) % len;
+        renderCommandPalette();
+      }
+      function applySelectedPaletteCommand() {
+        const cmd = paletteFiltered[paletteSelected];
+        if (!cmd) return;
+        performCommand(cmd.id);
+        closeCommandPalette();
+      }
+      function performCommand(id) {
+        const start = editor.selectionStart;
+        const text = editor.value;
+        const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+        const qStart = Math.max(lineStart, slashStart || lineStart);
+        const before = text.substring(0, qStart);
+        const after = text.substring(start);
+        const insertAtCursor = (str) => {
+          editor.value = before + str + after;
+          const pos = before.length + str.length;
+          editor.setSelectionRange(pos, pos);
+          updatePreview();
+          markAsUnsaved(true);
+          pushToHistory();
+        };
+        if (id === "table") {
+          toggleTableDropdown(true);
+          return;
+        }
+        if (id === "attach") {
+          attachInput.click();
+          return;
+        }
+        if (id === "zen") {
+          toggleZenMode();
+          return;
+        }
+        if (id === "toc") {
+          toggleTOC();
+          return;
+        }
+        if (id.startsWith("callout-")) {
+          const type = id.split("-")[1];
+          const title =
+            type === "info"
+              ? "Info"
+              : type === "warning"
+                ? "Warning"
+                : type === "success"
+                  ? "Success"
+                  : "Note";
+          const block = `\n> [!${title.toUpperCase()}] ${title}\n> Your content\n\n`;
+          insertAtCursor(block);
+          return;
+        }
+        if (
+          [
+            "bold",
+            "italic",
+            "quote",
+            "list",
+            "task",
+            "link",
+            "code",
+            "h1",
+          ].includes(id)
+        ) {
+          const map = {
+            bold: () => format("bold"),
+            italic: () => format("italic"),
+            quote: () => format("quote"),
+            list: () => format("list"),
+            task: () => format("task"),
+            link: () => format("link"),
+            code: () => format("code"),
+            h1: () => format("h1"),
+          };
+          editor.value = before + after;
+          editor.setSelectionRange(before.length, before.length);
+          map[id]();
+          return;
+        }
       }
 
       function format(type) {
@@ -1639,38 +2143,93 @@
         const replacement = replaceInput.value;
         const start = editor.selectionStart;
         const end = editor.selectionEnd;
-        const selectedText = editor.value.substring(start, end);
-
-        if (selectedText === query) {
-          editor.value =
-            editor.value.substring(0, start) +
-            replacement +
-            editor.value.substring(end);
-          editor.setSelectionRange(
-            start + replacement.length,
-            start + replacement.length,
-          );
-          updatePreview();
-          markAsUnsaved(true);
-        } else {
-          findNext();
-        }
+        if (start === end) return findNext();
+        const before = editor.value.substring(0, start);
+        const after = editor.value.substring(end);
+        editor.value = before + replacement + after;
+        editor.setSelectionRange(
+          start + replacement.length,
+          start + replacement.length,
+        );
+        updatePreview();
+        markAsUnsaved(true);
       }
 
       function replaceAll() {
         const query = findInput.value;
         const replacement = replaceInput.value;
         if (!query) return;
-
-        const content = editor.value;
-        const newContent = content.split(query).join(replacement);
-
-        if (content !== newContent) {
-          editor.value = newContent;
-          updatePreview();
-          markAsUnsaved(true);
-          notify("Replaced all occurrences");
+        const opts = {
+          case: document.getElementById("match-case").checked,
+          regex: document.getElementById("use-regex").checked,
+        };
+        try {
+          const re = buildRegex(query, opts);
+          const content = editor.value;
+          const newContent = content.replace(re, replacement);
+          if (content !== newContent) {
+            editor.value = newContent;
+            updatePreview();
+            markAsUnsaved(true);
+            notify("Replaced all occurrences");
+          } else {
+            notify("No matches found");
+          }
+        } catch (e) {
+          notify("Invalid regex");
         }
+      }
+      function findPrev() {
+        const query = findInput.value;
+        if (!query) return;
+        const opts = {
+          case: document.getElementById("match-case").checked,
+          regex: document.getElementById("use-regex").checked,
+        };
+        const matches = computeMatches(editor.value, query, opts);
+        if (!matches.length) {
+          updateFindCounter(0, 0);
+          return notify("No matches found");
+        }
+        const pos = editor.selectionStart;
+        let idx = -1;
+        for (let i = matches.length - 1; i >= 0; i--) {
+          if (matches[i].start < pos) {
+            idx = i;
+            break;
+          }
+        }
+        if (idx === -1) idx = matches.length - 1;
+        const m = matches[idx];
+        editor.focus();
+        editor.setSelectionRange(m.start, m.end);
+        updateFindCounter(idx + 1, matches.length);
+      }
+      function buildRegex(query, opts) {
+        const flags = opts.case ? "g" : "gi";
+        if (opts.regex) {
+          return new RegExp(query, flags);
+        }
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(escaped, flags);
+      }
+      function computeMatches(text, query, opts) {
+        try {
+          const re = buildRegex(query, opts);
+          const out = [];
+          let m;
+          while ((m = re.exec(text))) {
+            out.push({ start: m.index, end: m.index + m[0].length });
+            if (m[0].length === 0) re.lastIndex++;
+          }
+          return out;
+        } catch (e) {
+          return [];
+        }
+      }
+      function updateFindCounter(curr, total) {
+        const el = document.getElementById("find-counter");
+        if (el) el.textContent = `${curr} of ${total}`;
       }
 
       function downloadAsMarkdown() {
@@ -1830,6 +2389,7 @@
           "theme-midnight",
           "theme-retro",
           "theme-sepia",
+          "theme-savanna",
         );
 
         // Add the new theme class if it's not 'light'
@@ -1846,6 +2406,9 @@
         }
         if (theme === "sepia") {
           document.body.classList.add("theme-sepia");
+        }
+        if (theme === "savanna") {
+          document.body.classList.add("theme-savanna");
         }
 
         // Update highlight.js theme
