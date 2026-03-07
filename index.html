@@ -335,7 +335,7 @@
       <!-- Center Column: Workspace -->
       <section id="workspace" class="panel flex-1 no-print">
         <header class="panel-header">
-          <div class="flex items-center gap-2 overflow-hidden">
+          <div class="flex items-center gap-2">
             <span id="current-filename" class="text-sm font-medium truncate"
               >Untitled.md</span
             >
@@ -349,7 +349,6 @@
               <button
                 id="btn-undo"
                 class="toolbar-btn"
-                onclick="undo()"
                 title="Undo (⌘Z)"
                 disabled
               >
@@ -358,7 +357,6 @@
               <button
                 id="btn-redo"
                 class="toolbar-btn"
-                onclick="redo()"
                 title="Redo (⌘Y)"
                 disabled
               >
@@ -440,12 +438,7 @@
                 <i class="fas fa-check-square"></i>
               </button>
               <div class="relative">
-                <button
-                  id="btn-table"
-                  class="toolbar-btn"
-                  onclick="toggleTableDropdown()"
-                  title="Insert Table"
-                >
+                <button id="btn-table" class="toolbar-btn" title="Insert Table">
                   <i class="fas fa-table"></i>
                 </button>
                 <div
@@ -765,6 +758,9 @@
       const newFileBtn = document.getElementById("new-file");
       const saveFileBtn = document.getElementById("save-file");
       const exportPdfBtn = document.getElementById("export-pdf");
+      const undoBtn = document.getElementById("btn-undo");
+      const redoBtn = document.getElementById("btn-redo");
+      const tableBtn = document.getElementById("btn-table");
 
       // State
       let directoryHandle = null;
@@ -842,7 +838,13 @@
 
       function createTableGrid() {
         const container = document.getElementById("table-grid-container");
+        if (!container) return;
         container.innerHTML = "";
+        // Set fixed styles if Tailwind grid-cols-10 is missing
+        container.style.display = "grid";
+        container.style.gridTemplateColumns = "repeat(10, 1fr)";
+        container.style.gap = "4px";
+
         for (let r = 1; r <= 10; r++) {
           for (let c = 1; c <= 10; c++) {
             const cell = document.createElement("div");
@@ -850,8 +852,14 @@
               "w-4 h-4 border border-black/10 dark:border-white/10 rounded-sm cursor-pointer transition-colors";
             cell.dataset.row = r;
             cell.dataset.col = c;
-            cell.onmouseover = () => highlightGrid(r, c);
-            cell.onclick = () => insertTable(r, c);
+            cell.onmouseover = (e) => {
+              e.stopPropagation();
+              highlightGrid(r, c);
+            };
+            cell.onclick = (e) => {
+              e.stopPropagation();
+              insertTable(r, c);
+            };
             container.appendChild(cell);
           }
         }
@@ -875,6 +883,8 @@
       }
 
       function insertTable(rows, cols) {
+        if (!editor) return;
+
         let table = "\n|";
         for (let c = 1; c <= cols; c++) table += ` Header ${c} |`;
         table += "\n|";
@@ -885,14 +895,16 @@
         }
         table += "\n";
 
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
+        const start = editor.selectionStart || 0;
+        const end = editor.selectionEnd || 0;
         const before = editor.value.substring(0, start);
         const after = editor.value.substring(end);
 
         editor.value = before + table + after;
         editor.focus();
-        editor.setSelectionRange(start + table.length, start + table.length);
+        const newPos = start + table.length;
+        editor.setSelectionRange(newPos, newPos);
+
         updatePreview();
         markAsUnsaved(true);
         pushToHistory();
@@ -956,6 +968,9 @@
         newFileBtn.addEventListener("click", createNewFile);
         saveFileBtn.addEventListener("click", saveCurrentFile);
         exportPdfBtn.addEventListener("click", () => window.print());
+        undoBtn.addEventListener("click", undo);
+        redoBtn.addEventListener("click", redo);
+        tableBtn.addEventListener("click", () => toggleTableDropdown());
 
         zenModeBtn.addEventListener("click", toggleZenMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
@@ -1039,8 +1054,9 @@
           const scrollPercentage =
             editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
           const previewScrollTop =
-            scrollPercentage * (preview.scrollHeight - preview.clientHeight);
-          preview.scrollTop = previewScrollTop;
+            scrollPercentage *
+            (previewContent.scrollHeight - previewContent.clientHeight);
+          previewContent.scrollTop = previewScrollTop;
         });
 
         editor.addEventListener("paste", (e) => {
