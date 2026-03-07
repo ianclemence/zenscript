@@ -182,6 +182,9 @@
           --md-shadow: 0 12px 30px rgba(67, 76, 94, 0.35);
           --md-radius: 16px;
           --md-heading: #eceff4;
+          --modal-bg: #3b4252;
+          --modal-border: rgba(76, 86, 106, 0.5);
+          --modal-overlay: rgba(46, 52, 64, 0.8);
         }
         .theme-dracula {
           --md-paper: #282a36;
@@ -199,6 +202,9 @@
           --md-shadow: 0 12px 32px rgba(40, 42, 54, 0.6);
           --md-radius: 16px;
           --md-heading: #f8f8f2;
+          --modal-bg: #282a36;
+          --modal-border: rgba(68, 71, 90, 0.7);
+          --modal-overlay: rgba(40, 42, 54, 0.8);
         }
         .theme-midnight {
           --md-paper: #11151c;
@@ -216,6 +222,9 @@
           --md-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
           --md-radius: 16px;
           --md-heading: #e2e8f0;
+          --modal-bg: #11151c;
+          --modal-border: rgba(255, 255, 255, 0.15);
+          --modal-overlay: rgba(11, 14, 20, 0.8);
         }
         .theme-retro {
           --md-paper: #0d0208;
@@ -233,6 +242,9 @@
           --md-shadow: 0 12px 32px rgba(0, 255, 65, 0.12);
           --md-radius: 16px;
           --md-heading: #ffff00;
+          --modal-bg: #0d0208;
+          --modal-border: rgba(0, 255, 65, 0.3);
+          --modal-overlay: rgba(13, 2, 8, 0.8);
         }
         .glass {
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
@@ -266,7 +278,7 @@
           @apply bg-apple-accent/10 text-apple-accent font-medium;
         }
         .dropdown-menu {
-          @apply absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#1c1c1e] border border-black/10 dark:border-white/10 rounded-lg shadow-xl hidden group-hover:block z-20 overflow-hidden;
+          @apply absolute right-0 top-full mt-1 w-32 hidden group-hover:block z-20 overflow-hidden;
         }
         .dropdown-item {
           @apply w-full text-left px-3 py-2 text-[11px] transition-colors hover:bg-apple-accent hover:text-white;
@@ -310,9 +322,6 @@
         @apply bg-[#434c5e] text-[#eceff4] border-[#4c566a];
       }
 
-      .theme-nord .dropdown-menu {
-        @apply bg-[#3b4252] border-[#4c566a]/50;
-      }
       .theme-nord .dropdown-item {
         @apply text-[#eceff4] hover:bg-[#88c0d0] hover:text-[#2e3440];
       }
@@ -336,9 +345,6 @@
         @apply bg-[#44475a] text-[#f8f8f2] border-[#6272a4]/50;
       }
 
-      .theme-dracula .dropdown-menu {
-        @apply bg-[#282a36] border-[#44475a];
-      }
       .theme-dracula .dropdown-item {
         @apply text-[#f8f8f2] hover:bg-[#bd93f9] hover:text-[#282a36];
       }
@@ -362,9 +368,6 @@
         @apply bg-[#1a202c] text-white border-white/10;
       }
 
-      .theme-midnight .dropdown-menu {
-        @apply bg-[#11151c] border-white/10;
-      }
       .theme-midnight .dropdown-item {
         @apply text-white hover:bg-apple-accent;
       }
@@ -402,9 +405,6 @@
         @apply border-[#ffff00]/30;
       }
 
-      .theme-retro .dropdown-menu {
-        @apply bg-[#0d0208] border-[#00ff41]/50;
-      }
       .theme-retro .dropdown-item {
         @apply text-[#00ff41] hover:bg-[#00ff41] hover:text-[#0d0208];
       }
@@ -418,9 +418,6 @@
       .theme-sepia select,
       .theme-sepia input {
         @apply bg-[#efe7d8] text-[#3b2f2f] border-[#7a6a5e]/40;
-      }
-      .theme-sepia .dropdown-menu {
-        @apply bg-[#f7f1e3] border-[#7a6a5e]/30;
       }
       .theme-sepia .dropdown-item {
         @apply text-[#3b2f2f] hover:bg-[#8b6b3d] hover:text-[#f7f1e3];
@@ -680,10 +677,13 @@
       #toc-panel,
       #table-dropdown,
       .dropdown-menu,
-      #command-palette {
+      #command-palette,
+      #help-modal > div {
         background: var(--modal-bg, var(--md-paper));
         border-color: var(--modal-border, var(--md-border));
         color: var(--md-text);
+        border-radius: 1rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         transition:
           background-color 200ms ease,
           border-color 200ms ease,
@@ -691,6 +691,7 @@
       }
       #help-modal {
         background: var(--modal-overlay);
+        backdrop-filter: blur(4px);
       }
       .callout {
         @apply rounded-xl border px-4 py-3 my-3;
@@ -893,9 +894,9 @@
                 </button>
                 <div
                   id="table-dropdown"
-                  class="hidden absolute left-0 top-full mt-1 p-3 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-lg shadow-xl z-50 min-w-[180px]"
+                  class="hidden absolute left-0 top-full mt-2 p-4 border z-50 min-w-[200px]"
                 >
-                  <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center justify-between mb-3">
                     <span
                       class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
                       >Table</span
@@ -1104,13 +1105,13 @@
         <!-- Table of Contents Panel -->
         <div
           id="toc-panel"
-          class="hidden absolute top-14 right-4 w-64 max-h-[70%] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 overflow-y-auto z-10 transition-all duration-300"
+          class="hidden absolute top-14 right-4 w-72 max-h-[70%] backdrop-blur-xl border shadow-2xl p-5 overflow-y-auto z-10 transition-all duration-300"
         >
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between mb-4">
             <h3
               class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
             >
-              Outline
+              Document Outline
             </h3>
             <button
               onclick="toggleTOC()"
@@ -1136,7 +1137,7 @@
       class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] hidden items-center justify-center p-4"
     >
       <div
-        class="bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
+        class="border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
       >
         <header class="panel-header">
           <h2 class="text-sm font-bold uppercase tracking-widest">
@@ -1502,6 +1503,13 @@
             !e.target.closest("#table-dropdown")
           ) {
             toggleTableDropdown(false);
+          }
+          if (
+            !e.target.closest("#toggle-toc") &&
+            !e.target.closest("#toc-panel")
+          ) {
+            tocPanel.classList.add("hidden");
+            toggleTocBtn.classList.remove("text-apple-accent");
           }
         });
 
