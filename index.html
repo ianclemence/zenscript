@@ -345,7 +345,7 @@
       <div class="resizer no-print" id="resizer-1"></div>
 
       <!-- Center Column: Workspace -->
-      <section id="workspace" class="panel flex-1 no-print">
+      <section id="workspace" class="panel flex-1 no-print relative">
         <header class="panel-header">
           <div class="flex items-center gap-2">
             <span id="current-filename" class="text-sm font-medium truncate"
@@ -525,6 +525,57 @@
             </div>
           </div>
         </header>
+        <div
+          id="find-replace-panel"
+          class="absolute top-16 right-4 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 z-50 hidden w-96 transition-all duration-300"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <span
+              class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+              >Find & Replace</span
+            >
+            <button
+              onclick="toggleFind()"
+              class="text-apple-secondary hover:text-apple-accent transition-colors"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="find-input"
+              placeholder="Find..."
+              class="flex-1 text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
+            />
+            <input
+              type="text"
+              id="replace-input"
+              placeholder="Replace..."
+              class="flex-1 text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
+            />
+          </div>
+          <div class="mt-3 flex gap-2">
+            <button
+              id="find-next"
+              class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+            >
+              Next
+            </button>
+            <button
+              id="replace-btn"
+              class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+            >
+              Replace
+            </button>
+            <button
+              id="replace-all-btn"
+              class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+            >
+              All
+            </button>
+          </div>
+        </div>
         <textarea
           id="editor"
           class="flex-1 p-8 font-mono text-[15px] leading-relaxed resize-none outline-none bg-transparent caret-apple-accent"
@@ -681,57 +732,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Find & Replace Panel -->
-    <div
-      id="find-replace-panel"
-      class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 z-50 hidden flex-col gap-2 w-80 transition-all duration-300"
-    >
-      <div class="flex items-center justify-between mb-2">
-        <span
-          class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
-          >Find & Replace</span
-        >
-        <button
-          onclick="toggleFind()"
-          class="text-apple-secondary hover:text-apple-accent transition-colors"
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <input
-        type="text"
-        id="find-input"
-        placeholder="Find text..."
-        class="w-full text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
-      />
-      <input
-        type="text"
-        id="replace-input"
-        placeholder="Replace with..."
-        class="w-full text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
-      />
-      <div class="flex gap-2">
-        <button
-          id="find-next"
-          class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
-        >
-          Next
-        </button>
-        <button
-          id="replace-btn"
-          class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
-        >
-          Replace
-        </button>
-        <button
-          id="replace-all-btn"
-          class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
-        >
-          All
-        </button>
       </div>
     </div>
 
