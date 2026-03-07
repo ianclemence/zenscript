@@ -110,6 +110,9 @@
         .toolbar-btn.active {
           @apply bg-apple-accent/10 text-apple-accent;
         }
+        #editor::placeholder {
+          @apply text-apple-secondary/50;
+        }
       }
 
       /* Dark Mode (Apple Dark) */
@@ -474,6 +477,7 @@
           class="flex-1 p-8 font-mono text-[15px] leading-relaxed resize-none outline-none bg-transparent caret-apple-accent"
           placeholder="Start writing..."
           spellcheck="true"
+          autocomplete="off"
         ></textarea>
         <footer
           class="h-6 px-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] text-apple-secondary"
@@ -731,10 +735,13 @@
             mangle: false,
           });
         }
+        editor.value = ""; // Ensure editor is empty on refresh
         setupEventListeners();
         setupResizers();
         loadPreferences();
         updatePreview();
+        updateWordCount();
+        updateToolbarState();
       }
 
       function setupEventListeners() {
