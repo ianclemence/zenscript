@@ -166,39 +166,6 @@
           --modal-close-color: #7a6a5e;
           --modal-focus-ring: #8b6b3d;
         }
-        .theme-savanna {
-          --md-paper: #f7f3e8;
-          --md-text: #2f3a2f;
-          --md-secondary: #6b7a6b;
-          --md-accent: #c9643b;
-          --md-border: rgba(47, 58, 47, 0.18);
-          --md-border-faint: rgba(47, 58, 47, 0.1);
-          --md-code-bg: #efe9d9;
-          --md-code-sep: rgba(47, 58, 47, 0.12);
-          --md-quote-bg: rgba(201, 100, 59, 0.12);
-          --md-row-alt: rgba(47, 58, 47, 0.06);
-          --md-selection-bg: rgba(201, 100, 59, 0.22);
-          --md-selection-text: #2f3a2f;
-          --md-shadow: 0 10px 28px rgba(47, 58, 47, 0.12);
-          --md-radius: 16px;
-          --md-heading: #2f3a2f;
-          --modal-border: rgba(47, 58, 47, 0.18);
-          --modal-bg: #f7f3e8;
-          --modal-overlay: rgba(118, 131, 113, 0.14);
-          --modal-input-bg: #efe9d9;
-          --modal-input-border: rgba(47, 58, 47, 0.18);
-          --modal-input-text: #2f3a2f;
-          --modal-btn-bg: #c9643b;
-          --modal-btn-text: #ffffff;
-          --modal-btn-hover-bg: #a85433;
-          --modal-btn-border: transparent;
-          --modal-toggle-bg: #efe9d9;
-          --modal-toggle-border: rgba(47, 58, 47, 0.18);
-          --modal-hint-text: #6b7a6b;
-          --modal-counter-text: #6b7a6b;
-          --modal-close-color: #6b7a6b;
-          --modal-focus-ring: #c9643b;
-        }
         .theme-nord {
           --md-paper: #3b4252;
           --md-text: #eceff4;
@@ -454,29 +421,6 @@
       .theme-sepia .file-item:hover {
         @apply bg-[#efe7d8];
       }
-      /* Savanna Theme */
-      .theme-savanna .panel {
-        @apply bg-[#f7f3e8] border-[#6b7a6b]/30;
-      }
-      .theme-savanna .panel-header {
-        @apply bg-gradient-to-b from-[#efe9d9] to-transparent border-[#6b7a6b]/40;
-      }
-      .theme-savanna select,
-      .theme-savanna input {
-        @apply bg-[#efe9d9] text-[#2f3a2f] border-[#6b7a6b]/40;
-      }
-      .theme-savanna .dropdown-menu {
-        @apply bg-[#f7f3e8] border-[#6b7a6b]/30;
-      }
-      .theme-savanna .dropdown-item {
-        @apply text-[#2f3a2f] hover:bg-[#c9643b] hover:text-white;
-      }
-      .theme-savanna .header-btn:hover {
-        @apply bg-[#efe9d9] text-[#2f3a2f];
-      }
-      .theme-savanna .file-item:hover {
-        @apply bg-[#efe9d9];
-      }
 
       /* Common Theme Overrides */
       [class^="theme-"] .panel {
@@ -723,7 +667,6 @@
       #find-replace-panel .close-btn {
         color: var(--modal-close-color);
       }
-      #graph-panel,
       #toc-panel,
       #table-dropdown,
       .dropdown-menu,
@@ -1121,9 +1064,6 @@
             >
               <i class="fas fa-list-ul"></i>
             </button>
-            <button id="toggle-graph" class="header-btn" title="Vault Graph">
-              <i class="fas fa-project-diagram"></i>
-            </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <select
               id="theme-select"
@@ -1136,7 +1076,6 @@
               <option value="midnight">Midnight</option>
               <option value="retro">Retro</option>
               <option value="sepia">Sepia</option>
-              <option value="savanna">Savanna</option>
             </select>
             <input
               type="number"
@@ -1171,25 +1110,6 @@
             </button>
           </div>
           <div id="toc-list" class="space-y-2 text-xs"></div>
-        </div>
-        <div
-          id="graph-panel"
-          class="hidden absolute top-14 right-4 w-80 max-h-[70%] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 overflow-hidden z-10 transition-all duration-300"
-        >
-          <div class="flex items-center justify-between mb-3">
-            <h3
-              class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
-            >
-              Graph
-            </h3>
-            <button
-              onclick="toggleGraph()"
-              class="text-apple-secondary hover:text-apple-accent transition-colors"
-            >
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <svg id="graph-svg" class="w-full h-[280px]"></svg>
         </div>
       </aside>
     </div>
@@ -1284,11 +1204,8 @@
       const zenModeBtn = document.getElementById("zen-mode");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
-      const toggleGraphBtn = document.getElementById("toggle-graph");
       const tocPanel = document.getElementById("toc-panel");
       const tocList = document.getElementById("toc-list");
-      const graphPanel = document.getElementById("graph-panel");
-      const graphSvg = document.getElementById("graph-svg");
       const commandPalette = document.getElementById("command-palette");
       const commandPaletteList = document.getElementById(
         "command-palette-list",
@@ -1554,7 +1471,6 @@
             idbKeyval.set("md-autosave", e.target.checked);
           }
         });
-        toggleGraphBtn.addEventListener("click", toggleGraph);
         document
           .getElementById("find-prev")
           .addEventListener("click", findPrev);
@@ -1861,66 +1777,6 @@
       function toggleTOC() {
         tocPanel.classList.toggle("hidden");
         toggleTocBtn.classList.toggle("text-apple-accent");
-      }
-      function toggleGraph() {
-        graphPanel.classList.toggle("hidden");
-        toggleGraphBtn.classList.toggle("text-apple-accent");
-        if (!graphPanel.classList.contains("hidden")) {
-          buildVaultGraph();
-        }
-      }
-      async function buildVaultGraph() {
-        if (!directoryHandle) {
-          graphSvg.innerHTML =
-            '<text x="10" y="20" class="text-[10px] fill-current">Open a directory first</text>';
-          return;
-        }
-        const nodes = [];
-        const edges = [];
-        const nameToIndex = new Map();
-        let idx = 0;
-        for await (const entry of directoryHandle.values()) {
-          if (entry.kind === "file" && entry.name.endsWith(".md")) {
-            nameToIndex.set(entry.name.replace(/\.md$/i, ""), idx++);
-            nodes.push({ name: entry.name.replace(/\.md$/i, "") });
-          }
-        }
-        for await (const entry of directoryHandle.values()) {
-          if (entry.kind === "file" && entry.name.endsWith(".md")) {
-            const file = await entry.getFile();
-            const text = await file.text();
-            const from = entry.name.replace(/\.md$/i, "");
-            const re = /\[\[([^\]]+)\]\]/g;
-            let m;
-            while ((m = re.exec(text))) {
-              const to = m[1].trim();
-              if (nameToIndex.has(to)) {
-                edges.push({ from, to });
-              }
-            }
-          }
-        }
-        const w = graphSvg.clientWidth || 320;
-        const h = graphSvg.clientHeight || 240;
-        const r = Math.min(w, h) / 2 - 20;
-        const cx = w / 2;
-        const cy = h / 2;
-        let svg = "";
-        nodes.forEach((n, i) => {
-          const angle = (i / nodes.length) * Math.PI * 2;
-          n.x = Math.round(cx + r * Math.cos(angle));
-          n.y = Math.round(cy + r * Math.sin(angle));
-        });
-        edges.forEach((e) => {
-          const a = nodes[nameToIndex.get(e.from)];
-          const b = nodes[nameToIndex.get(e.to)];
-          svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="currentColor" stroke-opacity="0.2" />`;
-        });
-        nodes.forEach((n) => {
-          svg += `<circle cx="${n.x}" cy="${n.y}" r="8" fill="currentColor" fill-opacity="0.8" />`;
-          svg += `<text x="${n.x + 10}" y="${n.y + 4}" class="text-[10px]" fill="currentColor">${n.name}</text>`;
-        });
-        graphSvg.innerHTML = svg;
       }
 
       function toggleHelp() {
@@ -2473,7 +2329,6 @@
           "theme-midnight",
           "theme-retro",
           "theme-sepia",
-          "theme-savanna",
         );
 
         // Add the new theme class if it's not 'light'
@@ -2490,9 +2345,6 @@
         }
         if (theme === "sepia") {
           document.body.classList.add("theme-sepia");
-        }
-        if (theme === "savanna") {
-          document.body.classList.add("theme-savanna");
         }
 
         // Update highlight.js theme
