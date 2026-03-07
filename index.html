@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown Editor</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Marked for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Left Column: Explorer -->
+      <aside class="explorer">
+        <div class="explorer-header">
+          <h2>Explorer</h2>
+          <button id="open-directory" title="Open Directory">
+            <i class="fas fa-folder-open"></i>
+          </button>
+        </div>
+        <ul id="file-list">
+          <!-- File list will be populated here -->
+        </ul>
+      </aside>
+
+      <!-- Center Column: Workspace -->
+      <main class="workspace">
+        <div class="workspace-header">
+          <div class="file-info">
+            <span id="current-filename">Untitled.md</span>
+            <span id="unsaved-indicator" hidden>*</span>
+          </div>
+          <div class="actions">
+            <button id="new-file" title="New File">
+              <i class="fas fa-plus"></i>
+            </button>
+            <button id="save-file" title="Save File">
+              <i class="fas fa-save"></i>
+            </button>
+            <button id="export-pdf" title="Export as PDF">
+              <i class="fas fa-file-pdf"></i>
+            </button>
+          </div>
+        </div>
+        <textarea
+          id="editor"
+          placeholder="Type your markdown here..."
+        ></textarea>
+      </main>
+
+      <!-- Right Column: Viewer -->
+      <aside class="viewer">
+        <div class="viewer-header">
+          <h2>Preview</h2>
+          <div class="viewer-settings">
+            <select id="theme-select">
+              <option value="light">Light Theme</option>
+              <option value="dark">Dark Theme</option>
+              <option value="sepia">Sepia</option>
+            </select>
+            <input
+              type="number"
+              id="font-size"
+              value="16"
+              min="10"
+              max="32"
+              title="Font Size"
+            />
+            <input
+              type="color"
+              id="bg-color"
+              value="#ffffff"
+              title="Background Color"
+            />
+          </div>
+        </div>
+        <div id="preview-content" class="markdown-body">
+          <!-- Rendered markdown will appear here -->
+        </div>
+      </aside>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
