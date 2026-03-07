@@ -83,6 +83,7 @@
           --md-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
           --md-radius: 16px;
           --md-heading: #0f172a;
+          --modal-border: rgba(0, 0, 0, 0.12);
           --modal-bg: #ffffff;
           --modal-overlay: rgba(10, 10, 12, 0.08);
           --modal-input-bg: #f7f7f8;
@@ -115,6 +116,22 @@
           --md-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
           --md-radius: 16px;
           --md-heading: #e2e8f0;
+          --modal-border: rgba(255, 255, 255, 0.12);
+          --modal-bg: #1c1c1e;
+          --modal-overlay: rgba(255, 255, 255, 0.08);
+          --modal-input-bg: #2c2c2e;
+          --modal-input-border: rgba(255, 255, 255, 0.12);
+          --modal-input-text: #f5f6f8;
+          --modal-btn-bg: #0a84ff;
+          --modal-btn-text: #ffffff;
+          --modal-btn-hover-bg: #066dd3;
+          --modal-btn-border: transparent;
+          --modal-toggle-bg: #2c2c2e;
+          --modal-toggle-border: rgba(255, 255, 255, 0.12);
+          --modal-hint-text: #a1a7b3;
+          --modal-counter-text: #a1a7b3;
+          --modal-close-color: #a1a7b3;
+          --modal-focus-ring: #0a84ff;
         }
         .theme-sepia {
           --md-paper: #f7f1e3;
@@ -132,6 +149,7 @@
           --md-shadow: 0 10px 28px rgba(139, 107, 61, 0.15);
           --md-radius: 16px;
           --md-heading: #2b2222;
+          --modal-border: rgba(59, 47, 47, 0.18);
           --modal-bg: #f7f1e3;
           --modal-overlay: rgba(139, 107, 61, 0.12);
           --modal-input-bg: #efe7d8;
@@ -164,6 +182,7 @@
           --md-shadow: 0 10px 28px rgba(47, 58, 47, 0.12);
           --md-radius: 16px;
           --md-heading: #2f3a2f;
+          --modal-border: rgba(47, 58, 47, 0.18);
           --modal-bg: #f7f3e8;
           --modal-overlay: rgba(118, 131, 113, 0.14);
           --modal-input-bg: #efe9d9;
@@ -412,6 +431,52 @@
       .theme-retro .dropdown-item {
         @apply text-[#00ff41] hover:bg-[#00ff41] hover:text-[#0d0208];
       }
+      /* Sepia Theme */
+      .theme-sepia .panel {
+        @apply bg-[#f7f1e3] border-[#7a6a5e]/30;
+      }
+      .theme-sepia .panel-header {
+        @apply bg-gradient-to-b from-[#efe7d8] to-transparent border-[#7a6a5e]/40;
+      }
+      .theme-sepia select,
+      .theme-sepia input {
+        @apply bg-[#efe7d8] text-[#3b2f2f] border-[#7a6a5e]/40;
+      }
+      .theme-sepia .dropdown-menu {
+        @apply bg-[#f7f1e3] border-[#7a6a5e]/30;
+      }
+      .theme-sepia .dropdown-item {
+        @apply text-[#3b2f2f] hover:bg-[#8b6b3d] hover:text-[#f7f1e3];
+      }
+      .theme-sepia .header-btn:hover {
+        @apply bg-[#efe7d8] text-[#3b2f2f];
+      }
+      .theme-sepia .file-item:hover {
+        @apply bg-[#efe7d8];
+      }
+      /* Savanna Theme */
+      .theme-savanna .panel {
+        @apply bg-[#f7f3e8] border-[#6b7a6b]/30;
+      }
+      .theme-savanna .panel-header {
+        @apply bg-gradient-to-b from-[#efe9d9] to-transparent border-[#6b7a6b]/40;
+      }
+      .theme-savanna select,
+      .theme-savanna input {
+        @apply bg-[#efe9d9] text-[#2f3a2f] border-[#6b7a6b]/40;
+      }
+      .theme-savanna .dropdown-menu {
+        @apply bg-[#f7f3e8] border-[#6b7a6b]/30;
+      }
+      .theme-savanna .dropdown-item {
+        @apply text-[#2f3a2f] hover:bg-[#c9643b] hover:text-white;
+      }
+      .theme-savanna .header-btn:hover {
+        @apply bg-[#efe9d9] text-[#2f3a2f];
+      }
+      .theme-savanna .file-item:hover {
+        @apply bg-[#efe9d9];
+      }
 
       /* Common Theme Overrides */
       [class^="theme-"] .panel {
@@ -608,7 +673,7 @@
       }
       #find-replace-panel {
         background: var(--modal-bg);
-        border-color: var(--modal-border);
+        border-color: var(--modal-border, var(--md-border));
         transition:
           background-color 200ms ease,
           border-color 200ms ease,
@@ -657,6 +722,22 @@
       }
       #find-replace-panel .close-btn {
         color: var(--modal-close-color);
+      }
+      #graph-panel,
+      #toc-panel,
+      #table-dropdown,
+      .dropdown-menu,
+      #command-palette {
+        background: var(--modal-bg, var(--md-paper));
+        border-color: var(--modal-border, var(--md-border));
+        color: var(--md-text);
+        transition:
+          background-color 200ms ease,
+          border-color 200ms ease,
+          color 200ms ease;
+      }
+      #help-modal {
+        background: var(--modal-overlay);
       }
       .callout {
         @apply rounded-xl border px-4 py-3 my-3;
@@ -1850,7 +1931,10 @@
       function toggleFind() {
         const isHidden = findReplacePanel.classList.toggle("hidden");
         const overlay = document.getElementById("find-overlay");
-        if (overlay) overlay.classList.toggle("active", !isHidden);
+        if (overlay) {
+          overlay.classList.toggle("active", !isHidden);
+          overlay.classList.toggle("hidden", isHidden);
+        }
         if (!isHidden) {
           findInput.focus();
         }
