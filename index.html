@@ -71,7 +71,17 @@
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
         }
         .panel {
-          @apply bg-white border border-black/10 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300;
+          @apply bg-white border border-black/10 rounded-xl shadow-sm overflow-hidden flex flex-col;
+        }
+        .is-resizing .panel {
+          @apply transition-none!;
+        }
+        .is-resizing {
+          @apply cursor-col-resize select-none;
+        }
+        .is-resizing textarea,
+        .is-resizing #preview-content {
+          @apply pointer-events-none;
         }
         .panel-header {
           @apply flex items-center justify-between h-14 px-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-b from-black/[0.02] to-transparent;
@@ -877,31 +887,49 @@
 
       // --- Resizing Logic ---
       function setupResizers() {
-        const setupResizer = (resizerId, leftPanelId, isRight) => {
+        const setupResizer = (resizerId, panelId, isRight) => {
           const resizer = document.getElementById(resizerId);
-          const panel = document.getElementById(leftPanelId);
+          const panel = document.getElementById(panelId);
           let startX, startWidth;
+          let animationFrameId = null;
 
           resizer.addEventListener("mousedown", (e) => {
             startX = e.clientX;
             startWidth = panel.offsetWidth;
+            document.body.classList.add("is-resizing");
+            resizer.classList.add("bg-apple-accent");
+
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
-            resizer.classList.add("bg-apple-accent");
           });
 
           function onMouseMove(e) {
-            const delta = e.clientX - startX;
-            const newWidth = isRight ? startWidth - delta : startWidth + delta;
-            if (newWidth > 150 && newWidth < 600) {
-              panel.style.width = `${newWidth}px`;
+            if (animationFrameId) {
+              cancelAnimationFrame(animationFrameId);
             }
+
+            animationFrameId = requestAnimationFrame(() => {
+              const delta = e.clientX - startX;
+              const newWidth = isRight
+                ? startWidth - delta
+                : startWidth + delta;
+
+              if (newWidth > 150 && newWidth < 600) {
+                panel.style.width = `${newWidth}px`;
+              }
+              animationFrameId = null;
+            });
           }
 
           function onMouseUp() {
+            document.body.classList.remove("is-resizing");
+            resizer.classList.remove("bg-apple-accent");
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
-            resizer.classList.remove("bg-apple-accent");
+            if (animationFrameId) {
+              cancelAnimationFrame(animationFrameId);
+              animationFrameId = null;
+            }
           }
         };
 
