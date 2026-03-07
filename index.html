@@ -430,23 +430,7 @@
         border-radius: var(--md-radius);
         box-shadow: var(--md-shadow);
       }
-      .markdown-body .md-code-line {
-        display: grid;
-        grid-template-columns: 2.5em 1fr;
-        column-gap: 1em;
-        border-bottom: 1px solid var(--md-code-sep);
-      }
-      .markdown-body .md-code-line:last-child {
-        border-bottom: 0;
-      }
-      .markdown-body .md-code-lno {
-        color: var(--md-secondary);
-        text-align: right;
-        user-select: none;
-      }
-      .markdown-body .md-code-src {
-        color: var(--md-text);
-      }
+
       .markdown-body table {
         width: 100%;
         border-collapse: separate;
@@ -1458,7 +1442,6 @@
               hljs.highlightElement(block);
             });
           }
-          addCodeLineNumbers();
           // Table of Contents
           generateTOC();
           stylePreviewAttachments();
@@ -1924,21 +1907,6 @@
           div.classList.add("translate-y-10", "opacity-0");
           setTimeout(() => div.remove(), 500);
         }, 3000);
-      }
-
-      function addCodeLineNumbers() {
-        const codes = previewContent.querySelectorAll("pre code");
-        codes.forEach((code) => {
-          const html = code.innerHTML;
-          const lines = html.split("\n");
-          const numbered = lines
-            .map(
-              (line, i) =>
-                `<span class="md-code-line"><span class="md-code-lno">${i + 1}</span><span class="md-code-src">${line || " "}</span></span>`,
-            )
-            .join("\n");
-          code.innerHTML = numbered;
-        });
       }
 
       async function compressImageFile(file) {
