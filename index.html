@@ -13,6 +13,13 @@
     />
     <!-- Marked for markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for code syntax highlighting -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css"
+      id="hljs-style"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <!-- idb-keyval for IndexedDB storage -->
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
     <style type="text/tailwindcss">
@@ -280,8 +287,24 @@
               class="text-[10px] text-apple-secondary bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded-full ml-2"
               >0 words</span
             >
+            <label class="flex items-center gap-1.5 ml-4 cursor-pointer">
+              <input
+                type="checkbox"
+                id="autosave-toggle"
+                checked
+                class="w-3 h-3 rounded border-black/10 accent-apple-accent"
+              />
+              <span
+                class="text-[10px] text-apple-secondary uppercase tracking-tight"
+                >Autosave</span
+              >
+            </label>
           </div>
           <div class="flex items-center gap-1">
+            <button id="zen-mode" class="header-btn" title="Zen Mode">
+              <i class="fas fa-expand"></i>
+            </button>
+            <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <button id="new-file" class="header-btn" title="New (⌘N)">
               <i class="fas fa-plus"></i>
             </button>
@@ -319,6 +342,14 @@
             Preview
           </h2>
           <div class="flex items-center gap-2">
+            <button
+              id="toggle-toc"
+              class="header-btn"
+              title="Table of Contents"
+            >
+              <i class="fas fa-list-ul"></i>
+            </button>
+            <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <select
               id="theme-select"
               class="text-[11px] px-2 py-1 rounded-md border border-black/10 outline-none transition-colors"
@@ -344,6 +375,26 @@
           id="preview-content"
           class="markdown-body flex-1 p-8 overflow-y-auto"
         ></div>
+        <!-- Table of Contents Panel -->
+        <div
+          id="toc-panel"
+          class="hidden absolute top-14 right-4 w-64 max-h-[70%] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 overflow-y-auto z-10 transition-all duration-300"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <h3
+              class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+            >
+              Outline
+            </h3>
+            <button
+              onclick="toggleTOC()"
+              class="text-apple-secondary hover:text-apple-accent transition-colors"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div id="toc-list" class="space-y-2 text-xs"></div>
+        </div>
       </aside>
     </div>
 
@@ -367,6 +418,15 @@
       const statusBar = document.getElementById("status-bar");
       const autosaveStatus = document.getElementById("autosave-status");
       const guidanceContainer = document.getElementById("guidance-container");
+      const zenModeBtn = document.getElementById("zen-mode");
+      const autosaveToggle = document.getElementById("autosave-toggle");
+      const toggleTocBtn = document.getElementById("toggle-toc");
+      const tocPanel = document.getElementById("toc-panel");
+      const tocList = document.getElementById("toc-list");
+      const explorer = document.getElementById("explorer");
+      const viewer = document.getElementById("viewer");
+      const resizer1 = document.getElementById("resizer-1");
+      const resizer2 = document.getElementById("resizer-2");
 
       // Buttons
       const openDirBtn = document.getElementById("open-directory");
@@ -401,12 +461,21 @@
         saveFileBtn.addEventListener("click", saveCurrentFile);
         exportPdfBtn.addEventListener("click", () => window.print());
 
+        zenModeBtn.addEventListener("click", toggleZenMode);
+        toggleTocBtn.addEventListener("click", toggleTOC);
+
         themeSelect.addEventListener("change", (e) =>
           applyTheme(e.target.value),
         );
         fontSizeInput.addEventListener("input", (e) =>
           applyFontSize(e.target.value),
         );
+
+        autosaveToggle.addEventListener("change", (e) => {
+          if (window.idbKeyval) {
+            idbKeyval.set("md-autosave", e.target.checked);
+          }
+        });
 
         window.addEventListener("keydown", (e) => {
           if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -416,6 +485,11 @@
           if ((e.ctrlKey || e.metaKey) && e.key === "n") {
             e.preventDefault();
             createNewFile();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "j") {
+            // Zen mode shortcut
+            e.preventDefault();
+            toggleZenMode();
           }
         });
       }
@@ -457,14 +531,69 @@
       // --- Core Functions ---
       function updatePreview() {
         if (window.marked) {
-          previewContent.innerHTML = marked.parse(editor.value);
+          const content = editor.value;
+          previewContent.innerHTML = marked.parse(content);
+          // Syntax highlighting
+          if (window.hljs) {
+            previewContent.querySelectorAll("pre code").forEach((block) => {
+              hljs.highlightElement(block);
+            });
+          }
+          // Table of Contents
+          generateTOC();
         }
+      }
+
+      function generateTOC() {
+        const headers = previewContent.querySelectorAll("h1, h2, h3");
+        tocList.innerHTML = "";
+        if (headers.length === 0) {
+          tocList.innerHTML =
+            '<p class="text-apple-secondary italic">No headers found</p>';
+          return;
+        }
+
+        headers.forEach((header, index) => {
+          const id = `header-${index}`;
+          header.id = id;
+          const level = parseInt(header.tagName[1]);
+          const link = document.createElement("a");
+          link.href = `#${id}`;
+          link.textContent = header.textContent;
+          link.className = `block hover:text-apple-accent transition-colors ${level === 1 ? "font-bold" : level === 2 ? "pl-3 text-apple-secondary" : "pl-6 text-apple-secondary text-[10px]"}`;
+          link.onclick = (e) => {
+            e.preventDefault();
+            header.scrollIntoView({ behavior: "smooth" });
+          };
+          tocList.appendChild(link);
+        });
+      }
+
+      function toggleZenMode() {
+        const isZen = explorer.classList.toggle("hidden");
+        viewer.classList.toggle("hidden", isZen);
+        resizer1.classList.toggle("hidden", isZen);
+        resizer2.classList.toggle("hidden", isZen);
+        zenModeBtn.innerHTML = isZen
+          ? '<i class="fas fa-compress"></i>'
+          : '<i class="fas fa-expand"></i>';
+        zenModeBtn.classList.toggle("text-apple-accent", isZen);
+        statusBar.textContent = isZen
+          ? "Zen Mode Enabled"
+          : "Zen Mode Disabled";
+      }
+
+      function toggleTOC() {
+        tocPanel.classList.toggle("hidden");
+        toggleTocBtn.classList.toggle("text-apple-accent");
       }
 
       function updateWordCount() {
         const text = editor.value.trim();
-        const count = text ? text.split(/\s+/).length : 0;
-        wordCountDisplay.textContent = `${count} word${count === 1 ? "" : "s"}`;
+        const words = text ? text.split(/\s+/).length : 0;
+        const chars = text.length;
+        const readingTime = Math.ceil(words / 200); // 200 wpm avg
+        wordCountDisplay.textContent = `${words} word${words === 1 ? "" : "s"} · ${chars} char${chars === 1 ? "" : "s"} · ${readingTime} min read`;
       }
 
       async function openDirectory() {
@@ -544,7 +673,7 @@
 
       function handleAutosave() {
         clearTimeout(autosaveTimer);
-        if (!currentFileHandle) return;
+        if (!currentFileHandle || !autosaveToggle.checked) return;
         autosaveStatus.textContent = "Changes detected...";
         autosaveTimer = setTimeout(async () => {
           await saveCurrentFile();
@@ -576,8 +705,17 @@
         );
 
         // Add the new theme class if it's not 'light'
-        if (theme !== "light") {
+        const isDark = theme !== "light";
+        if (isDark) {
           document.body.classList.add(`theme-${theme}`);
+        }
+
+        // Update highlight.js theme
+        const hljsLink = document.getElementById("hljs-style");
+        if (hljsLink) {
+          hljsLink.href = isDark
+            ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
+            : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css";
         }
 
         if (window.idbKeyval) {
@@ -595,16 +733,20 @@
       async function loadPreferences() {
         let theme = "light";
         let size = "16";
+        let autosave = true;
 
         if (window.idbKeyval) {
           const storedTheme = await idbKeyval.get("md-theme");
           const storedSize = await idbKeyval.get("md-font-size");
+          const storedAutosave = await idbKeyval.get("md-autosave");
           if (storedTheme) theme = storedTheme;
           if (storedSize) size = storedSize;
+          if (storedAutosave !== undefined) autosave = storedAutosave;
         }
 
         themeSelect.value = theme;
         fontSizeInput.value = size;
+        autosaveToggle.checked = autosave;
         applyTheme(theme);
         applyFontSize(size);
       }
