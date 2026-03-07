@@ -1663,30 +1663,92 @@
         }, 3000);
       }
 
+      async function compressImageFile(file) {
+        return new Promise((resolve) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            const maxW = 1600;
+            const maxH = 1200;
+            let w = img.width;
+            let h = img.height;
+            const scale = Math.min(maxW / w, maxH / h, 1);
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            let outType = "image/webp";
+            let dataURL = canvas.toDataURL(outType, 0.8);
+            if (!dataURL.startsWith("data:image/webp")) {
+              outType = "image/jpeg";
+              dataURL = canvas.toDataURL(outType, 0.8);
+            }
+            URL.revokeObjectURL(url);
+            resolve({ dataURL, outType });
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            const reader = new FileReader();
+            reader.onload = () =>
+              resolve({
+                dataURL: reader.result,
+                outType: file.type || "image/*",
+              });
+            reader.readAsDataURL(file);
+          };
+          img.src = url;
+        });
+      }
+
+      function approxDataURLSizeBytes(dataURL) {
+        const b64 = dataURL.split(",")[1] || "";
+        return Math.floor((b64.length * 3) / 4);
+      }
+
       function handleAttachmentSelect(e) {
         const f = e.target.files && e.target.files[0];
         if (!f) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const url = reader.result;
-          const isImg = f.type && f.type.startsWith("image/");
-          const alt = f.name;
-          const insert = isImg
-            ? `\n\n![${alt}](${url})\n\n`
-            : `\n\n[${alt}](${url})\n\n`;
-          const start = editor.selectionStart || 0;
-          const end = editor.selectionEnd || 0;
-          const before = editor.value.substring(0, start);
-          const after = editor.value.substring(end);
-          editor.value = before + insert + after;
-          const pos = before.length + insert.length;
-          editor.setSelectionRange(pos, pos);
-          updatePreview();
-          markAsUnsaved(true);
-          pushToHistory();
-          e.target.value = "";
-        };
-        reader.readAsDataURL(f);
+        const isImg = f.type && f.type.startsWith("image/");
+        const alt = f.name;
+        if (isImg) {
+          compressImageFile(f).then(({ dataURL }) => {
+            const insert = `\n\n![${alt}](${dataURL})\n\n`;
+            const start = editor.selectionStart || 0;
+            const end = editor.selectionEnd || 0;
+            const before = editor.value.substring(0, start);
+            const after = editor.value.substring(end);
+            editor.value = before + insert + after;
+            const pos = before.length + insert.length;
+            editor.setSelectionRange(pos, pos);
+            updatePreview();
+            markAsUnsaved(true);
+            pushToHistory();
+            const saved = Math.max(f.size - approxDataURLSizeBytes(dataURL), 0);
+            notify(`Image compressed · saved ${Math.round(saved / 1024)} KB`);
+            e.target.value = "";
+          });
+        } else {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const url = reader.result;
+            const insert = `\n\n[${alt}](${url})\n\n`;
+            const start = editor.selectionStart || 0;
+            const end = editor.selectionEnd || 0;
+            const before = editor.value.substring(0, start);
+            const after = editor.value.substring(end);
+            editor.value = before + insert + after;
+            const pos = before.length + insert.length;
+            editor.setSelectionRange(pos, pos);
+            updatePreview();
+            markAsUnsaved(true);
+            pushToHistory();
+            e.target.value = "";
+          };
+          reader.readAsDataURL(f);
+        }
       }
 
       function stylePreviewAttachments() {
