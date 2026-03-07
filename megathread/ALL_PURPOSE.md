@@ -1,6 +1,4 @@
-![](%%all-purpose%%)
-
-# 🧭 ➜ [Megathread](https://www.reddit.com/r/Piracy/wiki/megathread/) / **All Purpose**
+# 🧭 ➜ **All Purpose**
 
 ### ❕ ➜ Quick reminder
 - ✔️ All links have been reviewed and approved by moderators, but proceed with caution.
@@ -162,6 +160,3 @@
 ---
 
 &nbsp;
-
-📜 ❮ Return to [**Megathread**](https://www.reddit.com/r/Piracy/wiki/megathread/)
----

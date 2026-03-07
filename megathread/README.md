@@ -1,5 +1,3 @@
-![](%%megathread%%)
-
 # 📜 ➜ **Megathread**
 
 ### ⛵ ➜ Not so fast sailor! Do this first
@@ -127,8 +125,3 @@
 ---
 
 &nbsp;
-
-⚓ ❮ Return to **r/Piracy**
----
-💀 ❮ Return to [**Wiki**](https://www.reddit.com/r/Piracy/wiki/index/)
----

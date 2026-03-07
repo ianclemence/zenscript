@@ -1,15 +1,15 @@
-![](%%anime%%)
-
-
-# ⭐ ➜ [Megathread](https://www.reddit.com/r/Piracy/wiki/megathread/) / **Anime**
+# ⭐ ➜ **Anime**
 
 ## ❕ ➜ Quick Reminder
 - ✅ All links have been reviewed and approved by moderators, but proceed with caution
 - 👍 Rather than having an enormous variety, our [Megathread](https://www.reddit.com/r/Piracy/wiki/megathread/) provides only the finest options
 - 🐐 **GOAT status** = Highly regarded by the pirate community
 
+&nbsp;
+
 ---
 
+&nbsp;
 
 ## 📊 ➜ Databases & Tracking
 
@@ -117,8 +117,11 @@ Access over 5,000 high-quality anime, drama series, and soundtracks with organiz
 
 - [URL Safety Results](https://www.urlvoid.com/scan/chauthanh.info/)
 
+&nbsp;
+
 ---
 
+&nbsp;
 
 ## 🎬 ➜ Streaming Sites
 
@@ -296,8 +299,11 @@ Several donghua streaming options with English subtitles accessible for internat
 
 - [URL Safety Results](https://www.urlvoid.com/scan/myanime.live/)
 
+&nbsp;
+
 ---
 
+&nbsp;
 
 ## 🧲 ➜ Torrent Sites
 
@@ -331,7 +337,11 @@ Aggregates resources from Anime Garden, Jiying BT, and Youxia BT for comprehensi
 
 - [URL Safety Results](https://www.urlvoid.com/scan/share.acgnx.se/)
 
+&nbsp;
+
 ---
+
+&nbsp;
 
 ## 🛠️ ➜ Helpful Tools & Resources
 
@@ -348,7 +358,6 @@ Aggregates resources from Anime Garden, Jiying BT, and Youxia BT for comprehensi
 - **[Senpai](https://www.senpai.moe/)** - Clean anime release schedule with countdown timers
 
 ### **Community & Discovery**
-- **[/r/anime Wiki](https://www.reddit.com/r/anime/wiki/watch_order/)** - Comprehensive anime watch order guides
 - **[Wotaku](https://wotaku.wiki/)** - Extensive anime resource wiki and community guides
 - **[The Wiki](https://thewiki.moe/)** - r/animepiracy wiki
 - **[The Index](https://theindex.moe/)** - Curated anime resource directory
@@ -358,15 +367,8 @@ Aggregates resources from Anime Garden, Jiying BT, and Youxia BT for comprehensi
 - **[HakuNeko](https://hakuneko.download/)** - Multi-site anime and manga downloader
 - **[Substital](https://substital.com/)** - External subtitle support for streaming sites
 
----
-
-## 🔗 ➜ Check Out More
-
-### 📜 **[All Purpose Torrents](https://www.reddit.com/r/Piracy/wiki/megathread/all_purpose/)**
-Looking for more torrent sites? Check our comprehensive all-purpose section.
+&nbsp;
 
 ---
 
-📜 **[← Return to Megathread](https://www.reddit.com/r/Piracy/wiki/megathread/)**
-
----
+&nbsp;
