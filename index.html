@@ -283,11 +283,23 @@
       .markdown-body pre code {
         @apply bg-transparent p-0;
       }
+      .markdown-body img {
+        @apply max-w-full rounded-lg border border-black/10 my-3;
+      }
+      .theme-dark .markdown-body img {
+        @apply border-white/10;
+      }
       .markdown-body .task-list-item {
         @apply list-none ml-0 flex items-center gap-2;
       }
       .markdown-body .task-list-item input {
         @apply m-0 accent-apple-accent w-4 h-4;
+      }
+      .attachment-chip {
+        @apply inline-flex items-center gap-2 px-2 py-1 rounded-md border border-black/10 bg-black/5 text-[12px];
+      }
+      .theme-dark .attachment-chip {
+        @apply bg-white/5 border-white/10;
       }
 
       @media print {
@@ -462,6 +474,10 @@
                   ></div>
                 </div>
               </div>
+              <button id="btn-attach" class="toolbar-btn" title="Attach">
+                <i class="fas fa-paperclip"></i>
+              </button>
+              <input id="attach-input" type="file" class="hidden" />
             </div>
             <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
             <label class="flex items-center gap-1.5 ml-1 cursor-pointer">
@@ -761,6 +777,8 @@
       const undoBtn = document.getElementById("btn-undo");
       const redoBtn = document.getElementById("btn-redo");
       const tableBtn = document.getElementById("btn-table");
+      const attachBtn = document.getElementById("btn-attach");
+      const attachInput = document.getElementById("attach-input");
 
       // State
       let directoryHandle = null;
@@ -971,6 +989,8 @@
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
         tableBtn.addEventListener("click", () => toggleTableDropdown());
+        attachBtn.addEventListener("click", () => attachInput.click());
+        attachInput.addEventListener("change", handleAttachmentSelect);
 
         zenModeBtn.addEventListener("click", toggleZenMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
@@ -1189,6 +1209,7 @@
           }
           // Table of Contents
           generateTOC();
+          stylePreviewAttachments();
         }
       }
 
@@ -1640,6 +1661,78 @@
           div.classList.add("translate-y-10", "opacity-0");
           setTimeout(() => div.remove(), 500);
         }, 3000);
+      }
+
+      function handleAttachmentSelect(e) {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const url = reader.result;
+          const isImg = f.type && f.type.startsWith("image/");
+          const alt = f.name;
+          const insert = isImg
+            ? `\n\n![${alt}](${url})\n\n`
+            : `\n\n[${alt}](${url})\n\n`;
+          const start = editor.selectionStart || 0;
+          const end = editor.selectionEnd || 0;
+          const before = editor.value.substring(0, start);
+          const after = editor.value.substring(end);
+          editor.value = before + insert + after;
+          const pos = before.length + insert.length;
+          editor.setSelectionRange(pos, pos);
+          updatePreview();
+          markAsUnsaved(true);
+          pushToHistory();
+          e.target.value = "";
+        };
+        reader.readAsDataURL(f);
+      }
+
+      function stylePreviewAttachments() {
+        const anchors = previewContent.querySelectorAll("a[href]");
+        anchors.forEach((a) => {
+          const href = a.getAttribute("href") || "";
+          if (href.startsWith("data:")) {
+            const m = href.match(/^data:([^;]+);/);
+            const type = m ? m[1] : "";
+            let icon = "fa-file";
+            if (type.startsWith("application/pdf")) icon = "fa-file-pdf";
+            else if (type.startsWith("text/")) icon = "fa-file-lines";
+            else if (
+              type.startsWith("application/zip") ||
+              type.includes("compressed")
+            )
+              icon = "fa-file-zipper";
+            else if (type.startsWith("audio/")) icon = "fa-file-audio";
+            else if (type.startsWith("video/")) icon = "fa-file-video";
+            else if (type.includes("word")) icon = "fa-file-word";
+            else if (type.includes("excel") || type.includes("spreadsheet"))
+              icon = "fa-file-excel";
+            a.classList.add("attachment-chip");
+            const label = a.textContent || "Attachment";
+            a.innerHTML = `<i class="fas ${icon}"></i><span>${label}</span>`;
+          } else {
+            const ext = href.split(".").pop().toLowerCase();
+            let icon = "";
+            if (ext === "pdf") icon = "fa-file-pdf";
+            else if (["txt", "md"].includes(ext)) icon = "fa-file-lines";
+            else if (["zip", "rar", "7z"].includes(ext))
+              icon = "fa-file-zipper";
+            else if (["mp3", "wav", "flac"].includes(ext))
+              icon = "fa-file-audio";
+            else if (["mp4", "webm", "mov"].includes(ext))
+              icon = "fa-file-video";
+            else if (["doc", "docx"].includes(ext)) icon = "fa-file-word";
+            else if (["xls", "xlsx", "csv"].includes(ext))
+              icon = "fa-file-excel";
+            if (icon) {
+              a.classList.add("attachment-chip");
+              const label = a.textContent || href;
+              a.innerHTML = `<i class="fas ${icon}"></i><span>${label}</span>`;
+            }
+          }
+        });
       }
 
       init();
