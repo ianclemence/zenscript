@@ -4,84 +4,218 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Markdown Editor | Elegant & Utilitarian</title>
-    <link rel="stylesheet" href="styles.css" />
-    <!-- SF Pro Icons or Font Awesome fallback -->
+    <!-- Tailwind CSS 4 -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <!-- Marked for markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-apple-bg: #f5f5f7;
+        --color-apple-sidebar: rgba(255, 255, 255, 0.72);
+        --color-apple-text: #1d1d1f;
+        --color-apple-secondary: #86868b;
+        --color-apple-accent: #007aff;
+        --font-sans:
+          -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons",
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+        --font-mono: "SF Mono", "Fira Code", "Courier New", Courier, monospace;
+      }
+
+      @layer base {
+        body {
+          @apply bg-apple-bg text-apple-text font-sans antialiased h-screen overflow-hidden;
+        }
+      }
+
+      @layer components {
+        .glass {
+          @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
+        }
+        .panel {
+          @apply bg-white border border-black/10 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300;
+        }
+        .header-btn {
+          @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-text transition-all flex items-center justify-center;
+        }
+        .resizer {
+          @apply w-1 hover:bg-apple-accent/30 cursor-col-resize transition-colors;
+        }
+        .file-item {
+          @apply flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-black/5 text-sm;
+        }
+        .file-item.active {
+          @apply bg-apple-accent/10 text-apple-accent font-medium;
+        }
+      }
+
+      /* Dark Mode Overrides */
+      .theme-dark {
+        --color-apple-bg: #000000;
+        --color-apple-sidebar: rgba(28, 28, 30, 0.72);
+        --color-apple-text: #ffffff;
+        --color-apple-secondary: #8e8e93;
+        --color-apple-accent: #0a84ff;
+      }
+      .theme-dark .panel {
+        @apply bg-[#1c1c1e] border-white/10;
+      }
+      .theme-dark select,
+      .theme-dark input {
+        @apply bg-[#2c2c2e] text-white border-white/10;
+      }
+      .theme-dark .header-btn:hover {
+        @apply bg-white/10 text-white;
+      }
+      .theme-dark .file-item:hover {
+        @apply bg-white/5;
+      }
+
+      /* Markdown Styling */
+      .markdown-body {
+        @apply leading-relaxed;
+      }
+      .markdown-body h1 {
+        @apply text-3xl font-bold mt-6 mb-4 pb-2 border-b border-black/10;
+      }
+      .markdown-body h2 {
+        @apply text-2xl font-bold mt-5 mb-3;
+      }
+      .markdown-body p {
+        @apply mb-4;
+      }
+      .markdown-body blockquote {
+        @apply border-l-4 border-apple-accent bg-apple-bg/50 px-4 py-2 my-4 italic rounded-r-lg;
+      }
+      .markdown-body code {
+        @apply bg-black/5 px-1.5 py-0.5 rounded font-mono text-sm;
+      }
+      .markdown-body pre {
+        @apply bg-black/5 p-4 rounded-xl overflow-x-auto my-4 font-mono text-sm;
+      }
+
+      .theme-dark .markdown-body code,
+      .theme-dark .markdown-body pre {
+        @apply bg-white/5;
+      }
+      .theme-dark .markdown-body h1 {
+        @apply border-white/10;
+      }
+
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        .print-only {
+          display: block !important;
+          width: 100% !important;
+          height: auto !important;
+          position: static !important;
+        }
+      }
+    </style>
   </head>
-  <body>
-    <div class="app-container" role="main">
-      <!-- Left Column: Explorer (Progressive Disclosure) -->
-      <aside class="explorer" aria-label="File Explorer">
-        <header class="explorer-header">
-          <h2>Explorer</h2>
+  <body class="transition-colors duration-500">
+    <div
+      class="app-container flex h-screen p-2 gap-0 overflow-hidden"
+      role="main"
+    >
+      <!-- Left Column: Explorer -->
+      <aside id="explorer" class="panel w-64 shrink-0 no-print">
+        <header
+          class="flex items-center justify-between h-12 px-4 border-b border-black/10 dark:border-white/10"
+        >
+          <h2
+            class="text-xs font-semibold uppercase tracking-wider text-apple-secondary"
+          >
+            Explorer
+          </h2>
           <button
             id="open-directory"
+            class="header-btn"
             title="Open Local Directory"
-            aria-label="Open Directory"
           >
             <i class="fas fa-folder-open"></i>
           </button>
         </header>
-        <nav id="file-list-container">
-          <ul id="file-list" role="listbox" aria-label="Markdown Files">
-            <!-- File list populated via script -->
-          </ul>
+        <nav class="flex-1 overflow-y-auto p-2">
+          <ul id="file-list" class="space-y-1" role="listbox"></ul>
         </nav>
       </aside>
 
-      <!-- Center Column: Workspace (Utilitarian Workspace) -->
-      <section class="workspace" aria-label="Editor Workspace">
-        <header class="workspace-header">
-          <div class="file-info" aria-live="polite">
-            <span id="current-filename">Untitled.md</span>
-            <span id="unsaved-indicator" hidden title="Unsaved Changes">*</span>
-          </div>
-          <div class="actions">
-            <button
-              id="new-file"
-              title="New Document (⌘N)"
-              aria-label="New File"
+      <!-- Resizer 1 -->
+      <div class="resizer no-print" id="resizer-1"></div>
+
+      <!-- Center Column: Workspace -->
+      <section id="workspace" class="panel flex-1 no-print">
+        <header
+          class="flex items-center justify-between h-12 px-4 border-b border-black/10 dark:border-white/10"
+        >
+          <div class="flex items-center gap-2 overflow-hidden">
+            <span id="current-filename" class="text-sm font-medium truncate"
+              >Untitled.md</span
             >
+            <span
+              id="unsaved-indicator"
+              class="text-apple-accent font-bold hidden"
+              >*</span
+            >
+            <span
+              id="word-count"
+              class="text-[10px] text-apple-secondary bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded-full ml-2"
+              >0 words</span
+            >
+          </div>
+          <div class="flex items-center gap-1">
+            <button id="new-file" class="header-btn" title="New (⌘N)">
               <i class="fas fa-plus"></i>
             </button>
-            <button
-              id="save-file"
-              title="Save Document (⌘S)"
-              aria-label="Save File"
-            >
+            <button id="save-file" class="header-btn" title="Save (⌘S)">
               <i class="fas fa-save"></i>
             </button>
-            <button
-              id="export-pdf"
-              title="Export as PDF"
-              aria-label="Export PDF"
-            >
+            <button id="export-pdf" class="header-btn" title="PDF">
               <i class="fas fa-file-pdf"></i>
             </button>
           </div>
         </header>
         <textarea
           id="editor"
-          placeholder="Start writing your thoughts in Markdown..."
+          class="flex-1 p-8 font-mono text-[15px] leading-relaxed resize-none outline-none bg-transparent caret-apple-accent"
+          placeholder="Start writing..."
           spellcheck="true"
-          aria-label="Markdown Editor Content"
         ></textarea>
+        <footer
+          class="h-6 px-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] text-apple-secondary"
+        >
+          <span id="status-bar">Ready</span>
+          <span id="autosave-status"></span>
+        </footer>
       </section>
 
-      <!-- Right Column: Viewer (Rendered Preview) -->
-      <aside class="viewer" aria-label="Markdown Preview">
-        <header class="viewer-header">
-          <h2>Preview</h2>
-          <div class="viewer-settings">
-            <select id="theme-select" aria-label="Choose Theme">
+      <!-- Resizer 2 -->
+      <div class="resizer no-print" id="resizer-2"></div>
+
+      <!-- Right Column: Viewer -->
+      <aside id="viewer" class="panel w-[400px] shrink-0 print-only">
+        <header
+          class="flex items-center justify-between h-12 px-4 border-b border-black/10 dark:border-white/10 no-print"
+        >
+          <h2
+            class="text-xs font-semibold uppercase tracking-wider text-apple-secondary"
+          >
+            Preview
+          </h2>
+          <div class="flex items-center gap-2">
+            <select
+              id="theme-select"
+              class="text-[11px] px-2 py-1 rounded-md border border-black/10 outline-none"
+            >
               <option value="light">Light</option>
               <option value="dark">Dark</option>
-              <option value="sepia">Sepia</option>
             </select>
             <input
               type="number"
@@ -89,27 +223,270 @@
               value="16"
               min="12"
               max="24"
-              title="Font Size"
-              aria-label="Font Size"
-            />
-            <input
-              type="color"
-              id="bg-color"
-              value="#ffffff"
-              title="Background Color"
-              aria-label="Background Color"
+              class="w-12 text-[11px] px-1 py-1 rounded-md border border-black/10 outline-none"
             />
           </div>
         </header>
-        <div id="preview-content" class="markdown-body" aria-live="polite">
-          <!-- Rendered markdown -->
-        </div>
+        <div
+          id="preview-content"
+          class="markdown-body flex-1 p-8 overflow-y-auto"
+        ></div>
       </aside>
     </div>
 
-    <!-- Educational Guidance Component -->
-    <div id="guidance-container"></div>
+    <!-- Guidance -->
+    <div
+      id="guidance-container"
+      class="fixed bottom-6 right-6 z-50 pointer-events-none"
+    ></div>
 
-    <script src="script.js"></script>
+    <script>
+      // DOM Elements
+      const editor = document.getElementById("editor");
+      const previewContent = document.getElementById("preview-content");
+      const fileList = document.getElementById("file-list");
+      const currentFilenameDisplay =
+        document.getElementById("current-filename");
+      const unsavedIndicator = document.getElementById("unsaved-indicator");
+      const themeSelect = document.getElementById("theme-select");
+      const fontSizeInput = document.getElementById("font-size");
+      const wordCountDisplay = document.getElementById("word-count");
+      const statusBar = document.getElementById("status-bar");
+      const autosaveStatus = document.getElementById("autosave-status");
+      const guidanceContainer = document.getElementById("guidance-container");
+
+      // Buttons
+      const openDirBtn = document.getElementById("open-directory");
+      const newFileBtn = document.getElementById("new-file");
+      const saveFileBtn = document.getElementById("save-file");
+      const exportPdfBtn = document.getElementById("export-pdf");
+
+      // State
+      let directoryHandle = null;
+      let currentFileHandle = null;
+      let isUnsaved = false;
+      let autosaveTimer = null;
+
+      // --- Initialization ---
+      function init() {
+        setupEventListeners();
+        setupResizers();
+        loadPreferences();
+        updatePreview();
+      }
+
+      function setupEventListeners() {
+        editor.addEventListener("input", () => {
+          updatePreview();
+          updateWordCount();
+          markAsUnsaved(true);
+          handleAutosave();
+        });
+
+        openDirBtn.addEventListener("click", openDirectory);
+        newFileBtn.addEventListener("click", createNewFile);
+        saveFileBtn.addEventListener("click", saveCurrentFile);
+        exportPdfBtn.addEventListener("click", () => window.print());
+
+        themeSelect.addEventListener("change", (e) =>
+          applyTheme(e.target.value),
+        );
+        fontSizeInput.addEventListener("input", (e) =>
+          applyFontSize(e.target.value),
+        );
+
+        window.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+            e.preventDefault();
+            saveCurrentFile();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+            e.preventDefault();
+            createNewFile();
+          }
+        });
+      }
+
+      // --- Resizing Logic ---
+      function setupResizers() {
+        const setupResizer = (resizerId, leftPanelId, isRight) => {
+          const resizer = document.getElementById(resizerId);
+          const panel = document.getElementById(leftPanelId);
+          let startX, startWidth;
+
+          resizer.addEventListener("mousedown", (e) => {
+            startX = e.clientX;
+            startWidth = panel.offsetWidth;
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+            resizer.classList.add("bg-apple-accent");
+          });
+
+          function onMouseMove(e) {
+            const delta = e.clientX - startX;
+            const newWidth = isRight ? startWidth - delta : startWidth + delta;
+            if (newWidth > 150 && newWidth < 600) {
+              panel.style.width = `${newWidth}px`;
+            }
+          }
+
+          function onMouseUp() {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            resizer.classList.remove("bg-apple-accent");
+          }
+        };
+
+        setupResizer("resizer-1", "explorer", false);
+        setupResizer("resizer-2", "viewer", true);
+      }
+
+      // --- Core Functions ---
+      function updatePreview() {
+        if (window.marked) {
+          previewContent.innerHTML = marked.parse(editor.value);
+        }
+      }
+
+      function updateWordCount() {
+        const text = editor.value.trim();
+        const count = text ? text.split(/\s+/).length : 0;
+        wordCountDisplay.textContent = `${count} word${count === 1 ? "" : "s"}`;
+      }
+
+      async function openDirectory() {
+        try {
+          directoryHandle = await window.showDirectoryPicker();
+          await scanDirectory();
+          notify("Directory opened");
+        } catch (err) {
+          if (err.name !== "AbortError") notify("Error opening directory");
+        }
+      }
+
+      async function scanDirectory() {
+        if (!directoryHandle) return;
+        fileList.innerHTML = "";
+        for await (const entry of directoryHandle.values()) {
+          if (entry.kind === "file" && entry.name.endsWith(".md")) {
+            const li = document.createElement("li");
+            li.className = "file-item";
+            li.innerHTML = `<i class="far fa-file-alt text-apple-secondary"></i> <span class="truncate">${entry.name}</span>`;
+            li.onclick = () => openFile(entry);
+            fileList.appendChild(li);
+          }
+        }
+      }
+
+      async function openFile(handle) {
+        if (isUnsaved && !confirm("Discard unsaved changes?")) return;
+        try {
+          const file = await handle.getFile();
+          editor.value = await file.text();
+          currentFileHandle = handle;
+          currentFilenameDisplay.textContent = handle.name;
+          updatePreview();
+          updateWordCount();
+          markAsUnsaved(false);
+          updateActiveHighlight(handle.name);
+          statusBar.textContent = `Opened ${handle.name}`;
+        } catch (err) {
+          notify("Error reading file");
+        }
+      }
+
+      async function saveCurrentFile() {
+        if (!currentFileHandle) {
+          if (!directoryHandle) return notify("Open a directory first");
+          const name = prompt("Filename:", "note.md");
+          if (!name) return;
+          currentFileHandle = await directoryHandle.getFileHandle(name, {
+            create: true,
+          });
+          currentFilenameDisplay.textContent = currentFileHandle.name;
+          await scanDirectory();
+        }
+        try {
+          const writable = await currentFileHandle.createWritable();
+          await writable.write(editor.value);
+          await writable.close();
+          markAsUnsaved(false);
+          notify("Saved");
+          statusBar.textContent = `Last saved at ${new Date().toLocaleTimeString()}`;
+        } catch (err) {
+          notify("Save failed");
+        }
+      }
+
+      function createNewFile() {
+        if (isUnsaved && !confirm("Discard changes?")) return;
+        currentFileHandle = null;
+        editor.value = "";
+        currentFilenameDisplay.textContent = "Untitled.md";
+        updatePreview();
+        updateWordCount();
+        markAsUnsaved(false);
+        editor.focus();
+      }
+
+      function handleAutosave() {
+        clearTimeout(autosaveTimer);
+        if (!currentFileHandle) return;
+        autosaveStatus.textContent = "Changes detected...";
+        autosaveTimer = setTimeout(async () => {
+          await saveCurrentFile();
+          autosaveStatus.textContent = "Autosaved";
+          setTimeout(() => (autosaveStatus.textContent = ""), 2000);
+        }, 3000);
+      }
+
+      // --- Helpers ---
+      function markAsUnsaved(unsaved) {
+        isUnsaved = unsaved;
+        unsavedIndicator.classList.toggle("hidden", !unsaved);
+      }
+
+      function updateActiveHighlight(name) {
+        document.querySelectorAll(".file-item").forEach((item) => {
+          item.classList.toggle("active", item.textContent.trim() === name);
+        });
+      }
+
+      function applyTheme(theme) {
+        document.body.className = theme === "dark" ? "theme-dark" : "";
+        localStorage.setItem("md-theme", theme);
+      }
+
+      function applyFontSize(size) {
+        previewContent.style.fontSize = `${size}px`;
+        localStorage.setItem("md-font-size", size);
+      }
+
+      function loadPreferences() {
+        const theme = localStorage.getItem("md-theme") || "light";
+        const size = localStorage.getItem("md-font-size") || "16";
+        themeSelect.value = theme;
+        fontSizeInput.value = size;
+        applyTheme(theme);
+        applyFontSize(size);
+      }
+
+      function notify(msg) {
+        const div = document.createElement("div");
+        div.className =
+          "bg-apple-accent text-white px-4 py-2 rounded-full shadow-lg text-xs font-medium mb-2 transition-all duration-500 transform translate-y-10 opacity-0";
+        div.textContent = msg;
+        guidanceContainer.appendChild(div);
+        setTimeout(() => {
+          div.classList.remove("translate-y-10", "opacity-0");
+        }, 10);
+        setTimeout(() => {
+          div.classList.add("translate-y-10", "opacity-0");
+          setTimeout(() => div.remove(), 500);
+        }, 3000);
+      }
+
+      init();
+    </script>
   </body>
 </html>
