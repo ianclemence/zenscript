@@ -347,6 +347,25 @@
             <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
             <div class="flex items-center gap-1">
               <button
+                id="btn-undo"
+                class="toolbar-btn"
+                onclick="undo()"
+                title="Undo (⌘Z)"
+                disabled
+              >
+                <i class="fas fa-undo"></i>
+              </button>
+              <button
+                id="btn-redo"
+                class="toolbar-btn"
+                onclick="redo()"
+                title="Redo (⌘Y)"
+                disabled
+              >
+                <i class="fas fa-redo"></i>
+              </button>
+              <div class="h-3 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
+              <button
                 id="btn-bold"
                 class="toolbar-btn"
                 onclick="format('bold')"
@@ -420,6 +439,36 @@
               >
                 <i class="fas fa-check-square"></i>
               </button>
+              <div class="relative">
+                <button
+                  id="btn-table"
+                  class="toolbar-btn"
+                  onclick="toggleTableDropdown()"
+                  title="Insert Table"
+                >
+                  <i class="fas fa-table"></i>
+                </button>
+                <div
+                  id="table-dropdown"
+                  class="hidden absolute left-0 top-full mt-1 p-3 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-lg shadow-xl z-50 min-w-[180px]"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <span
+                      class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+                      >Table</span
+                    >
+                    <span
+                      id="table-grid-label"
+                      class="text-[10px] font-mono text-apple-accent"
+                      >0 x 0</span
+                    >
+                  </div>
+                  <div
+                    id="table-grid-container"
+                    class="grid grid-cols-10 gap-1 p-1 bg-black/5 dark:bg-white/5 rounded"
+                  ></div>
+                </div>
+              </div>
             </div>
             <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
             <label class="flex items-center gap-1.5 ml-1 cursor-pointer">
@@ -723,6 +772,148 @@
       let isUnsaved = false;
       let autosaveTimer = null;
 
+      // History for Undo/Redo
+      const historyStack = [];
+      let historyIndex = -1;
+      const MAX_HISTORY = 100;
+
+      function pushToHistory() {
+        const content = editor.value;
+        const selection = {
+          start: editor.selectionStart,
+          end: editor.selectionEnd,
+        };
+
+        // Don't push if content is same as current history point
+        if (
+          historyIndex >= 0 &&
+          historyStack[historyIndex].content === content
+        ) {
+          return;
+        }
+
+        // If we're not at the end of the stack, remove future points
+        if (historyIndex < historyStack.length - 1) {
+          historyStack.splice(historyIndex + 1);
+        }
+
+        historyStack.push({ content, selection });
+        if (historyStack.length > MAX_HISTORY) {
+          historyStack.shift();
+        } else {
+          historyIndex++;
+        }
+        updateHistoryButtons();
+      }
+
+      function undo() {
+        if (historyIndex > 0) {
+          historyIndex--;
+          applyHistoryState(historyStack[historyIndex]);
+        }
+      }
+
+      function redo() {
+        if (historyIndex < historyStack.length - 1) {
+          historyIndex++;
+          applyHistoryState(historyStack[historyIndex]);
+        }
+      }
+
+      function applyHistoryState(state) {
+        editor.value = state.content;
+        editor.setSelectionRange(state.selection.start, state.selection.end);
+        updatePreview();
+        updateWordCount();
+        markAsUnsaved(true);
+        updateHistoryButtons();
+      }
+
+      function updateHistoryButtons() {
+        const undoBtn = document.getElementById("btn-undo");
+        const redoBtn = document.getElementById("btn-redo");
+        if (undoBtn) undoBtn.disabled = historyIndex <= 0;
+        if (redoBtn) redoBtn.disabled = historyIndex >= historyStack.length - 1;
+      }
+
+      // --- Table Insertion Grid ---
+      let selectedRows = 0;
+      let selectedCols = 0;
+
+      function createTableGrid() {
+        const container = document.getElementById("table-grid-container");
+        container.innerHTML = "";
+        for (let r = 1; r <= 10; r++) {
+          for (let c = 1; c <= 10; c++) {
+            const cell = document.createElement("div");
+            cell.className =
+              "w-4 h-4 border border-black/10 dark:border-white/10 rounded-sm cursor-pointer transition-colors";
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.onmouseover = () => highlightGrid(r, c);
+            cell.onclick = () => insertTable(r, c);
+            container.appendChild(cell);
+          }
+        }
+      }
+
+      function highlightGrid(rows, cols) {
+        selectedRows = rows;
+        selectedCols = cols;
+        const cells = document.querySelectorAll("#table-grid-container div");
+        cells.forEach((cell) => {
+          const r = parseInt(cell.dataset.row);
+          const c = parseInt(cell.dataset.col);
+          if (r <= rows && c <= cols) {
+            cell.classList.add("bg-apple-accent/40", "border-apple-accent");
+          } else {
+            cell.classList.remove("bg-apple-accent/40", "border-apple-accent");
+          }
+        });
+        document.getElementById("table-grid-label").textContent =
+          `${rows} x ${cols}`;
+      }
+
+      function insertTable(rows, cols) {
+        let table = "\n|";
+        for (let c = 1; c <= cols; c++) table += ` Header ${c} |`;
+        table += "\n|";
+        for (let c = 1; c <= cols; c++) table += " --- |";
+        for (let r = 1; r <= rows; r++) {
+          table += "\n|";
+          for (let c = 1; c <= cols; c++) table += ` Cell ${r}-${c} |`;
+        }
+        table += "\n";
+
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const before = editor.value.substring(0, start);
+        const after = editor.value.substring(end);
+
+        editor.value = before + table + after;
+        editor.focus();
+        editor.setSelectionRange(start + table.length, start + table.length);
+        updatePreview();
+        markAsUnsaved(true);
+        pushToHistory();
+        toggleTableDropdown(false);
+      }
+
+      function toggleTableDropdown(show) {
+        const dropdown = document.getElementById("table-dropdown");
+        if (show === undefined) {
+          dropdown.classList.toggle("hidden");
+        } else if (show) {
+          dropdown.classList.remove("hidden");
+        } else {
+          dropdown.classList.add("hidden");
+        }
+        if (!dropdown.classList.contains("hidden")) {
+          createTableGrid();
+          highlightGrid(0, 0);
+        }
+      }
+
       // --- Initialization ---
       function init() {
         if (window.marked) {
@@ -734,6 +925,7 @@
           });
         }
         editor.value = ""; // Ensure editor is empty on refresh
+        pushToHistory(); // Initial state
         setupEventListeners();
         setupResizers();
         loadPreferences();
@@ -743,12 +935,17 @@
       }
 
       function setupEventListeners() {
+        let historyTimeout;
         editor.addEventListener("input", () => {
           updatePreview();
           updateWordCount();
           markAsUnsaved(true);
           handleAutosave();
           updateToolbarState();
+
+          // Debounced history push for normal typing
+          clearTimeout(historyTimeout);
+          historyTimeout = setTimeout(pushToHistory, 1000);
         });
 
         editor.addEventListener("click", updateToolbarState);
@@ -783,6 +980,15 @@
           }
         });
 
+        window.addEventListener("click", (e) => {
+          if (
+            !e.target.closest("#btn-table") &&
+            !e.target.closest("#table-dropdown")
+          ) {
+            toggleTableDropdown(false);
+          }
+        });
+
         window.addEventListener("keydown", (e) => {
           if ((e.ctrlKey || e.metaKey) && e.key === "s") {
             e.preventDefault();
@@ -813,6 +1019,18 @@
           if ((e.ctrlKey || e.metaKey) && e.key === "k") {
             e.preventDefault();
             format("link");
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+            e.preventDefault();
+            undo();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+            e.preventDefault();
+            redo();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Z") {
+            e.preventDefault();
+            redo();
           }
         });
 
@@ -1123,6 +1341,7 @@
         editor.setSelectionRange(newPos, newPos);
         updatePreview();
         markAsUnsaved(true);
+        pushToHistory(); // Immediate history push for explicit formatting
       }
 
       function findNext() {
