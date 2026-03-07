@@ -88,6 +88,12 @@
         .file-item.active {
           @apply bg-apple-accent/10 text-apple-accent font-medium;
         }
+        .dropdown-menu {
+          @apply absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#1c1c1e] border border-black/10 dark:border-white/10 rounded-lg shadow-xl hidden group-hover:block z-20 overflow-hidden;
+        }
+        .dropdown-item {
+          @apply w-full text-left px-3 py-2 text-[11px] transition-colors hover:bg-apple-accent hover:text-white;
+        }
       }
 
       /* Dark Mode (Apple Dark) */
@@ -118,6 +124,13 @@
         @apply bg-[#434c5e] text-[#eceff4] border-[#4c566a];
       }
 
+      .theme-nord .dropdown-menu {
+        @apply bg-[#3b4252] border-[#4c566a]/50;
+      }
+      .theme-nord .dropdown-item {
+        @apply text-[#eceff4] hover:bg-[#88c0d0] hover:text-[#2e3440];
+      }
+
       /* Dracula Theme */
       .theme-dracula {
         --color-apple-bg: #282a36;
@@ -137,6 +150,13 @@
         @apply bg-[#44475a] text-[#f8f8f2] border-[#6272a4]/50;
       }
 
+      .theme-dracula .dropdown-menu {
+        @apply bg-[#282a36] border-[#44475a];
+      }
+      .theme-dracula .dropdown-item {
+        @apply text-[#f8f8f2] hover:bg-[#bd93f9] hover:text-[#282a36];
+      }
+
       /* Midnight Theme */
       .theme-midnight {
         --color-apple-bg: #0b0e14;
@@ -154,6 +174,13 @@
       .theme-midnight select,
       .theme-midnight input {
         @apply bg-[#1a202c] text-white border-white/10;
+      }
+
+      .theme-midnight .dropdown-menu {
+        @apply bg-[#11151c] border-white/10;
+      }
+      .theme-midnight .dropdown-item {
+        @apply text-white hover:bg-apple-accent;
       }
 
       /* Retro Theme */
@@ -177,6 +204,13 @@
       }
       .theme-retro .markdown-body h1 {
         @apply border-[#00ff41]/30 text-[#00ff41];
+      }
+
+      .theme-retro .dropdown-menu {
+        @apply bg-[#0d0208] border-[#00ff41]/50;
+      }
+      .theme-retro .dropdown-item {
+        @apply text-[#00ff41] hover:bg-[#00ff41] hover:text-[#0d0208];
       }
 
       /* Common Theme Overrides */
@@ -318,25 +352,14 @@
               <button class="header-btn" title="Download/Export">
                 <i class="fas fa-download"></i>
               </button>
-              <div
-                class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-lg shadow-xl hidden group-hover:block z-20"
-              >
-                <button
-                  id="download-md"
-                  class="w-full text-left px-3 py-2 text-[11px] hover:bg-apple-accent hover:text-white transition-colors rounded-t-lg"
-                >
+              <div class="dropdown-menu">
+                <button id="download-md" class="dropdown-item">
                   Download .md
                 </button>
-                <button
-                  id="download-html"
-                  class="w-full text-left px-3 py-2 text-[11px] hover:bg-apple-accent hover:text-white transition-colors"
-                >
+                <button id="download-html" class="dropdown-item">
                   Download .html
                 </button>
-                <button
-                  id="export-pdf"
-                  class="w-full text-left px-3 py-2 text-[11px] hover:bg-apple-accent hover:text-white transition-colors rounded-b-lg"
-                >
+                <button id="export-pdf" class="dropdown-item">
                   Print to PDF
                 </button>
               </div>
