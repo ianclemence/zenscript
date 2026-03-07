@@ -39,6 +39,9 @@
         .panel {
           @apply bg-white border border-black/10 rounded-xl shadow-sm overflow-hidden flex flex-col transition-all duration-300;
         }
+        .panel-header {
+          @apply flex items-center justify-between h-14 px-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-b from-black/[0.02] to-transparent;
+        }
         .header-btn {
           @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-text transition-all flex items-center justify-center;
         }
@@ -53,13 +56,98 @@
         }
       }
 
-      /* Dark Mode Overrides */
+      /* Dark Mode (Apple Dark) */
       .theme-dark {
         --color-apple-bg: #000000;
         --color-apple-sidebar: rgba(28, 28, 30, 0.72);
         --color-apple-text: #ffffff;
         --color-apple-secondary: #8e8e93;
         --color-apple-accent: #0a84ff;
+      }
+
+      /* Nord Theme */
+      .theme-nord {
+        --color-apple-bg: #2e3440;
+        --color-apple-sidebar: rgba(59, 66, 82, 0.8);
+        --color-apple-text: #eceff4;
+        --color-apple-secondary: #d8dee9;
+        --color-apple-accent: #88c0d0;
+      }
+      .theme-nord .panel {
+        @apply bg-[#3b4252] border-[#4c566a]/30;
+      }
+      .theme-nord .panel-header {
+        @apply bg-gradient-to-b from-[#434c5e] to-transparent border-[#4c566a]/50;
+      }
+      .theme-nord select,
+      .theme-nord input {
+        @apply bg-[#434c5e] text-[#eceff4] border-[#4c566a];
+      }
+
+      /* Dracula Theme */
+      .theme-dracula {
+        --color-apple-bg: #282a36;
+        --color-apple-sidebar: rgba(68, 71, 90, 0.8);
+        --color-apple-text: #f8f8f2;
+        --color-apple-secondary: #6272a4;
+        --color-apple-accent: #bd93f9;
+      }
+      .theme-dracula .panel {
+        @apply bg-[#282a36] border-[#44475a]/50;
+      }
+      .theme-dracula .panel-header {
+        @apply bg-gradient-to-b from-[#44475a]/30 to-transparent border-[#44475a];
+      }
+      .theme-dracula select,
+      .theme-dracula input {
+        @apply bg-[#44475a] text-[#f8f8f2] border-[#6272a4]/50;
+      }
+
+      /* Midnight Theme */
+      .theme-midnight {
+        --color-apple-bg: #0b0e14;
+        --color-apple-sidebar: rgba(17, 21, 28, 0.85);
+        --color-apple-text: #ffffff;
+        --color-apple-secondary: #4b5563;
+        --color-apple-accent: #3b82f6;
+      }
+      .theme-midnight .panel {
+        @apply bg-[#11151c] border-white/5;
+      }
+      .theme-midnight .panel-header {
+        @apply bg-gradient-to-b from-white/[0.03] to-transparent border-white/10;
+      }
+      .theme-midnight select,
+      .theme-midnight input {
+        @apply bg-[#1a202c] text-white border-white/10;
+      }
+
+      /* Retro Theme */
+      .theme-retro {
+        --color-apple-bg: #0d0208;
+        --color-apple-sidebar: rgba(0, 59, 0, 0.1);
+        --color-apple-text: #00ff41;
+        --color-apple-secondary: #008f11;
+        --color-apple-accent: #00ff41;
+        --font-sans: "SF Mono", "Fira Code", monospace;
+      }
+      .theme-retro .panel {
+        @apply bg-[#0d0208] border-[#00ff41]/30;
+      }
+      .theme-retro .panel-header {
+        @apply bg-black border-[#00ff41]/50;
+      }
+      .theme-retro select,
+      .theme-retro input {
+        @apply bg-black text-[#00ff41] border-[#00ff41]/50;
+      }
+      .theme-retro .markdown-body h1 {
+        @apply border-[#00ff41]/30 text-[#00ff41];
+      }
+
+      /* Common Theme Overrides */
+      [class^="theme-"] .panel {
+        @apply shadow-2xl;
       }
       .theme-dark .panel {
         @apply bg-[#1c1c1e] border-white/10;
@@ -126,9 +214,7 @@
     >
       <!-- Left Column: Explorer -->
       <aside id="explorer" class="panel w-64 shrink-0 no-print">
-        <header
-          class="flex items-center justify-between h-12 px-4 border-b border-black/10 dark:border-white/10"
-        >
+        <header class="panel-header">
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-apple-secondary"
           >
@@ -152,9 +238,7 @@
 
       <!-- Center Column: Workspace -->
       <section id="workspace" class="panel flex-1 no-print">
-        <header
-          class="flex items-center justify-between h-12 px-4 border-b border-black/10 dark:border-white/10"
-        >
+        <header class="panel-header">
           <div class="flex items-center gap-2 overflow-hidden">
             <span id="current-filename" class="text-sm font-medium truncate"
               >Untitled.md</span
@@ -201,9 +285,7 @@
 
       <!-- Right Column: Viewer -->
       <aside id="viewer" class="panel w-[400px] shrink-0 print-only">
-        <header
-          class="flex items-center justify-between h-12 px-4 border-b border-black/10 dark:border-white/10 no-print"
-        >
+        <header class="panel-header no-print">
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-apple-secondary"
           >
@@ -212,10 +294,14 @@
           <div class="flex items-center gap-2">
             <select
               id="theme-select"
-              class="text-[11px] px-2 py-1 rounded-md border border-black/10 outline-none"
+              class="text-[11px] px-2 py-1 rounded-md border border-black/10 outline-none transition-colors"
             >
               <option value="light">Light</option>
               <option value="dark">Dark</option>
+              <option value="nord">Nord</option>
+              <option value="dracula">Dracula</option>
+              <option value="midnight">Midnight</option>
+              <option value="retro">Retro</option>
             </select>
             <input
               type="number"
@@ -223,7 +309,7 @@
               value="16"
               min="12"
               max="24"
-              class="w-12 text-[11px] px-1 py-1 rounded-md border border-black/10 outline-none"
+              class="w-12 text-[11px] px-1 py-1 rounded-md border border-black/10 outline-none transition-colors"
             />
           </div>
         </header>
@@ -453,7 +539,20 @@
       }
 
       function applyTheme(theme) {
-        document.body.className = theme === "dark" ? "theme-dark" : "";
+        // Remove all existing theme classes
+        document.body.classList.remove(
+          "theme-dark",
+          "theme-nord",
+          "theme-dracula",
+          "theme-midnight",
+          "theme-retro",
+        );
+
+        // Add the new theme class if it's not 'light'
+        if (theme !== "light") {
+          document.body.classList.add(`theme-${theme}`);
+        }
+
         localStorage.setItem("md-theme", theme);
       }
 
