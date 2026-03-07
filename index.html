@@ -13,6 +13,8 @@
     />
     <!-- Marked for markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- idb-keyval for IndexedDB storage -->
+    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
     <style type="text/tailwindcss">
       @theme {
         --color-apple-bg: #f5f5f7;
@@ -578,17 +580,29 @@
           document.body.classList.add(`theme-${theme}`);
         }
 
-        localStorage.setItem("md-theme", theme);
+        if (window.idbKeyval) {
+          idbKeyval.set("md-theme", theme);
+        }
       }
 
       function applyFontSize(size) {
         previewContent.style.fontSize = `${size}px`;
-        localStorage.setItem("md-font-size", size);
+        if (window.idbKeyval) {
+          idbKeyval.set("md-font-size", size);
+        }
       }
 
-      function loadPreferences() {
-        const theme = localStorage.getItem("md-theme") || "light";
-        const size = localStorage.getItem("md-font-size") || "16";
+      async function loadPreferences() {
+        let theme = "light";
+        let size = "16";
+
+        if (window.idbKeyval) {
+          const storedTheme = await idbKeyval.get("md-theme");
+          const storedSize = await idbKeyval.get("md-font-size");
+          if (storedTheme) theme = storedTheme;
+          if (storedSize) size = storedSize;
+        }
+
         themeSelect.value = theme;
         fontSizeInput.value = size;
         applyTheme(theme);
