@@ -30,6 +30,31 @@
         body {
           @apply bg-apple-bg text-apple-text font-sans antialiased h-screen overflow-hidden;
         }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          @apply bg-transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          @apply bg-black/10 rounded-full border-2 border-transparent bg-clip-content hover:bg-black/20 transition-colors;
+        }
+
+        .theme-dark ::-webkit-scrollbar-thumb,
+        .theme-nord ::-webkit-scrollbar-thumb,
+        .theme-dracula ::-webkit-scrollbar-thumb,
+        .theme-midnight ::-webkit-scrollbar-thumb {
+          @apply bg-white/10 hover:bg-white/20;
+        }
+
+        .theme-retro ::-webkit-scrollbar-thumb {
+          @apply bg-apple-accent/30 hover:bg-apple-accent/50;
+        }
       }
 
       @layer components {
