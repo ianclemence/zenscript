@@ -99,6 +99,8 @@
           --modal-counter-text: #6b7280;
           --modal-close-color: #6b7280;
           --modal-focus-ring: #0a84ff;
+          --table-cell-highlight: rgba(10, 132, 255, 0.4);
+          --table-cell-border: #0a84ff;
         }
         .theme-dark {
           --md-paper: #0f1115;
@@ -132,6 +134,8 @@
           --modal-counter-text: #a1a7b3;
           --modal-close-color: #a1a7b3;
           --modal-focus-ring: #0a84ff;
+          --table-cell-highlight: rgba(10, 132, 255, 0.5);
+          --table-cell-border: #0a84ff;
         }
         .theme-sepia {
           --md-paper: #f7f1e3;
@@ -165,6 +169,8 @@
           --modal-counter-text: #7a6a5e;
           --modal-close-color: #7a6a5e;
           --modal-focus-ring: #8b6b3d;
+          --table-cell-highlight: rgba(139, 107, 61, 0.4);
+          --table-cell-border: #8b6b3d;
         }
         .theme-nord {
           --md-paper: #3b4252;
@@ -185,6 +191,8 @@
           --modal-bg: #3b4252;
           --modal-border: rgba(76, 86, 106, 0.5);
           --modal-overlay: rgba(46, 52, 64, 0.8);
+          --table-cell-highlight: rgba(136, 192, 208, 0.4);
+          --table-cell-border: #88c0d0;
         }
         .theme-dracula {
           --md-paper: #282a36;
@@ -205,6 +213,8 @@
           --modal-bg: #282a36;
           --modal-border: rgba(68, 71, 90, 0.7);
           --modal-overlay: rgba(40, 42, 54, 0.8);
+          --table-cell-highlight: rgba(189, 147, 249, 0.4);
+          --table-cell-border: #bd93f9;
         }
         .theme-midnight {
           --md-paper: #11151c;
@@ -225,6 +235,8 @@
           --modal-bg: #11151c;
           --modal-border: rgba(255, 255, 255, 0.15);
           --modal-overlay: rgba(11, 14, 20, 0.8);
+          --table-cell-highlight: rgba(59, 130, 246, 0.4);
+          --table-cell-border: #3b82f6;
         }
         .theme-retro {
           --md-paper: #0d0208;
@@ -245,6 +257,8 @@
           --modal-bg: #0d0208;
           --modal-border: rgba(0, 255, 65, 0.3);
           --modal-overlay: rgba(13, 2, 8, 0.8);
+          --table-cell-highlight: rgba(0, 255, 65, 0.4);
+          --table-cell-border: #00ff41;
         }
         .glass {
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
@@ -1358,9 +1372,11 @@
           const r = parseInt(cell.dataset.row);
           const c = parseInt(cell.dataset.col);
           if (r <= rows && c <= cols) {
-            cell.classList.add("bg-apple-accent/60", "border-apple-accent");
+            cell.style.backgroundColor = "var(--table-cell-highlight)";
+            cell.style.borderColor = "var(--table-cell-border)";
           } else {
-            cell.classList.remove("bg-apple-accent/60", "border-apple-accent");
+            cell.style.backgroundColor = "";
+            cell.style.borderColor = "";
           }
         });
         document.getElementById("table-grid-label").textContent =
