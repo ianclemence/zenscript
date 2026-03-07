@@ -301,8 +301,11 @@
             </label>
           </div>
           <div class="flex items-center gap-1">
-            <button id="zen-mode" class="header-btn" title="Zen Mode">
+            <button id="zen-mode" class="header-btn" title="Zen Mode (⌘J)">
               <i class="fas fa-expand"></i>
+            </button>
+            <button id="help-btn" class="header-btn" title="Markdown Help">
+              <i class="far fa-question-circle"></i>
             </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <button id="new-file" class="header-btn" title="New (⌘N)">
@@ -311,9 +314,33 @@
             <button id="save-file" class="header-btn" title="Save (⌘S)">
               <i class="fas fa-save"></i>
             </button>
-            <button id="export-pdf" class="header-btn" title="PDF">
-              <i class="fas fa-file-pdf"></i>
-            </button>
+            <div class="relative group">
+              <button class="header-btn" title="Download/Export">
+                <i class="fas fa-download"></i>
+              </button>
+              <div
+                class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-lg shadow-xl hidden group-hover:block z-20"
+              >
+                <button
+                  id="download-md"
+                  class="w-full text-left px-3 py-2 text-[11px] hover:bg-apple-accent hover:text-white transition-colors rounded-t-lg"
+                >
+                  Download .md
+                </button>
+                <button
+                  id="download-html"
+                  class="w-full text-left px-3 py-2 text-[11px] hover:bg-apple-accent hover:text-white transition-colors"
+                >
+                  Download .html
+                </button>
+                <button
+                  id="export-pdf"
+                  class="w-full text-left px-3 py-2 text-[11px] hover:bg-apple-accent hover:text-white transition-colors rounded-b-lg"
+                >
+                  Print to PDF
+                </button>
+              </div>
+            </div>
           </div>
         </header>
         <textarea
@@ -404,6 +431,116 @@
       class="fixed bottom-6 right-6 z-50 pointer-events-none"
     ></div>
 
+    <!-- Help Modal -->
+    <div
+      id="help-modal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] hidden items-center justify-center p-4"
+    >
+      <div
+        class="bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
+      >
+        <header class="panel-header">
+          <h2 class="text-sm font-bold uppercase tracking-widest">
+            Markdown Syntax Guide
+          </h2>
+          <button onclick="toggleHelp()" class="header-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </header>
+        <div class="p-6 overflow-y-auto max-h-[70vh] text-sm space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Headers</p>
+              <code class="block bg-black/5 p-2 rounded"
+                ># Header 1<br />## Header 2</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Emphasis</p>
+              <code class="block bg-black/5 p-2 rounded"
+                >*Italic*<br />**Bold**</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Lists</p>
+              <code class="block bg-black/5 p-2 rounded"
+                >- Bullet<br />1. Numbered</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Links & Images</p>
+              <code class="block bg-black/5 p-2 rounded"
+                >[Link](url)<br />![Alt](url)</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Code</p>
+              <code class="block bg-black/5 p-2 rounded"
+                >`Inline`<br />```Block```</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Shortcuts</p>
+              <code class="block bg-black/5 p-2 rounded"
+                >⌘S: Save<br />⌘J: Zen Mode</code
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Find & Replace Panel -->
+    <div
+      id="find-replace-panel"
+      class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-xl shadow-2xl p-4 z-50 hidden flex-col gap-2 w-80 transition-all duration-300"
+    >
+      <div class="flex items-center justify-between mb-2">
+        <span
+          class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+          >Find & Replace</span
+        >
+        <button
+          onclick="toggleFind()"
+          class="text-apple-secondary hover:text-apple-accent transition-colors"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <input
+        type="text"
+        id="find-input"
+        placeholder="Find text..."
+        class="w-full text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
+      />
+      <input
+        type="text"
+        id="replace-input"
+        placeholder="Replace with..."
+        class="w-full text-xs p-2 rounded-md border border-black/10 outline-none bg-black/5"
+      />
+      <div class="flex gap-2">
+        <button
+          id="find-next"
+          class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+        >
+          Next
+        </button>
+        <button
+          id="replace-btn"
+          class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+        >
+          Replace
+        </button>
+        <button
+          id="replace-all-btn"
+          class="flex-1 text-[10px] bg-apple-accent text-white py-1.5 rounded-md hover:bg-apple-accent/80 transition-colors"
+        >
+          All
+        </button>
+      </div>
+    </div>
+
     <script>
       // DOM Elements
       const editor = document.getElementById("editor");
@@ -427,6 +564,16 @@
       const viewer = document.getElementById("viewer");
       const resizer1 = document.getElementById("resizer-1");
       const resizer2 = document.getElementById("resizer-2");
+      const helpBtn = document.getElementById("help-btn");
+      const helpModal = document.getElementById("help-modal");
+      const downloadMdBtn = document.getElementById("download-md");
+      const downloadHtmlBtn = document.getElementById("download-html");
+      const findReplacePanel = document.getElementById("find-replace-panel");
+      const findInput = document.getElementById("find-input");
+      const replaceInput = document.getElementById("replace-input");
+      const findNextBtn = document.getElementById("find-next");
+      const replaceBtn = document.getElementById("replace-btn");
+      const replaceAllBtn = document.getElementById("replace-all-btn");
 
       // Buttons
       const openDirBtn = document.getElementById("open-directory");
@@ -463,6 +610,13 @@
 
         zenModeBtn.addEventListener("click", toggleZenMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
+        helpBtn.addEventListener("click", toggleHelp);
+        downloadMdBtn.addEventListener("click", downloadAsMarkdown);
+        downloadHtmlBtn.addEventListener("click", downloadAsHTML);
+
+        findNextBtn.addEventListener("click", findNext);
+        replaceBtn.addEventListener("click", replaceCurrent);
+        replaceAllBtn.addEventListener("click", replaceAll);
 
         themeSelect.addEventListener("change", (e) =>
           applyTheme(e.target.value),
@@ -490,6 +644,36 @@
             // Zen mode shortcut
             e.preventDefault();
             toggleZenMode();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+            // Find shortcut
+            e.preventDefault();
+            toggleFind();
+          }
+        });
+
+        // Auto-pairing
+        editor.addEventListener("keydown", (e) => {
+          const pairs = {
+            "(": ")",
+            "[": "]",
+            "{": "}",
+            '"': '"',
+            "'": "'",
+            "`": "`",
+          };
+
+          if (pairs[e.key]) {
+            e.preventDefault();
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const val = editor.value;
+            const pair = pairs[e.key];
+
+            editor.value =
+              val.substring(0, start) + e.key + pair + val.substring(end);
+            editor.selectionStart = editor.selectionEnd = start + 1;
+            updatePreview();
           }
         });
       }
@@ -586,6 +770,122 @@
       function toggleTOC() {
         tocPanel.classList.toggle("hidden");
         toggleTocBtn.classList.toggle("text-apple-accent");
+      }
+
+      function toggleHelp() {
+        helpModal.classList.toggle("hidden");
+        helpModal.classList.toggle("flex");
+      }
+
+      function toggleFind() {
+        const isHidden = findReplacePanel.classList.toggle("hidden");
+        if (!isHidden) {
+          findInput.focus();
+        }
+      }
+
+      function findNext() {
+        const query = findInput.value;
+        if (!query) return;
+
+        const content = editor.value;
+        const startPos = editor.selectionEnd;
+        const nextIndex = content.indexOf(query, startPos);
+
+        if (nextIndex !== -1) {
+          editor.focus();
+          editor.setSelectionRange(nextIndex, nextIndex + query.length);
+        } else {
+          // Wrap around to the beginning
+          const firstIndex = content.indexOf(query);
+          if (firstIndex !== -1) {
+            editor.focus();
+            editor.setSelectionRange(firstIndex, firstIndex + query.length);
+          } else {
+            notify("No matches found");
+          }
+        }
+      }
+
+      function replaceCurrent() {
+        const query = findInput.value;
+        const replacement = replaceInput.value;
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const selectedText = editor.value.substring(start, end);
+
+        if (selectedText === query) {
+          editor.value =
+            editor.value.substring(0, start) +
+            replacement +
+            editor.value.substring(end);
+          editor.setSelectionRange(
+            start + replacement.length,
+            start + replacement.length,
+          );
+          updatePreview();
+          markAsUnsaved(true);
+        } else {
+          findNext();
+        }
+      }
+
+      function replaceAll() {
+        const query = findInput.value;
+        const replacement = replaceInput.value;
+        if (!query) return;
+
+        const content = editor.value;
+        const newContent = content.split(query).join(replacement);
+
+        if (content !== newContent) {
+          editor.value = newContent;
+          updatePreview();
+          markAsUnsaved(true);
+          notify("Replaced all occurrences");
+        }
+      }
+
+      function downloadAsMarkdown() {
+        const filename = currentFileHandle
+          ? currentFileHandle.name
+          : "document.md";
+        const blob = new Blob([editor.value], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function downloadAsHTML() {
+        const filename = currentFileHandle
+          ? currentFileHandle.name.replace(".md", ".html")
+          : "document.html";
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${filename}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+  <style>
+    body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; }
+    @media (max-width: 767px) { body { padding: 15px; } }
+  </style>
+</head>
+<body class="markdown-body">
+  ${previewContent.innerHTML}
+</body>
+</html>`;
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
       }
 
       function updateWordCount() {
