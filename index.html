@@ -94,6 +94,9 @@
         .dropdown-item {
           @apply w-full text-left px-3 py-2 text-[11px] transition-colors hover:bg-apple-accent hover:text-white;
         }
+        .toolbar-btn {
+          @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-accent transition-all flex items-center justify-center text-[12px];
+        }
       }
 
       /* Dark Mode (Apple Dark) */
@@ -261,6 +264,15 @@
       .theme-dark .markdown-body h1 {
         @apply border-white/10;
       }
+      .markdown-body pre code {
+        @apply bg-transparent p-0;
+      }
+      .markdown-body .task-list-item {
+        @apply list-none ml-0 flex items-center gap-2;
+      }
+      .markdown-body .task-list-item input {
+        @apply m-0 accent-apple-accent w-4 h-4;
+      }
 
       @media print {
         .no-print {
@@ -321,7 +333,68 @@
               class="text-[10px] text-apple-secondary bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded-full ml-2"
               >0 words</span
             >
-            <label class="flex items-center gap-1.5 ml-4 cursor-pointer">
+            <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
+            <div class="flex items-center gap-1">
+              <button
+                class="toolbar-btn"
+                onclick="format('bold')"
+                title="Bold (⌘B)"
+              >
+                <i class="fas fa-bold"></i>
+              </button>
+              <button
+                class="toolbar-btn"
+                onclick="format('italic')"
+                title="Italic (⌘I)"
+              >
+                <i class="fas fa-italic"></i>
+              </button>
+              <button
+                class="toolbar-btn"
+                onclick="format('strikethrough')"
+                title="Strike"
+              >
+                <i class="fas fa-strikethrough"></i>
+              </button>
+              <div class="h-3 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
+              <button
+                class="toolbar-btn"
+                onclick="format('h1')"
+                title="Heading 1"
+              >
+                <i class="fas fa-heading"></i>
+              </button>
+              <button
+                class="toolbar-btn"
+                onclick="format('link')"
+                title="Link (⌘K)"
+              >
+                <i class="fas fa-link"></i>
+              </button>
+              <button class="toolbar-btn" onclick="format('code')" title="Code">
+                <i class="fas fa-code"></i>
+              </button>
+              <div class="h-3 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
+              <button
+                class="toolbar-btn"
+                onclick="format('quote')"
+                title="Quote"
+              >
+                <i class="fas fa-quote-right"></i>
+              </button>
+              <button class="toolbar-btn" onclick="format('list')" title="List">
+                <i class="fas fa-list-ul"></i>
+              </button>
+              <button
+                class="toolbar-btn"
+                onclick="format('task')"
+                title="Task List"
+              >
+                <i class="fas fa-check-square"></i>
+              </button>
+            </div>
+            <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
+            <label class="flex items-center gap-1.5 ml-1 cursor-pointer">
               <input
                 type="checkbox"
                 id="autosave-toggle"
@@ -504,8 +577,16 @@
             </div>
             <div>
               <p class="font-bold text-apple-accent mb-1">Shortcuts</p>
-              <code class="block bg-black/5 p-2 rounded"
-                >⌘S: Save<br />⌘J: Zen Mode</code
+              <code class="block bg-black/5 p-2 rounded text-[10px]"
+                >⌘S: Save<br />⌘N: New<br />⌘J: Zen Mode<br />⌘F: Find<br />⌘B:
+                Bold<br />⌘I: Italic<br />⌘K: Link</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Editor</p>
+              <code class="block bg-black/5 p-2 rounded text-[10px]"
+                >Tab: Indent<br />Auto-pairing: ()[]{}""''``<br />Sync Scroll:
+                Enabled<br />Smart Paste: Paste URL on selection</code
               >
             </div>
           </div>
@@ -612,6 +693,14 @@
 
       // --- Initialization ---
       function init() {
+        if (window.marked) {
+          marked.setOptions({
+            gfm: true,
+            breaks: true,
+            headerIds: true,
+            mangle: false,
+          });
+        }
         setupEventListeners();
         setupResizers();
         loadPreferences();
@@ -673,10 +762,70 @@
             e.preventDefault();
             toggleFind();
           }
+          if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+            e.preventDefault();
+            format("bold");
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "i") {
+            e.preventDefault();
+            format("italic");
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+            e.preventDefault();
+            format("link");
+          }
         });
 
-        // Auto-pairing
+        // Sync Scroll
+        editor.addEventListener("scroll", () => {
+          const scrollPercentage =
+            editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+          const previewScrollTop =
+            scrollPercentage * (preview.scrollHeight - preview.clientHeight);
+          preview.scrollTop = previewScrollTop;
+        });
+
+        editor.addEventListener("paste", (e) => {
+          const start = editor.selectionStart;
+          const end = editor.selectionEnd;
+          const selection = editor.value.substring(start, end);
+          if (!selection) return;
+
+          const clipboardData = e.clipboardData || window.clipboardData;
+          const pastedData = clipboardData.getData("Text");
+
+          // Simple URL regex
+          const urlRegex =
+            /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+          if (urlRegex.test(pastedData)) {
+            e.preventDefault();
+            const newText = `[${selection}](${pastedData})`;
+            editor.value =
+              editor.value.substring(0, start) +
+              newText +
+              editor.value.substring(end);
+            editor.selectionStart = editor.selectionEnd =
+              start + newText.length;
+            updatePreview();
+            markAsUnsaved(true);
+          }
+        });
+
+        // Auto-pairing & Tab support & Paste Link
         editor.addEventListener("keydown", (e) => {
+          if (e.key === "Tab") {
+            e.preventDefault();
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            editor.value =
+              editor.value.substring(0, start) +
+              "  " +
+              editor.value.substring(end);
+            editor.selectionStart = editor.selectionEnd = start + 2;
+            updatePreview();
+            return;
+          }
+
           const pairs = {
             "(": ")",
             "[": "]",
@@ -805,6 +954,58 @@
         if (!isHidden) {
           findInput.focus();
         }
+      }
+
+      function format(type) {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const selection = editor.value.substring(start, end);
+        let before = editor.value.substring(0, start);
+        let after = editor.value.substring(end);
+        let newSelection = selection;
+        let cursorOffset = 0;
+
+        switch (type) {
+          case "bold":
+            newSelection = `**${selection || "text"}**`;
+            cursorOffset = selection ? 0 : -2;
+            break;
+          case "italic":
+            newSelection = `_${selection || "text"}_`;
+            cursorOffset = selection ? 0 : -1;
+            break;
+          case "strikethrough":
+            newSelection = `~~${selection || "text"}~~`;
+            cursorOffset = selection ? 0 : -2;
+            break;
+          case "h1":
+            newSelection = `\n# ${selection || "Heading"}`;
+            break;
+          case "link":
+            newSelection = `[${selection || "link text"}](https://)`;
+            cursorOffset = -1;
+            break;
+          case "code":
+            newSelection = `\`${selection || "code"}\``;
+            cursorOffset = selection ? 0 : -1;
+            break;
+          case "quote":
+            newSelection = `\n> ${selection || "quote"}`;
+            break;
+          case "list":
+            newSelection = `\n- ${selection || "item"}`;
+            break;
+          case "task":
+            newSelection = `\n- [ ] ${selection || "task"}`;
+            break;
+        }
+
+        editor.value = before + newSelection + after;
+        editor.focus();
+        const newPos = start + newSelection.length + cursorOffset;
+        editor.setSelectionRange(newPos, newPos);
+        updatePreview();
+        markAsUnsaved(true);
       }
 
       function findNext() {
