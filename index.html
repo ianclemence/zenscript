@@ -67,6 +67,125 @@
       }
 
       @layer components {
+        :root {
+          --md-paper: #ffffff;
+          --md-text: #1d1d1f;
+          --md-secondary: #6b7280;
+          --md-accent: #0a84ff;
+          --md-border: rgba(0, 0, 0, 0.1);
+          --md-border-faint: rgba(0, 0, 0, 0.06);
+          --md-code-bg: #f7f7f8;
+          --md-code-sep: rgba(0, 0, 0, 0.06);
+          --md-quote-bg: rgba(10, 132, 255, 0.06);
+          --md-row-alt: rgba(0, 0, 0, 0.03);
+          --md-selection-bg: rgba(10, 132, 255, 0.2);
+          --md-selection-text: #1d1d1f;
+          --md-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+          --md-radius: 16px;
+          --md-heading: #0f172a;
+        }
+        .theme-dark {
+          --md-paper: #0f1115;
+          --md-text: #f5f6f8;
+          --md-secondary: #a1a7b3;
+          --md-accent: #0a84ff;
+          --md-border: rgba(255, 255, 255, 0.12);
+          --md-border-faint: rgba(255, 255, 255, 0.08);
+          --md-code-bg: #11151c;
+          --md-code-sep: rgba(255, 255, 255, 0.08);
+          --md-quote-bg: rgba(10, 132, 255, 0.1);
+          --md-row-alt: rgba(255, 255, 255, 0.03);
+          --md-selection-bg: rgba(10, 132, 255, 0.25);
+          --md-selection-text: #f5f6f8;
+          --md-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+          --md-radius: 16px;
+          --md-heading: #e2e8f0;
+        }
+        .theme-sepia {
+          --md-paper: #f7f1e3;
+          --md-text: #3b2f2f;
+          --md-secondary: #7a6a5e;
+          --md-accent: #8b6b3d;
+          --md-border: rgba(59, 47, 47, 0.12);
+          --md-border-faint: rgba(59, 47, 47, 0.08);
+          --md-code-bg: #efe7d8;
+          --md-code-sep: rgba(59, 47, 47, 0.08);
+          --md-quote-bg: rgba(139, 107, 61, 0.08);
+          --md-row-alt: rgba(59, 47, 47, 0.04);
+          --md-selection-bg: rgba(139, 107, 61, 0.2);
+          --md-selection-text: #3b2f2f;
+          --md-shadow: 0 10px 28px rgba(139, 107, 61, 0.15);
+          --md-radius: 16px;
+          --md-heading: #2b2222;
+        }
+        .theme-nord {
+          --md-paper: #3b4252;
+          --md-text: #eceff4;
+          --md-secondary: #d8dee9;
+          --md-accent: #88c0d0;
+          --md-border: rgba(76, 86, 106, 0.5);
+          --md-border-faint: rgba(76, 86, 106, 0.3);
+          --md-code-bg: #434c5e;
+          --md-code-sep: rgba(76, 86, 106, 0.4);
+          --md-quote-bg: rgba(136, 192, 208, 0.12);
+          --md-row-alt: rgba(76, 86, 106, 0.25);
+          --md-selection-bg: rgba(136, 192, 208, 0.25);
+          --md-selection-text: #eceff4;
+          --md-shadow: 0 12px 30px rgba(67, 76, 94, 0.35);
+          --md-radius: 16px;
+          --md-heading: #eceff4;
+        }
+        .theme-dracula {
+          --md-paper: #282a36;
+          --md-text: #f8f8f2;
+          --md-secondary: #b8b8b8;
+          --md-accent: #bd93f9;
+          --md-border: rgba(68, 71, 90, 0.7);
+          --md-border-faint: rgba(68, 71, 90, 0.45);
+          --md-code-bg: #2f3242;
+          --md-code-sep: rgba(68, 71, 90, 0.5);
+          --md-quote-bg: rgba(189, 147, 249, 0.12);
+          --md-row-alt: rgba(68, 71, 90, 0.25);
+          --md-selection-bg: rgba(189, 147, 249, 0.25);
+          --md-selection-text: #f8f8f2;
+          --md-shadow: 0 12px 32px rgba(40, 42, 54, 0.6);
+          --md-radius: 16px;
+          --md-heading: #f8f8f2;
+        }
+        .theme-midnight {
+          --md-paper: #11151c;
+          --md-text: #ffffff;
+          --md-secondary: #c7cdd6;
+          --md-accent: #3b82f6;
+          --md-border: rgba(255, 255, 255, 0.15);
+          --md-border-faint: rgba(255, 255, 255, 0.1);
+          --md-code-bg: #1a202c;
+          --md-code-sep: rgba(255, 255, 255, 0.12);
+          --md-quote-bg: rgba(59, 130, 246, 0.12);
+          --md-row-alt: rgba(255, 255, 255, 0.06);
+          --md-selection-bg: rgba(59, 130, 246, 0.25);
+          --md-selection-text: #ffffff;
+          --md-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+          --md-radius: 16px;
+          --md-heading: #e2e8f0;
+        }
+        .theme-retro {
+          --md-paper: #0d0208;
+          --md-text: #00ff41;
+          --md-secondary: #008f11;
+          --md-accent: #00ff41;
+          --md-border: rgba(0, 255, 65, 0.3);
+          --md-border-faint: rgba(0, 255, 65, 0.2);
+          --md-code-bg: rgba(0, 255, 65, 0.06);
+          --md-code-sep: rgba(0, 255, 65, 0.25);
+          --md-quote-bg: rgba(0, 255, 65, 0.08);
+          --md-row-alt: rgba(0, 255, 65, 0.05);
+          --md-selection-bg: rgba(0, 255, 65, 0.25);
+          --md-selection-text: #00ff41;
+          --md-shadow: 0 12px 32px rgba(0, 255, 65, 0.12);
+          --md-radius: 16px;
+          --md-heading: #00ff41;
+        }
         .glass {
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
         }
@@ -282,6 +401,138 @@
       }
       .markdown-body pre code {
         @apply bg-transparent p-0;
+      }
+      .markdown-body {
+        color: var(--md-text);
+      }
+      .markdown-body h1,
+      .markdown-body h2,
+      .markdown-body h3 {
+        color: var(--md-heading);
+      }
+      .markdown-body h1 {
+        letter-spacing: -0.01em;
+        border-bottom: 1px solid var(--md-border);
+      }
+      .markdown-body h2 {
+        letter-spacing: -0.005em;
+      }
+      .markdown-body blockquote {
+        border-left: 4px solid var(--md-accent);
+        background: var(--md-quote-bg);
+      }
+      .markdown-body code {
+        background: var(--md-code-bg);
+      }
+      .markdown-body pre {
+        background: var(--md-code-bg);
+        border: 1px solid var(--md-border-faint);
+        border-radius: var(--md-radius);
+        box-shadow: var(--md-shadow);
+      }
+      .markdown-body .md-code-line {
+        display: grid;
+        grid-template-columns: 2.5em 1fr;
+        column-gap: 1em;
+        border-bottom: 1px solid var(--md-code-sep);
+      }
+      .markdown-body .md-code-line:last-child {
+        border-bottom: 0;
+      }
+      .markdown-body .md-code-lno {
+        color: var(--md-secondary);
+        text-align: right;
+        user-select: none;
+      }
+      .markdown-body .md-code-src {
+        color: var(--md-text);
+      }
+      .markdown-body table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid var(--md-border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 1rem 0;
+      }
+      .markdown-body thead th {
+        background: var(--md-row-alt);
+        color: var(--md-text);
+        font-weight: 600;
+        padding: 0.75rem 0.75rem;
+        border-bottom: 1px solid var(--md-border);
+        text-align: left;
+      }
+      .markdown-body td {
+        padding: 0.75rem 0.75rem;
+        border-bottom: 1px solid var(--md-border-faint);
+      }
+      .markdown-body tbody tr:nth-child(odd) {
+        background: var(--md-row-alt);
+      }
+      .markdown-body tbody tr:hover {
+        background: color-mix(in oklab, var(--md-row-alt), var(--md-accent) 8%);
+      }
+      .markdown-body ul {
+        list-style: none;
+        padding-left: 1.25rem;
+      }
+      .markdown-body ul li {
+        position: relative;
+        padding-left: 0.5rem;
+        margin: 0.25rem 0;
+      }
+      .markdown-body ul li::before {
+        content: "";
+        position: absolute;
+        left: -1rem;
+        top: 0.6em;
+        width: 0.35em;
+        height: 0.35em;
+        border-radius: 9999px;
+        background: var(--md-accent);
+      }
+      .markdown-body a {
+        color: var(--md-accent);
+        text-decoration: none;
+      }
+      .markdown-body a:hover {
+        text-decoration: underline;
+      }
+      .markdown-body hr {
+        border: 0;
+        height: 1px;
+        background: var(--md-border);
+        position: relative;
+        margin: 2rem 0;
+      }
+      .markdown-body hr::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: var(--md-border);
+        top: -2px;
+      }
+      #preview-content {
+        background: var(--md-paper);
+        border: 1px solid var(--md-border);
+        border-radius: var(--md-radius);
+        box-shadow: var(--md-shadow);
+        padding: clamp(16px, 2vw, 32px);
+        transition:
+          background-color 200ms ease,
+          color 200ms ease,
+          border-color 200ms ease,
+          box-shadow 200ms ease;
+      }
+      .markdown-body ::selection {
+        background: var(--md-selection-bg);
+        color: var(--md-selection-text);
       }
       .markdown-body img {
         @apply max-w-full rounded-lg border border-black/10 my-3;
@@ -624,6 +875,7 @@
               <option value="dracula">Dracula</option>
               <option value="midnight">Midnight</option>
               <option value="retro">Retro</option>
+              <option value="sepia">Sepia</option>
             </select>
             <input
               type="number"
@@ -1207,6 +1459,7 @@
               hljs.highlightElement(block);
             });
           }
+          addCodeLineNumbers();
           // Table of Contents
           generateTOC();
           stylePreviewAttachments();
@@ -1599,12 +1852,23 @@
           "theme-dracula",
           "theme-midnight",
           "theme-retro",
+          "theme-sepia",
         );
 
         // Add the new theme class if it's not 'light'
-        const isDark = theme !== "light";
+        const darkThemes = new Set([
+          "dark",
+          "nord",
+          "dracula",
+          "midnight",
+          "retro",
+        ]);
+        const isDark = darkThemes.has(theme);
         if (isDark) {
           document.body.classList.add(`theme-${theme}`);
+        }
+        if (theme === "sepia") {
+          document.body.classList.add("theme-sepia");
         }
 
         // Update highlight.js theme
@@ -1661,6 +1925,21 @@
           div.classList.add("translate-y-10", "opacity-0");
           setTimeout(() => div.remove(), 500);
         }, 3000);
+      }
+
+      function addCodeLineNumbers() {
+        const codes = previewContent.querySelectorAll("pre code");
+        codes.forEach((code) => {
+          const html = code.innerHTML;
+          const lines = html.split("\n");
+          const numbered = lines
+            .map(
+              (line, i) =>
+                `<span class="md-code-line"><span class="md-code-lno">${i + 1}</span><span class="md-code-src">${line || " "}</span></span>`,
+            )
+            .join("\n");
+          code.innerHTML = numbered;
+        });
       }
 
       async function compressImageFile(file) {
