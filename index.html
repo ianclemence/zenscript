@@ -97,6 +97,9 @@
         .toolbar-btn {
           @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-accent transition-all flex items-center justify-center text-[12px];
         }
+        .toolbar-btn.active {
+          @apply bg-apple-accent/10 text-apple-accent;
+        }
       }
 
       /* Dark Mode (Apple Dark) */
@@ -336,6 +339,7 @@
             <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
             <div class="flex items-center gap-1">
               <button
+                id="btn-bold"
                 class="toolbar-btn"
                 onclick="format('bold')"
                 title="Bold (⌘B)"
@@ -343,6 +347,7 @@
                 <i class="fas fa-bold"></i>
               </button>
               <button
+                id="btn-italic"
                 class="toolbar-btn"
                 onclick="format('italic')"
                 title="Italic (⌘I)"
@@ -350,6 +355,7 @@
                 <i class="fas fa-italic"></i>
               </button>
               <button
+                id="btn-strikethrough"
                 class="toolbar-btn"
                 onclick="format('strikethrough')"
                 title="Strike"
@@ -358,6 +364,7 @@
               </button>
               <div class="h-3 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
               <button
+                id="btn-h1"
                 class="toolbar-btn"
                 onclick="format('h1')"
                 title="Heading 1"
@@ -365,27 +372,40 @@
                 <i class="fas fa-heading"></i>
               </button>
               <button
+                id="btn-link"
                 class="toolbar-btn"
                 onclick="format('link')"
                 title="Link (⌘K)"
               >
                 <i class="fas fa-link"></i>
               </button>
-              <button class="toolbar-btn" onclick="format('code')" title="Code">
+              <button
+                id="btn-code"
+                class="toolbar-btn"
+                onclick="format('code')"
+                title="Code"
+              >
                 <i class="fas fa-code"></i>
               </button>
               <div class="h-3 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
               <button
+                id="btn-quote"
                 class="toolbar-btn"
                 onclick="format('quote')"
                 title="Quote"
               >
                 <i class="fas fa-quote-right"></i>
               </button>
-              <button class="toolbar-btn" onclick="format('list')" title="List">
+              <button
+                id="btn-list"
+                class="toolbar-btn"
+                onclick="format('list')"
+                title="List"
+              >
                 <i class="fas fa-list-ul"></i>
               </button>
               <button
+                id="btn-task"
                 class="toolbar-btn"
                 onclick="format('task')"
                 title="Task List"
@@ -713,7 +733,12 @@
           updateWordCount();
           markAsUnsaved(true);
           handleAutosave();
+          updateToolbarState();
         });
+
+        editor.addEventListener("click", updateToolbarState);
+        editor.addEventListener("keyup", updateToolbarState);
+        editor.addEventListener("mouseup", updateToolbarState);
 
         openDirBtn.addEventListener("click", openDirectory);
         newFileBtn.addEventListener("click", createNewFile);
@@ -954,6 +979,65 @@
         if (!isHidden) {
           findInput.focus();
         }
+      }
+
+      function updateToolbarState() {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const text = editor.value;
+
+        // Helper to check if cursor is within markdown markers
+        const checkFormat = (marker) => {
+          const before = text.substring(0, start);
+          const after = text.substring(end);
+          // Check if markers exist around current selection/cursor
+          return (
+            (before.endsWith(marker) && after.startsWith(marker)) ||
+            (selectionExists() &&
+              text.substring(start, end).startsWith(marker) &&
+              text.substring(start, end).endsWith(marker))
+          );
+        };
+
+        const selectionExists = () => start !== end;
+
+        // Simplified detection logic
+        const isBold = checkFormat("**") || checkFormat("__");
+        const isItalic = checkFormat("*") || checkFormat("_");
+        const isStrike = checkFormat("~~");
+        const isCode = checkFormat("`") || checkFormat("```");
+
+        // Line-based detection
+        const currentLine = text.substring(0, start).split("\n").pop();
+        const isH1 = currentLine.trim().startsWith("# ");
+        const isQuote = currentLine.trim().startsWith("> ");
+        const isList = currentLine.trim().startsWith("- ");
+        const isTask =
+          currentLine.trim().startsWith("- [ ]") ||
+          currentLine.trim().startsWith("- [x]");
+
+        // Link detection (check if within []() pattern)
+        const isLink =
+          /\[.*\]\(.*\)/.test(text.substring(start - 10, end + 10)) &&
+          text.substring(0, start).includes("[") &&
+          text.substring(end).includes(")");
+
+        // Update button classes
+        document.getElementById("btn-bold").classList.toggle("active", isBold);
+        document
+          .getElementById("btn-italic")
+          .classList.toggle("active", isItalic);
+        document
+          .getElementById("btn-strikethrough")
+          .classList.toggle("active", isStrike);
+        document.getElementById("btn-h1").classList.toggle("active", isH1);
+        document.getElementById("btn-link").classList.toggle("active", isLink);
+        document.getElementById("btn-code").classList.toggle("active", isCode);
+        document
+          .getElementById("btn-quote")
+          .classList.toggle("active", isQuote);
+        document.getElementById("btn-list").classList.toggle("active", isList);
+        document.getElementById("btn-task").classList.toggle("active", isTask);
       }
 
       function format(type) {
