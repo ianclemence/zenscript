@@ -221,7 +221,7 @@
           --md-paper: #0d0208;
           --md-text: #00ff41;
           --md-secondary: #008f11;
-          --md-accent: #00ff41;
+          --md-accent: #ffff00;
           --md-border: rgba(0, 255, 65, 0.3);
           --md-border-faint: rgba(0, 255, 65, 0.2);
           --md-code-bg: rgba(0, 255, 65, 0.06);
@@ -232,7 +232,7 @@
           --md-selection-text: #00ff41;
           --md-shadow: 0 12px 32px rgba(0, 255, 65, 0.12);
           --md-radius: 16px;
-          --md-heading: #00ff41;
+          --md-heading: #ffff00;
         }
         .glass {
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
@@ -388,8 +388,18 @@
       .theme-retro input {
         @apply bg-black text-[#00ff41] border-[#00ff41]/50;
       }
+      .theme-retro .markdown-body h1,
+      .theme-retro .markdown-body h2,
+      .theme-retro .markdown-body h3,
+      .theme-retro .markdown-body h4,
+      .theme-retro .markdown-body h5,
+      .theme-retro .markdown-body h6,
+      .theme-retro .markdown-body strong,
+      .theme-retro .markdown-body b {
+        @apply text-[#ffff00];
+      }
       .theme-retro .markdown-body h1 {
-        @apply border-[#00ff41]/30 text-[#00ff41];
+        @apply border-[#ffff00]/30;
       }
 
       .theme-retro .dropdown-menu {
