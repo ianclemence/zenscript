@@ -31,8 +31,9 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-    <!-- html2pdf for advanced PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- jsPDF and html2canvas-pro for advanced PDF export (fixes modern color errors) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
     <!-- Prettier for markdown formatting -->
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"></script>
@@ -4067,63 +4068,85 @@
         });
       }
 
-      function exportToPDF() {
+      async function exportToPDF() {
         const element = document.getElementById("preview-content");
         const filename = currentFileHandle
           ? currentFileHandle.name.replace(/\.md$/, ".pdf")
           : "guide.pdf";
 
-        const options = {
-          margin: [15, 15, 20, 15],
-          filename: filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        };
+        notify("Generating PDF with html2canvas-pro...");
 
-        notify("Generating PDF...");
+        try {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF("p", "mm", "a4");
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const margin = 15;
+          const contentWidth = pageWidth - 2 * margin;
 
-        html2pdf()
-          .set(options)
-          .from(element)
-          .toPdf()
-          .get("pdf")
-          .then(function (pdf) {
-            const totalPages = pdf.internal.getNumberOfPages();
-            for (let i = 1; i <= totalPages; i++) {
-              pdf.setPage(i);
-              pdf.setFontSize(9);
-              pdf.setTextColor(150);
-
-              // Footer: Page number
-              pdf.text(
-                "Page " + i + " of " + totalPages,
-                pdf.internal.pageSize.getWidth() / 2,
-                pdf.internal.pageSize.getHeight() - 10,
-                { align: "center" },
-              );
-
-              // Header: Title if available
-              const title =
-                (document.getElementById("meta-title") &&
-                  document.getElementById("meta-title").value) ||
-                currentFilenameDisplay.textContent;
-              if (title && title !== "Untitled.md") {
-                pdf.text(title, pdf.internal.pageSize.getWidth() / 2, 10, {
-                  align: "center",
-                });
-              }
-            }
-          })
-          .save()
-          .then(() => {
-            notify("PDF exported successfully");
-          })
-          .catch((err) => {
-            console.error(err);
-            notify("PDF export failed");
+          // Render the whole content to a single canvas
+          const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: getComputedStyle(document.body).getPropertyValue(
+              "--md-paper",
+            ),
           });
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.98);
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfImgHeight =
+            (imgProps.height * contentWidth) / imgProps.width;
+
+          const printableHeight = pageHeight - 2 * margin;
+          const totalPages = Math.ceil(pdfImgHeight / printableHeight);
+
+          let heightLeft = pdfImgHeight;
+          let position = margin;
+
+          for (let i = 1; i <= totalPages; i++) {
+            pdf.addImage(
+              imgData,
+              "JPEG",
+              margin,
+              position,
+              contentWidth,
+              pdfImgHeight,
+            );
+
+            // Add Header/Footer
+            pdf.setFontSize(9);
+            pdf.setTextColor(150);
+            pdf.text(
+              `Page ${i} of ${totalPages}`,
+              pageWidth / 2,
+              pageHeight - 10,
+              { align: "center" },
+            );
+
+            const title =
+              (document.getElementById("meta-title") &&
+                document.getElementById("meta-title").value) ||
+              currentFilenameDisplay.textContent;
+            if (title && title !== "Untitled.md") {
+              pdf.text(title, pageWidth / 2, 10, { align: "center" });
+            }
+
+            heightLeft -= printableHeight;
+            position -= printableHeight;
+
+            if (i < totalPages) {
+              pdf.addPage();
+            }
+          }
+
+          pdf.save(filename);
+          notify("PDF exported successfully");
+        } catch (err) {
+          console.error("PDF Export Error:", err);
+          notify("PDF export failed: " + err.message);
+        }
       }
 
       init();
