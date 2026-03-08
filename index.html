@@ -782,6 +782,8 @@
       #table-dropdown,
       .dropdown-menu,
       #command-palette,
+      #explorer-context-menu,
+      #emoji-menu,
       #help-modal > div {
         background: var(--modal-bg, var(--md-paper));
         border-color: var(--modal-border, var(--md-border));
@@ -1454,7 +1456,7 @@
         </div>
         <div
           id="emoji-menu"
-          class="hidden absolute z-50 bg-white dark:bg-apple-bg border border-black/10 dark:border-white/10 rounded-lg shadow-2xl p-1 w-48 max-h-48 overflow-y-auto"
+          class="hidden absolute z-50 p-1 w-48 max-h-48 overflow-y-auto"
         ></div>
         <footer
           class="h-6 px-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] text-apple-secondary"
@@ -1548,7 +1550,7 @@
     <!-- Explorer Context Menu -->
     <div
       id="explorer-context-menu"
-      class="fixed hidden backdrop-blur-xl border shadow-2xl rounded-xl p-1.5 z-[200] min-w-[160px] animate-in fade-in zoom-in duration-200"
+      class="fixed hidden backdrop-blur-xl border shadow-2xl rounded-2xl p-1 z-[200] min-w-[160px] animate-in fade-in zoom-in duration-200"
     >
       <div id="explorer-menu-content" class="space-y-0.5"></div>
     </div>
@@ -4018,16 +4020,25 @@
             return;
           }
           const btn = document.createElement("button");
-          btn.className = `w-full flex items-center gap-3 px-3 py-1.5 text-xs text-left rounded-lg transition-all ${
+          btn.className = `w-full flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-medium text-left rounded-lg transition-all ${
             item.disabled
               ? "opacity-40 cursor-not-allowed pointer-events-none grayscale"
               : "hover:bg-apple-accent hover:text-white"
           }`;
-          btn.innerHTML = `<i class="${item.icon} w-4 text-center"></i> <span>${item.label}</span>`;
+          btn.style.color = "var(--md-text)";
+          btn.innerHTML = `<i class="${item.icon} w-4 text-center text-[10px] opacity-70"></i> <span>${item.label}</span>`;
           if (!item.disabled) {
             btn.onclick = () => {
               item.action();
               explorerContextMenu.classList.add("hidden");
+            };
+            btn.onmouseenter = () => {
+              btn.style.color = "white";
+              btn.querySelector("i").style.opacity = "1";
+            };
+            btn.onmouseleave = () => {
+              btn.style.color = "var(--md-text)";
+              btn.querySelector("i").style.opacity = "0.7";
             };
           }
           explorerMenuContent.appendChild(btn);
