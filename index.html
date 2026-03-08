@@ -31,6 +31,9 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <!-- Prettier for markdown formatting -->
+    <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"></script>
     <style type="text/tailwindcss">
       @theme {
         --color-apple-bg: #f5f5f7;
@@ -1008,6 +1011,13 @@
             <button id="help-btn" class="header-btn" title="Markdown Help">
               <i class="far fa-question-circle"></i>
             </button>
+            <button
+              id="format-btn"
+              class="header-btn"
+              title="Format Document (Shift+Alt+F)"
+            >
+              <i class="fas fa-magic"></i>
+            </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <button id="new-file" class="header-btn" title="New (⌘N)">
               <i class="fas fa-plus"></i>
@@ -1301,7 +1311,8 @@
               </p>
               <code class="block bg-black/5 p-2 rounded text-[11px]"
                 >⌘S: Save<br />⌘N: New<br />⌘J: Zen Mode<br />⌘H: Focus<br />⌘F:
-                Find<br />⌘B: Bold<br />⌘I: Italic<br />⌘K: Link</code
+                Find<br />Shift+Alt+F: Format<br />⌘B: Bold<br />⌘I: Italic<br />⌘K:
+                Link</code
               >
             </div>
             <div>
@@ -1365,6 +1376,7 @@
       const resizer1 = document.getElementById("resizer-1");
       const resizer2 = document.getElementById("resizer-2");
       const helpBtn = document.getElementById("help-btn");
+      const formatBtn = document.getElementById("format-btn");
       const emojiMenu = document.getElementById("emoji-menu");
       const helpModal = document.getElementById("help-modal");
       const downloadMdBtn = document.getElementById("download-md");
@@ -1619,6 +1631,7 @@
         toggleTocBtn.addEventListener("click", toggleTOC);
         copyHtmlBtn.addEventListener("click", copyAsHTML);
         helpBtn.addEventListener("click", toggleHelp);
+        formatBtn.addEventListener("click", formatDocument);
         helpModal.addEventListener("click", (e) => {
           if (e.target === helpModal) toggleHelp();
         });
@@ -1724,6 +1737,10 @@
           if ((e.ctrlKey || e.metaKey) && e.key === "y") {
             e.preventDefault();
             redo();
+          }
+          if (e.shiftKey && e.altKey && (e.key === "f" || e.key === "F")) {
+            e.preventDefault();
+            formatDocument();
           }
           if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Z") {
             e.preventDefault();
@@ -2077,6 +2094,43 @@
       function toggleHelp() {
         helpModal.classList.toggle("hidden");
         helpModal.classList.toggle("flex");
+      }
+
+      function formatDocument() {
+        if (!window.prettier || !window.prettierPlugins) {
+          notify("Prettier not loaded yet");
+          return;
+        }
+
+        const content = editor.value;
+        const cursorPosition = editor.selectionStart;
+
+        try {
+          const formatted = prettier.format(content, {
+            parser: "markdown",
+            plugins: prettierPlugins,
+            printWidth: 80,
+            proseWrap: "always",
+          });
+
+          if (formatted === content) {
+            notify("Document is already formatted");
+            return;
+          }
+
+          editor.value = formatted;
+          updatePreview();
+          updateWordCount();
+          markAsUnsaved(true);
+          pushToHistory();
+          notify("Document formatted");
+
+          // Restore cursor position (approximate)
+          editor.setSelectionRange(cursorPosition, cursorPosition);
+        } catch (err) {
+          console.error("Formatting error:", err);
+          notify("Formatting failed");
+        }
       }
 
       function toggleFind() {
