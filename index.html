@@ -367,13 +367,13 @@
         @apply bg-[#434c5e] text-[#eceff4] border-[#4c566a];
       }
 
-      .theme-nord .dropdown-item,
+      .theme-nord .dropdown-item:hover,
       .theme-nord #command-palette .item:hover,
       .theme-nord #command-palette .item.active {
         @apply bg-[#88c0d0] text-[#2e3440]!;
       }
       .theme-nord .dropdown-item {
-        @apply text-[#eceff4];
+        @apply text-[#eceff4] bg-transparent;
       }
 
       /* Dracula Theme */
@@ -395,13 +395,13 @@
         @apply bg-[#44475a] text-[#f8f8f2] border-[#6272a4]/50;
       }
 
-      .theme-dracula .dropdown-item,
+      .theme-dracula .dropdown-item:hover,
       .theme-dracula #command-palette .item:hover,
       .theme-dracula #command-palette .item.active {
         @apply bg-[#bd93f9] text-[#282a36]!;
       }
       .theme-dracula .dropdown-item {
-        @apply text-[#f8f8f2];
+        @apply text-[#f8f8f2] bg-transparent;
       }
 
       /* Midnight Theme */
@@ -423,13 +423,13 @@
         @apply bg-[#1a202c] text-white border-white/10;
       }
 
-      .theme-midnight .dropdown-item,
+      .theme-midnight .dropdown-item:hover,
       .theme-midnight #command-palette .item:hover,
       .theme-midnight #command-palette .item.active {
         @apply bg-apple-accent text-white!;
       }
       .theme-midnight .dropdown-item {
-        @apply text-white;
+        @apply text-white bg-transparent;
       }
 
       /* Retro Theme */
@@ -465,13 +465,13 @@
         @apply border-[#ffff00]/30;
       }
 
-      .theme-retro .dropdown-item,
+      .theme-retro .dropdown-item:hover,
       .theme-retro #command-palette .item:hover,
       .theme-retro #command-palette .item.active {
         @apply bg-[#00ff41] text-[#0d0208]!;
       }
       .theme-retro .dropdown-item {
-        @apply text-[#00ff41];
+        @apply text-[#00ff41] bg-transparent;
       }
       /* Sepia Theme */
       .theme-sepia .panel {
