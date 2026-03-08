@@ -1056,14 +1056,83 @@
               >
                 <i class="fas fa-check-square"></i>
               </button>
-              <button
-                id="btn-mermaid"
-                class="toolbar-btn"
-                onclick="format('mermaid-flow')"
-                title="Mermaid Flowchart"
-              >
-                <i class="fas fa-project-diagram"></i>
-              </button>
+              <div class="relative">
+                <button
+                  id="btn-mermaid"
+                  class="toolbar-btn"
+                  title="Insert Mermaid Diagram"
+                >
+                  <i class="fas fa-project-diagram"></i>
+                </button>
+                <div
+                  id="mermaid-dropdown"
+                  class="hidden absolute left-0 top-full mt-2 p-1 border z-50 min-w-[180px] bg-white dark:bg-apple-sidebar backdrop-blur-xl rounded-xl shadow-2xl"
+                >
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-flow')"
+                  >
+                    <i class="fas fa-project-diagram mr-2"></i> Flowchart
+                  </button>
+                  <button class="dropdown-item" onclick="format('mermaid-seq')">
+                    <i class="fas fa-exchange-alt mr-2"></i> Sequence Diagram
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-gantt')"
+                  >
+                    <i class="fas fa-tasks mr-2"></i> Gantt Chart
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-class')"
+                  >
+                    <i class="fas fa-project-diagram mr-2"></i> Class Diagram
+                  </button>
+                  <button class="dropdown-item" onclick="format('mermaid-er')">
+                    <i class="fas fa-database mr-2"></i> ER Diagram
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-state')"
+                  >
+                    <i class="fas fa-project-diagram mr-2"></i> State Diagram
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-mindmap')"
+                  >
+                    <i class="fas fa-brain mr-2"></i> Mindmap
+                  </button>
+                  <button class="dropdown-item" onclick="format('mermaid-pie')">
+                    <i class="fas fa-chart-pie mr-2"></i> Pie Chart
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-timeline')"
+                  >
+                    <i class="fas fa-history mr-2"></i> Timeline
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-journey')"
+                  >
+                    <i class="fas fa-route mr-2"></i> User Journey
+                  </button>
+                  <button class="dropdown-item" onclick="format('mermaid-git')">
+                    <i class="fas fa-code-branch mr-2"></i> Git Graph
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="format('mermaid-sankey')"
+                  >
+                    <i class="fas fa-water mr-2"></i> Sankey Diagram
+                  </button>
+                  <button class="dropdown-item" onclick="format('mermaid-xy')">
+                    <i class="fas fa-chart-line mr-2"></i> XY Chart
+                  </button>
+                </div>
+              </div>
               <div class="relative">
                 <button id="btn-table" class="toolbar-btn" title="Insert Table">
                   <i class="fas fa-table"></i>
@@ -1560,6 +1629,7 @@
       const guidanceContainer = document.getElementById("guidance-container");
       const zenModeBtn = document.getElementById("zen-mode");
       const focusModeBtn = document.getElementById("focus-mode");
+      const btnMermaid = document.getElementById("btn-mermaid");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
       const copyHtmlBtn = document.getElementById("copy-html");
@@ -1773,6 +1843,18 @@
         }
       }
 
+      function toggleMermaidDropdown(show) {
+        const dropdown = document.getElementById("mermaid-dropdown");
+        if (!dropdown) return;
+        if (show === undefined) {
+          dropdown.classList.toggle("hidden");
+        } else if (show) {
+          dropdown.classList.remove("hidden");
+        } else {
+          dropdown.classList.add("hidden");
+        }
+      }
+
       function toggleDownloadDropdown(show) {
         const menu = document.getElementById("download-menu");
         if (!menu) return;
@@ -1961,6 +2043,9 @@
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
         tableBtn.addEventListener("click", () => toggleTableDropdown());
+        if (btnMermaid) {
+          btnMermaid.addEventListener("click", () => toggleMermaidDropdown());
+        }
         attachBtn.addEventListener("click", () => attachInput.click());
         attachInput.addEventListener("change", handleAttachmentSelect);
 
@@ -2028,6 +2113,12 @@
             !e.target.closest("#table-dropdown")
           ) {
             toggleTableDropdown(false);
+          }
+          if (
+            !e.target.closest("#btn-mermaid") &&
+            !e.target.closest("#mermaid-dropdown")
+          ) {
+            toggleMermaidDropdown(false);
           }
           if (
             !e.target.closest("#toggle-toc") &&
@@ -2753,6 +2844,32 @@
           },
           { id: "mermaid-gantt", label: "Gantt Chart", icon: "fas fa-tasks" },
           {
+            id: "mermaid-class",
+            label: "Class Diagram",
+            icon: "fas fa-project-diagram",
+          },
+          { id: "mermaid-er", label: "ER Diagram", icon: "fas fa-database" },
+          {
+            id: "mermaid-state",
+            label: "State Diagram",
+            icon: "fas fa-project-diagram",
+          },
+          { id: "mermaid-mindmap", label: "Mindmap", icon: "fas fa-brain" },
+          { id: "mermaid-pie", label: "Pie Chart", icon: "fas fa-chart-pie" },
+          { id: "mermaid-timeline", label: "Timeline", icon: "fas fa-history" },
+          {
+            id: "mermaid-journey",
+            label: "User Journey",
+            icon: "fas fa-route",
+          },
+          { id: "mermaid-git", label: "Git Graph", icon: "fas fa-code-branch" },
+          {
+            id: "mermaid-sankey",
+            label: "Sankey Diagram",
+            icon: "fas fa-water",
+          },
+          { id: "mermaid-xy", label: "XY Chart", icon: "fas fa-chart-line" },
+          {
             id: "callout-info",
             label: "Info Callout",
             icon: "fas fa-info-circle",
@@ -2930,6 +3047,36 @@
             break;
           case "mermaid-gantt":
             newSelection = `\n\`\`\`mermaid\ngantt\n  title A Gantt Diagram\n  dateFormat  YYYY-MM-DD\n  section Section\n  A task           :a1, 2023-01-01, 30d\n  Another task     :after a1, 20d\n\`\`\`\n`;
+            break;
+          case "mermaid-class":
+            newSelection = `\n\`\`\`mermaid\nclassDiagram\n  Animal <|-- Duck\n  Animal <|-- Fish\n  Animal <|-- Zebra\n  Animal : +int age\n  Animal : +String gender\n  Animal: +isMammal()\n  Animal: +mate()\n  class Duck{\n    +String beakColor\n    +swim()\n    +quack()\n  }\n\`\`\`\n`;
+            break;
+          case "mermaid-er":
+            newSelection = `\n\`\`\`mermaid\nerDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE-ITEM : contains\n  CUSTOMER }|..|{ DELIVERY-ADDRESS : uses\n\`\`\`\n`;
+            break;
+          case "mermaid-state":
+            newSelection = `\n\`\`\`mermaid\nstateDiagram-v2\n  [*] --> Still\n  Still --> [*]\n  Still --> Moving\n  Moving --> Still\n  Moving --> Crash\n  Crash --> [*]\n\`\`\`\n`;
+            break;
+          case "mermaid-mindmap":
+            newSelection = `\n\`\`\`mermaid\nmindmap\n  root((mindmap))\n    Origins\n      Long history\n      Popularisation\n    Research\n      On effectiveness\n      On Automatic creation\n    Tools\n      Pen and paper\n      Mermaid\n\`\`\`\n`;
+            break;
+          case "mermaid-pie":
+            newSelection = `\n\`\`\`mermaid\npie title Pets adopted by volunteers\n    "Dogs" : 386\n    "Cats" : 85\n    "Rats" : 15\n\`\`\`\n`;
+            break;
+          case "mermaid-timeline":
+            newSelection = `\n\`\`\`mermaid\ntimeline\n    title History of Social Media Platform\n    2002 : LinkedIn\n    2004 : Facebook\n         : Google\n    2005 : Youtube\n    2006 : Twitter\n\`\`\`\n`;
+            break;
+          case "mermaid-journey":
+            newSelection = `\n\`\`\`mermaid\njourney\n    title My working day\n    section Go to work\n      Make tea: 5: Me\n      Go upstairs: 3: Me\n      Do work: 1: Me, Cat\n    section Go home\n      Go downstairs: 5: Me\n      Sit down: 5: Me\n\`\`\`\n`;
+            break;
+          case "mermaid-git":
+            newSelection = `\n\`\`\`mermaid\ngitGraph\n    commit\n    commit\n    branch develop\n    checkout develop\n    commit\n    commit\n    checkout main\n    merge develop\n    commit\n    commit\n\`\`\`\n`;
+            break;
+          case "mermaid-sankey":
+            newSelection = `\n\`\`\`mermaid\nsankey-beta\n  Agricultural 'waste',Bio-conversion,124.729\n  Bio-conversion,Liquid Converted,0.597\n  Bio-conversion,Losses,26.862\n  Bio-conversion,Solid Converted,280.322\n  Bio-conversion,Gas Converted,81.144\n\`\`\`\n`;
+            break;
+          case "mermaid-xy":
+            newSelection = `\n\`\`\`mermaid\nxychart-beta\n    title "Sales Revenue"\n    x-axis ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]\n    y-axis "Revenue (in $)" 4000 --> 11000\n    bar [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]\n    line [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]\n\`\`\`\n`;
             break;
         }
 
