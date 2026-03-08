@@ -2293,9 +2293,15 @@
         });
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
-        tableBtn.addEventListener("click", () => toggleTableDropdown());
+        tableBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleTableDropdown();
+        });
         if (btnMermaid) {
-          btnMermaid.addEventListener("click", () => toggleMermaidDropdown());
+          btnMermaid.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleMermaidDropdown();
+          });
         }
         attachBtn.addEventListener("click", () => attachInput.click());
         attachInput.addEventListener("change", handleAttachmentSelect);
