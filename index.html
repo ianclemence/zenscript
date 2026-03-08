@@ -22,6 +22,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <!-- idb-keyval for IndexedDB storage -->
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
+    <!-- Mermaid.js for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- KaTeX for math formulas -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
     <style type="text/tailwindcss">
       @theme {
         --color-apple-bg: #f5f5f7;
@@ -101,6 +110,7 @@
           --modal-focus-ring: #0a84ff;
           --table-cell-highlight: rgba(10, 132, 255, 0.4);
           --table-cell-border: #0a84ff;
+          --md-focus-dim: rgba(29, 29, 31, 0.1);
         }
         .theme-dark {
           --md-paper: #0f1115;
@@ -136,6 +146,7 @@
           --modal-focus-ring: #0a84ff;
           --table-cell-highlight: rgba(10, 132, 255, 0.5);
           --table-cell-border: #0a84ff;
+          --md-focus-dim: rgba(245, 246, 248, 0.1);
         }
         .theme-sepia {
           --md-paper: #f7f1e3;
@@ -171,6 +182,7 @@
           --modal-focus-ring: #8b6b3d;
           --table-cell-highlight: rgba(139, 107, 61, 0.4);
           --table-cell-border: #8b6b3d;
+          --md-focus-dim: rgba(59, 47, 47, 0.15);
         }
         .theme-nord {
           --md-paper: #3b4252;
@@ -193,6 +205,7 @@
           --modal-overlay: rgba(46, 52, 64, 0.8);
           --table-cell-highlight: rgba(136, 192, 208, 0.4);
           --table-cell-border: #88c0d0;
+          --md-focus-dim: rgba(236, 239, 244, 0.1);
         }
         .theme-dracula {
           --md-paper: #282a36;
@@ -215,6 +228,7 @@
           --modal-overlay: rgba(40, 42, 54, 0.8);
           --table-cell-highlight: rgba(189, 147, 249, 0.4);
           --table-cell-border: #bd93f9;
+          --md-focus-dim: rgba(248, 248, 242, 0.1);
         }
         .theme-midnight {
           --md-paper: #11151c;
@@ -237,6 +251,7 @@
           --modal-overlay: rgba(11, 14, 20, 0.8);
           --table-cell-highlight: rgba(59, 130, 246, 0.4);
           --table-cell-border: #3b82f6;
+          --md-focus-dim: rgba(255, 255, 255, 0.1);
         }
         .theme-retro {
           --md-paper: #0d0208;
@@ -259,6 +274,7 @@
           --modal-overlay: rgba(13, 2, 8, 0.8);
           --table-cell-highlight: rgba(0, 255, 65, 0.4);
           --table-cell-border: #00ff41;
+          --md-focus-dim: rgba(0, 255, 65, 0.1);
         }
         .glass {
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
@@ -305,6 +321,16 @@
         }
         #editor::placeholder {
           @apply text-apple-secondary/50;
+        }
+
+        #editor.focus-mode {
+          color: var(--md-focus-dim);
+          transition: color 0.3s ease;
+        }
+
+        #editor.focus-mode::selection {
+          background: var(--md-selection-bg);
+          color: var(--md-text);
         }
       }
 
@@ -789,8 +815,32 @@
             <i class="fas fa-folder-open"></i>
           </button>
         </header>
+        <div class="px-3 py-2">
+          <div class="relative group">
+            <i
+              class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-apple-secondary group-focus-within:text-apple-accent transition-colors"
+            ></i>
+            <input
+              type="text"
+              id="global-search-input"
+              placeholder="Search guides..."
+              class="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-apple-accent/30 rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none transition-all"
+            />
+            <button
+              id="clear-search"
+              class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-apple-secondary hover:text-apple-accent"
+            >
+              <i class="fas fa-times-circle text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+        <div
+          id="tags-container"
+          class="px-3 py-1 flex flex-wrap gap-1 border-b border-black/5 dark:border-white/5 hidden"
+        ></div>
         <nav class="flex-1 overflow-y-auto p-2">
           <ul id="file-list" class="space-y-1" role="listbox"></ul>
+          <div id="search-results" class="hidden space-y-4"></div>
         </nav>
       </aside>
 
@@ -947,6 +997,9 @@
             </label>
           </div>
           <div class="flex items-center gap-1">
+            <button id="focus-mode" class="header-btn" title="Focus Mode (⌘H)">
+              <i class="fas fa-bullseye"></i>
+            </button>
             <button id="zen-mode" class="header-btn" title="Zen Mode (⌘J)">
               <i class="fas fa-expand"></i>
             </button>
@@ -1059,12 +1112,18 @@
         <div id="command-palette" class="hidden">
           <ul id="command-palette-list" class="space-y-1"></ul>
         </div>
+        <div
+          id="emoji-menu"
+          class="hidden absolute z-50 bg-white dark:bg-apple-bg border border-black/10 dark:border-white/10 rounded-lg shadow-2xl p-1 w-48 max-h-48 overflow-y-auto"
+        ></div>
         <footer
           class="h-6 px-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] text-apple-secondary"
         >
           <span id="status-bar">Ready</span>
           <div class="flex items-center gap-4">
             <span id="autosave-status"></span>
+            <span id="reading-time">0 min read</span>
+            <span id="char-count">0 chars</span>
             <span id="word-count">0 words</span>
           </div>
         </footer>
@@ -1088,6 +1147,13 @@
               title="Table of Contents"
             >
               <i class="fas fa-list-ul"></i>
+            </button>
+            <button
+              id="copy-html"
+              class="header-btn"
+              title="Copy Rendered HTML"
+            >
+              <i class="far fa-copy"></i>
             </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <select
@@ -1188,16 +1254,24 @@
               >
             </div>
             <div>
-              <p class="font-bold text-apple-accent mb-1">Code</p>
-              <code class="block bg-black/5 p-2 rounded"
-                >`Inline`<br />```Block```</code
+              <p class="font-bold text-apple-accent mb-1">Emoji Autocomplete</p>
+              <code class="block bg-black/5 p-2 rounded text-[10px]"
+                >:emoji: (e.g. :smile:)<br />↑/↓: Navigate menu<br />Enter:
+                Insert emoji</code
+              >
+            </div>
+            <div>
+              <p class="font-bold text-apple-accent mb-1">Code & Formulas</p>
+              <code class="block bg-black/5 p-2 rounded text-[10px]"
+                >`Inline`<br />```Block```<br />```mermaid<br />graph TD;<br />A-->B;<br />```<br />$E=mc^2$
+                (Math)</code
               >
             </div>
             <div>
               <p class="font-bold text-apple-accent mb-1">Shortcuts</p>
               <code class="block bg-black/5 p-2 rounded text-[10px]"
-                >⌘S: Save<br />⌘N: New<br />⌘J: Zen Mode<br />⌘F: Find<br />⌘B:
-                Bold<br />⌘I: Italic<br />⌘K: Link</code
+                >⌘S: Save<br />⌘N: New<br />⌘J: Zen Mode<br />⌘H: Focus<br />⌘F:
+                Find<br />⌘B: Bold<br />⌘I: Italic<br />⌘K: Link</code
               >
             </div>
             <div>
@@ -1213,6 +1287,15 @@
     </div>
 
     <script>
+      // Initialize Mermaid
+      if (window.mermaid) {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "default",
+          securityLevel: "loose",
+        });
+      }
+
       // DOM Elements
       const editor = document.getElementById("editor");
       const previewContent = document.getElementById("preview-content");
@@ -1222,15 +1305,23 @@
       const unsavedIndicator = document.getElementById("unsaved-indicator");
       const themeSelect = document.getElementById("theme-select");
       const fontSizeInput = document.getElementById("font-size");
+      const readingTimeDisplay = document.getElementById("reading-time");
+      const charCountDisplay = document.getElementById("char-count");
       const wordCountDisplay = document.getElementById("word-count");
       const statusBar = document.getElementById("status-bar");
       const autosaveStatus = document.getElementById("autosave-status");
       const guidanceContainer = document.getElementById("guidance-container");
       const zenModeBtn = document.getElementById("zen-mode");
+      const focusModeBtn = document.getElementById("focus-mode");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
+      const copyHtmlBtn = document.getElementById("copy-html");
       const tocPanel = document.getElementById("toc-panel");
       const tocList = document.getElementById("toc-list");
+      const tagsContainer = document.getElementById("tags-container");
+      const globalSearchInput = document.getElementById("global-search-input");
+      const clearSearchBtn = document.getElementById("clear-search");
+      const searchResults = document.getElementById("search-results");
       const commandPalette = document.getElementById("command-palette");
       const commandPaletteList = document.getElementById(
         "command-palette-list",
@@ -1240,6 +1331,7 @@
       const resizer1 = document.getElementById("resizer-1");
       const resizer2 = document.getElementById("resizer-2");
       const helpBtn = document.getElementById("help-btn");
+      const emojiMenu = document.getElementById("emoji-menu");
       const helpModal = document.getElementById("help-modal");
       const downloadMdBtn = document.getElementById("download-md");
       const downloadHtmlBtn = document.getElementById("download-html");
@@ -1266,6 +1358,7 @@
       let currentFileHandle = null;
       let isUnsaved = false;
       let autosaveTimer = null;
+      let isFocusMode = false;
 
       // History for Undo/Redo
       const historyStack = [];
@@ -1456,15 +1549,22 @@
           handleAutosave();
           updateToolbarState();
           if (paletteOpen) updateSlashPaletteFilter();
+          handleEmojiAutocomplete();
 
           // Debounced history push for normal typing
           clearTimeout(historyTimeout);
           historyTimeout = setTimeout(pushToHistory, 1000);
         });
 
-        editor.addEventListener("click", updateToolbarState);
-        editor.addEventListener("keyup", updateToolbarState);
-        editor.addEventListener("mouseup", updateToolbarState);
+        editor.addEventListener("click", () => {
+          updateToolbarState();
+        });
+        editor.addEventListener("keyup", () => {
+          updateToolbarState();
+        });
+        editor.addEventListener("mouseup", () => {
+          updateToolbarState();
+        });
 
         openDirBtn.addEventListener("click", openDirectory);
         newFileBtn.addEventListener("click", createNewFile);
@@ -1477,10 +1577,18 @@
         attachInput.addEventListener("change", handleAttachmentSelect);
 
         zenModeBtn.addEventListener("click", toggleZenMode);
+        focusModeBtn.addEventListener("click", toggleFocusMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
+        copyHtmlBtn.addEventListener("click", copyAsHTML);
         helpBtn.addEventListener("click", toggleHelp);
+        helpModal.addEventListener("click", (e) => {
+          if (e.target === helpModal) toggleHelp();
+        });
         downloadMdBtn.addEventListener("click", downloadAsMarkdown);
         downloadHtmlBtn.addEventListener("click", downloadAsHTML);
+
+        globalSearchInput.addEventListener("input", performGlobalSearch);
+        clearSearchBtn.addEventListener("click", clearSearch);
 
         findNextBtn.addEventListener("click", findNext);
         replaceBtn.addEventListener("click", replaceCurrent);
@@ -1527,6 +1635,12 @@
             tocPanel.classList.add("hidden");
             toggleTocBtn.classList.remove("text-apple-accent");
           }
+          if (emojiMenuOpen && !e.target.closest("#emoji-menu")) {
+            hideEmojiMenu();
+          }
+          if (paletteOpen && !e.target.closest("#command-palette")) {
+            closeCommandPalette();
+          }
         });
 
         window.addEventListener("keydown", (e) => {
@@ -1542,6 +1656,11 @@
             // Zen mode shortcut
             e.preventDefault();
             toggleZenMode();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key === "h") {
+            // Focus mode shortcut
+            e.preventDefault();
+            toggleFocusMode();
           }
           if ((e.ctrlKey || e.metaKey) && e.key === "f") {
             // Find shortcut
@@ -1612,6 +1731,10 @@
 
         // Auto-pairing & Tab support & Paste Link
         editor.addEventListener("keydown", (e) => {
+          if (emojiMenuOpen) {
+            handleEmojiKeydown(e);
+            return;
+          }
           if (e.key === "/" && !paletteOpen) {
             openCommandPalette();
             return;
@@ -1659,6 +1782,42 @@
               val.substring(0, start) + e.key + pair + val.substring(end);
             editor.selectionStart = editor.selectionEnd = start + 1;
             updatePreview();
+          }
+
+          // Shortcuts
+          if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+            e.preventDefault();
+            saveCurrentFile();
+          } else if (
+            (e.ctrlKey || e.metaKey) &&
+            (e.key === "n" || e.key === "N")
+          ) {
+            e.preventDefault();
+            createNewFile();
+          } else if (
+            (e.ctrlKey || e.metaKey) &&
+            (e.key === "f" || e.key === "F")
+          ) {
+            e.preventDefault();
+            toggleFind();
+          } else if (
+            (e.ctrlKey || e.metaKey) &&
+            (e.key === "j" || e.key === "J")
+          ) {
+            e.preventDefault();
+            toggleZenMode();
+          } else if (
+            (e.ctrlKey || e.metaKey) &&
+            (e.key === "t" || e.key === "T")
+          ) {
+            e.preventDefault();
+            toggleTypewriterMode();
+          } else if (
+            (e.ctrlKey || e.metaKey) &&
+            (e.key === "h" || e.key === "H")
+          ) {
+            e.preventDefault();
+            toggleFocusMode();
           }
         });
       }
@@ -1723,7 +1882,32 @@
           // Syntax highlighting
           if (window.hljs) {
             previewContent.querySelectorAll("pre code").forEach((block) => {
-              hljs.highlightElement(block);
+              if (block.classList.contains("language-mermaid")) {
+                const mermaidDiv = document.createElement("div");
+                mermaidDiv.className = "mermaid";
+                mermaidDiv.textContent = block.textContent;
+                block.parentElement.replaceWith(mermaidDiv);
+              } else {
+                hljs.highlightElement(block);
+              }
+            });
+          }
+          // Render Mermaid diagrams
+          if (window.mermaid) {
+            mermaid.run({
+              nodes: previewContent.querySelectorAll(".mermaid"),
+            });
+          }
+          // Render Math with KaTeX
+          if (window.renderMathInElement) {
+            renderMathInElement(previewContent, {
+              delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true },
+              ],
+              throwOnError: false,
             });
           }
           // Table of Contents
@@ -1808,9 +1992,27 @@
           : "Zen Mode Disabled";
       }
 
+      function toggleFocusMode() {
+        isFocusMode = !isFocusMode;
+        focusModeBtn.classList.toggle("text-apple-accent", isFocusMode);
+        editor.classList.toggle("focus-mode", isFocusMode);
+        statusBar.textContent = isFocusMode
+          ? "Focus Mode Enabled"
+          : "Focus Mode Disabled";
+      }
+
       function toggleTOC() {
         tocPanel.classList.toggle("hidden");
         toggleTocBtn.classList.toggle("text-apple-accent");
+      }
+
+      async function copyAsHTML() {
+        try {
+          await navigator.clipboard.writeText(previewContent.innerHTML);
+          notify("HTML copied to clipboard");
+        } catch (err) {
+          notify("Failed to copy HTML");
+        }
       }
 
       function toggleHelp() {
@@ -2252,8 +2454,16 @@
         const text = editor.value.trim();
         const words = text ? text.split(/\s+/).length : 0;
         const chars = text.length;
-        const readingTime = Math.ceil(words / 200); // 200 wpm avg
-        wordCountDisplay.textContent = `${words} word${words === 1 ? "" : "s"} · ${chars} char${chars === 1 ? "" : "s"} · ${readingTime} min read`;
+        const readingTime = Math.ceil(words / 200);
+
+        const lines = editor.value.split("\n").length;
+        const sentences = text
+          ? text.split(/[.!?]+/).filter(Boolean).length
+          : 0;
+
+        wordCountDisplay.textContent = `${words} word${words === 1 ? "" : "s"}`;
+        charCountDisplay.innerHTML = `<span title="Characters / Sentences / Lines">${chars}c / ${sentences}s / ${lines}l</span>`;
+        readingTimeDisplay.textContent = `${readingTime} min read`;
       }
 
       async function openDirectory() {
@@ -2266,18 +2476,479 @@
         }
       }
 
+      const emojis = {
+        ":smile:": "😄",
+        ":heart:": "❤️",
+        ":check:": "✅",
+        ":warning:": "⚠️",
+        ":info:": "ℹ️",
+        ":rocket:": "🚀",
+        ":fire:": "🔥",
+        ":sparkles:": "✨",
+        ":thumbsup:": "👍",
+        ":thumbsdown:": "👎",
+        ":memo:": "📝",
+        ":link:": "🔗",
+        ":star:": "⭐",
+        ":bulb:": "💡",
+        ":eyes:": "👀",
+        ":tada:": "🎉",
+        ":ok_hand:": "👌",
+        ":pray:": "🙏",
+        ":computer:": "💻",
+        ":book:": "📖",
+        ":lock:": "🔒",
+        ":unlock:": "🔓",
+        ":gear:": "⚙️",
+        ":hammer:": "🔨",
+        ":wrench:": "🔧",
+        ":bug:": "🐛",
+        ":chart:": "📊",
+        ":search:": "🔍",
+        ":package:": "📦",
+        ":globe:": "🌐",
+        ":clock:": "🕒",
+        ":calendar:": "📅",
+        ":coffee:": "☕",
+        ":beer:": "🍺",
+        ":pizza:": "🍕",
+        ":apple:": "🍎",
+        ":rocket:": "🚀",
+        ":plane:": "✈️",
+        ":car:": "🚗",
+        ":house:": "🏠",
+        ":office:": "🏢",
+        ":phone:": "📱",
+        ":camera:": "📷",
+        ":video:": "🎥",
+        ":music:": "🎵",
+        ":art:": "🎨",
+        ":gift:": "🎁",
+        ":balloon:": "🎈",
+        ":party:": "🥳",
+        ":cool:": "😎",
+        ":thinking:": "🤔",
+        ":cry:": "😢",
+        ":angry:": "😠",
+        ":sleepy:": "😴",
+        ":strong:": "💪",
+        ":clap:": "👏",
+        ":wave:": "👋",
+        ":point_up:": "☝️",
+        ":point_down:": "👇",
+        ":point_left:": "👈",
+        ":point_right:": "👉",
+        ":writing:": "✍️",
+        ":pin:": "📌",
+        ":paperclip:": "📎",
+        ":trash:": "🗑️",
+        ":folder:": "📁",
+        ":cloud:": "☁️",
+        ":sun:": "☀️",
+        ":moon:": "🌙",
+        ":rain:": "🌧️",
+        ":snow:": "❄️",
+        ":lightning:": "⚡",
+      };
+
+      let emojiMenuOpen = false;
+      let emojiSelectedIndex = 0;
+      let emojiQueryStart = -1;
+
+      function handleEmojiAutocomplete(e) {
+        const cursor = editor.selectionStart;
+        const text = editor.value.substring(0, cursor);
+        const lastColon = text.lastIndexOf(":");
+
+        if (lastColon !== -1 && !text.substring(lastColon).includes(" ")) {
+          const query = text.substring(lastColon).toLowerCase();
+          const filtered = Object.keys(emojis).filter((k) =>
+            k.toLowerCase().includes(query),
+          );
+
+          if (filtered.length > 0) {
+            showEmojiMenu(filtered, lastColon);
+          } else {
+            hideEmojiMenu();
+          }
+        } else {
+          hideEmojiMenu();
+        }
+      }
+
+      function showEmojiMenu(filtered, startPos) {
+        emojiMenuOpen = true;
+        emojiQueryStart = startPos;
+        emojiMenu.innerHTML = "";
+        emojiMenu.classList.remove("hidden");
+
+        filtered.forEach((key, index) => {
+          const btn = document.createElement("button");
+          btn.className = `w-full text-left px-2 py-1.5 rounded text-xs flex items-center gap-2 hover:bg-apple-accent hover:text-white transition-colors ${
+            index === emojiSelectedIndex ? "bg-apple-accent text-white" : ""
+          }`;
+          btn.innerHTML = `<span class="text-base">${emojis[key]}</span> <span class="flex-1">${key}</span>`;
+          btn.onclick = () => insertEmoji(key);
+          emojiMenu.appendChild(btn);
+        });
+
+        // Position menu
+        const coords = getCursorCoordinates();
+        emojiMenu.style.left = `${coords.left}px`;
+        emojiMenu.style.top = `${coords.top + 20}px`;
+      }
+
+      function hideEmojiMenu() {
+        emojiMenuOpen = false;
+        emojiSelectedIndex = 0;
+        emojiMenu.classList.add("hidden");
+      }
+
+      function insertEmoji(key) {
+        const cursor = editor.selectionStart;
+        const before = editor.value.substring(0, emojiQueryStart);
+        const after = editor.value.substring(cursor);
+        editor.value = before + emojis[key] + after;
+        const newPos = emojiQueryStart + emojis[key].length;
+        editor.setSelectionRange(newPos, newPos);
+        hideEmojiMenu();
+        updatePreview();
+        editor.focus();
+      }
+
+      function getCursorCoordinates() {
+        // Approximate cursor position for textarea
+        const textBefore = editor.value.substring(0, editor.selectionStart);
+        const lines = textBefore.split("\n");
+        const lineIndex = lines.length - 1;
+        const charIndex = lines[lineIndex].length;
+
+        const lineHeight = 24.375;
+        const charWidth = 9; // Approximate for monospace
+        const paddingTop = 32;
+        const paddingLeft = 32;
+
+        return {
+          top: lineIndex * lineHeight + paddingTop - editor.scrollTop,
+          left: charIndex * charWidth + paddingLeft - editor.scrollLeft,
+        };
+      }
+
+      function handleEmojiKeydown(e) {
+        if (!emojiMenuOpen) return;
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          emojiSelectedIndex =
+            (emojiSelectedIndex + 1) % emojiMenu.children.length;
+          renderEmojiMenuHighlight();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          emojiSelectedIndex =
+            (emojiSelectedIndex - 1 + emojiMenu.children.length) %
+            emojiMenu.children.length;
+          renderEmojiMenuHighlight();
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          const selectedBtn = emojiMenu.children[emojiSelectedIndex];
+          if (selectedBtn) {
+            const key =
+              selectedBtn.querySelector("span:last-child").textContent;
+            insertEmoji(key);
+          }
+        } else if (e.key === "Escape") {
+          hideEmojiMenu();
+        }
+      }
+
+      function renderEmojiMenuHighlight() {
+        Array.from(emojiMenu.children).forEach((child, index) => {
+          const isActive = index === emojiSelectedIndex;
+          child.classList.toggle("bg-apple-accent", isActive);
+          child.classList.toggle("text-white", isActive);
+          if (isActive) {
+            child.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        });
+      }
+
+      async function performGlobalSearch() {
+        const query = globalSearchInput.value.trim().toLowerCase();
+        if (!query) {
+          clearSearch();
+          return;
+        }
+
+        if (!directoryHandle) {
+          notify("Open a directory to search");
+          return;
+        }
+
+        clearSearchBtn.classList.remove("hidden");
+        fileList.classList.add("hidden");
+        searchResults.classList.remove("hidden");
+        searchResults.innerHTML =
+          '<div class="text-center py-4 text-apple-secondary italic text-[10px]">Searching...</div>';
+
+        const matches = [];
+        try {
+          for await (const entry of directoryHandle.values()) {
+            if (entry.kind === "file" && entry.name.endsWith(".md")) {
+              const file = await entry.getFile();
+              const text = await file.text();
+              const lines = text.split("\n");
+
+              lines.forEach((line, index) => {
+                if (line.toLowerCase().includes(query)) {
+                  matches.push({
+                    handle: entry,
+                    line: index + 1,
+                    text: line.trim(),
+                    fileName: entry.name,
+                  });
+                }
+              });
+            }
+          }
+
+          displaySearchResults(matches, query);
+        } catch (err) {
+          console.error(err);
+          searchResults.innerHTML =
+            '<div class="text-center py-4 text-red-500 text-[10px]">Search failed</div>';
+        }
+      }
+
+      function displaySearchResults(matches, query) {
+        if (matches.length === 0) {
+          searchResults.innerHTML =
+            '<div class="text-center py-4 text-apple-secondary text-[10px]">No matches found</div>';
+          return;
+        }
+
+        searchResults.innerHTML = "";
+        // Group by file
+        const grouped = {};
+        matches.forEach((m) => {
+          if (!grouped[m.fileName]) grouped[m.fileName] = [];
+          grouped[m.fileName].push(m);
+        });
+
+        for (const fileName in grouped) {
+          const fileMatches = grouped[fileName];
+          const fileDiv = document.createElement("div");
+          fileDiv.className = "mb-4";
+
+          const header = document.createElement("div");
+          header.className =
+            "flex items-center gap-2 px-2 py-1 mb-1 font-bold text-[10px] text-apple-accent bg-apple-accent/5 rounded-md cursor-pointer hover:bg-apple-accent/10 transition-colors";
+          header.innerHTML = `<i class="far fa-file-alt"></i> ${fileName}`;
+          header.onclick = () => openFile(fileMatches[0].handle);
+          fileDiv.appendChild(header);
+
+          const list = document.createElement("ul");
+          list.className = "space-y-1 pl-4";
+
+          fileMatches.forEach((m) => {
+            const li = document.createElement("li");
+            li.className =
+              "text-[10px] text-apple-secondary hover:text-apple-text cursor-pointer transition-colors group truncate";
+            // Highlight query in the snippet
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const highlightedText = m.text.replace(
+              new RegExp(escapedQuery, "gi"),
+              (match) =>
+                `<span class="bg-yellow-500/30 text-apple-text">${match}</span>`,
+            );
+
+            li.innerHTML = `<span class="text-apple-accent/50 mr-1 font-mono">${m.line}:</span> ${highlightedText}`;
+            li.onclick = async () => {
+              await openFile(m.handle);
+              // Simple scroll to line logic
+              const lineHeight = 24.375;
+              const paddingTop = 32;
+              editor.scrollTop = (m.line - 1) * lineHeight + paddingTop - 100;
+              // Briefly highlight line? Not easy with textarea, maybe just select it
+              const textBefore = editor.value
+                .split("\n")
+                .slice(0, m.line - 1)
+                .join("\n");
+              const lineText = editor.value.split("\n")[m.line - 1];
+              const start = textBefore.length + (m.line > 1 ? 1 : 0);
+              const end = start + lineText.length;
+              editor.setSelectionRange(start, end);
+              editor.focus();
+            };
+            list.appendChild(li);
+          });
+
+          fileDiv.appendChild(list);
+          searchResults.appendChild(fileDiv);
+        }
+      }
+
+      function clearSearch() {
+        globalSearchInput.value = "";
+        clearSearchBtn.classList.add("hidden");
+        fileList.classList.remove("hidden");
+        searchResults.classList.add("hidden");
+        searchResults.innerHTML = "";
+      }
+
+      let allTags = new Map();
+      let pinnedFiles = new Set();
+
       async function scanDirectory() {
         if (!directoryHandle) return;
         fileList.innerHTML = "";
+        allTags.clear();
+
+        const entries = [];
         for await (const entry of directoryHandle.values()) {
           if (entry.kind === "file" && entry.name.endsWith(".md")) {
-            const li = document.createElement("li");
-            li.className = "file-item";
-            li.innerHTML = `<i class="far fa-file-alt text-apple-secondary"></i> <span class="truncate">${entry.name}</span>`;
-            li.onclick = () => openFile(entry);
-            fileList.appendChild(li);
+            entries.push(entry);
           }
         }
+
+        // Sort entries: pinned first, then alphabetical
+        entries.sort((a, b) => {
+          const aPinned = pinnedFiles.has(a.name);
+          const bPinned = pinnedFiles.has(b.name);
+          if (aPinned && !bPinned) return -1;
+          if (!aPinned && bPinned) return 1;
+          return a.name.localeCompare(b.name);
+        });
+
+        for (const entry of entries) {
+          const file = await entry.getFile();
+          const text = await file.text();
+
+          // Extract tags
+          const tags = extractTags(text);
+          tags.forEach((tag) => {
+            if (!allTags.has(tag)) allTags.set(tag, []);
+            allTags.get(tag).push(entry);
+          });
+
+          const li = document.createElement("li");
+          li.className = `file-item group flex items-center justify-between ${
+            pinnedFiles.has(entry.name) ? "active-pin" : ""
+          }`;
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className =
+            "flex-1 truncate cursor-pointer flex items-center gap-2";
+          nameSpan.innerHTML = `<i class="far fa-file-alt text-apple-secondary"></i> ${entry.name}`;
+          nameSpan.onclick = () => openFile(entry);
+
+          const pinBtn = document.createElement("button");
+          pinBtn.className = `p-1 opacity-0 group-hover:opacity-100 transition-opacity ${
+            pinnedFiles.has(entry.name)
+              ? "text-apple-accent opacity-100"
+              : "text-apple-secondary"
+          }`;
+          pinBtn.innerHTML = `<i class="fas fa-thumbtack text-[10px] ${
+            pinnedFiles.has(entry.name) ? "" : "-rotate-45"
+          }"></i>`;
+          pinBtn.onclick = (e) => {
+            e.stopPropagation();
+            togglePin(entry.name);
+          };
+
+          li.appendChild(nameSpan);
+          li.appendChild(pinBtn);
+          fileList.appendChild(li);
+        }
+        renderTags();
+        if (activeTag) filterFileList();
+      }
+
+      function togglePin(fileName) {
+        if (pinnedFiles.has(fileName)) {
+          pinnedFiles.delete(fileName);
+        } else {
+          pinnedFiles.add(fileName);
+        }
+        if (window.idbKeyval) {
+          idbKeyval.set("md-pinned", Array.from(pinnedFiles));
+        }
+        scanDirectory();
+      }
+
+      function extractTags(text) {
+        const frontmatterMatch = text.match(/^---\s*\n([\s\S]*?)\n---/);
+        if (!frontmatterMatch) return [];
+
+        const yaml = frontmatterMatch[1];
+        const tagsMatch =
+          yaml.match(/tags:\s*\[(.*?)\]/) ||
+          yaml.match(/tags:\s*\n((?:\s*-\s*.*\n?)+)/);
+
+        if (!tagsMatch) return [];
+
+        if (tagsMatch[1].includes("[")) {
+          // Inline format: [tag1, tag2]
+          return tagsMatch[1]
+            .split(",")
+            .map((t) => t.trim().replace(/['"]/g, ""));
+        } else {
+          // List format:
+          // - tag1
+          // - tag2
+          return tagsMatch[1]
+            .split("\n")
+            .map((t) => t.replace(/^\s*-\s*/, "").trim())
+            .filter((t) => t);
+        }
+      }
+
+      let activeTag = null;
+
+      function renderTags() {
+        if (allTags.size === 0) {
+          tagsContainer.classList.add("hidden");
+          return;
+        }
+
+        tagsContainer.classList.remove("hidden");
+        tagsContainer.innerHTML = "";
+
+        allTags.forEach((handles, tag) => {
+          const badge = document.createElement("button");
+          badge.className = `px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+            activeTag === tag
+              ? "bg-apple-accent text-white"
+              : "bg-apple-accent/10 text-apple-accent hover:bg-apple-accent/20"
+          }`;
+          badge.textContent = `${tag} (${handles.length})`;
+          badge.onclick = () => toggleTagFilter(tag);
+          tagsContainer.appendChild(badge);
+        });
+      }
+
+      function toggleTagFilter(tag) {
+        if (activeTag === tag) {
+          activeTag = null;
+        } else {
+          activeTag = tag;
+        }
+        renderTags();
+        filterFileList();
+      }
+
+      function filterFileList() {
+        const items = fileList.querySelectorAll(".file-item");
+        items.forEach((item) => {
+          const fileName = item.textContent.trim();
+          if (!activeTag) {
+            item.classList.remove("hidden");
+            return;
+          }
+
+          const fileHandles = allTags.get(activeTag) || [];
+          const isMatch = fileHandles.some((h) => h.name === fileName);
+          item.classList.toggle("hidden", !isMatch);
+        });
       }
 
       async function openFile(handle) {
@@ -2392,6 +3063,17 @@
         if (window.idbKeyval) {
           idbKeyval.set("md-theme", theme);
         }
+
+        // Update Mermaid theme
+        if (window.mermaid) {
+          const mermaidTheme = isDark
+            ? "dark"
+            : theme === "sepia"
+              ? "neutral"
+              : "default";
+          mermaid.initialize({ theme: mermaidTheme });
+          updatePreview();
+        }
       }
 
       function applyFontSize(size) {
@@ -2410,9 +3092,12 @@
           const storedTheme = await idbKeyval.get("md-theme");
           const storedSize = await idbKeyval.get("md-font-size");
           const storedAutosave = await idbKeyval.get("md-autosave");
+          const storedPinned = await idbKeyval.get("md-pinned");
+
           if (storedTheme) theme = storedTheme;
           if (storedSize) size = storedSize;
           if (storedAutosave !== undefined) autosave = storedAutosave;
+          if (storedPinned) pinnedFiles = new Set(storedPinned);
         }
 
         themeSelect.value = theme;
