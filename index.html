@@ -320,7 +320,14 @@
           @apply w-full text-left px-3 py-2 text-[11px] rounded-lg bg-transparent transition-colors hover:bg-apple-accent hover:text-white;
         }
         .toolbar-btn {
-          @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-accent transition-all flex items-center justify-center text-[12px];
+          @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-accent transition-all flex items-center justify-center text-[12px] flex-shrink-0;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         .toolbar-btn.active {
           @apply bg-apple-accent/10 text-apple-accent;
@@ -965,17 +972,24 @@
       <!-- Center Column: Workspace -->
       <section id="workspace" class="panel flex-1 no-print relative">
         <header class="panel-header">
-          <div class="flex items-center gap-2">
-            <span id="current-filename" class="text-sm font-medium truncate"
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <span
+              id="current-filename"
+              class="text-sm font-medium truncate flex-shrink-0"
               >Untitled.md</span
             >
             <span
               id="unsaved-indicator"
-              class="text-apple-accent font-bold hidden"
+              class="text-apple-accent font-bold hidden flex-shrink-0"
               >*</span
             >
-            <div class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2"></div>
-            <div class="flex items-center gap-1">
+            <div
+              class="h-4 w-px bg-black/10 dark:bg-white/10 mx-2 flex-shrink-0"
+            ></div>
+            <div
+              id="toolbar-container"
+              class="flex items-center gap-1 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 min-w-0"
+            >
               <button
                 id="btn-undo"
                 class="toolbar-btn"
@@ -1432,21 +1446,6 @@
             Preview
           </h2>
           <div class="flex items-center gap-2">
-            <button
-              id="toggle-toc"
-              class="header-btn"
-              title="Table of Contents"
-            >
-              <i class="fas fa-list-ul"></i>
-            </button>
-            <button
-              id="copy-html"
-              class="header-btn"
-              title="Copy Rendered HTML"
-            >
-              <i class="far fa-copy"></i>
-            </button>
-            <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <select
               id="theme-select"
               class="text-[11px] px-2 py-1 rounded-md border border-black/10 outline-none transition-colors"
@@ -1467,6 +1466,21 @@
               max="24"
               class="w-12 text-[11px] px-1 py-1 rounded-md border border-black/10 outline-none transition-colors"
             />
+            <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
+            <button
+              id="toggle-toc"
+              class="header-btn"
+              title="Table of Contents"
+            >
+              <i class="fas fa-list-ul"></i>
+            </button>
+            <button
+              id="copy-html"
+              class="header-btn"
+              title="Copy Rendered HTML"
+            >
+              <i class="far fa-copy"></i>
+            </button>
           </div>
         </header>
         <div
@@ -2004,6 +2018,16 @@
       }
 
       function setupEventListeners() {
+        const toolbar = document.getElementById("toolbar-container");
+        if (toolbar) {
+          toolbar.addEventListener("wheel", (e) => {
+            if (e.deltaY !== 0) {
+              e.preventDefault();
+              toolbar.scrollLeft += e.deltaY;
+            }
+          });
+        }
+
         let historyTimeout;
         editor.addEventListener("input", () => {
           updatePreview();
