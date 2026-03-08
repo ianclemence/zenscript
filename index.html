@@ -678,6 +678,22 @@
       .theme-dark .attachment-chip {
         @apply bg-white/5 border-white/10;
       }
+      #meta-panel {
+        @apply backdrop-blur-xl border transition-all duration-300;
+        background: var(--modal-bg);
+        border-color: var(--modal-border);
+        color: var(--md-text);
+      }
+      #meta-panel input {
+        @apply bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-xs;
+        color: var(--md-text);
+      }
+      #meta-panel label {
+        color: var(--md-secondary);
+      }
+      .modal-title {
+        color: var(--md-text);
+      }
       .find-overlay {
         position: absolute;
         inset: 0;
@@ -1101,6 +1117,13 @@
             >
               <i class="fas fa-magic"></i>
             </button>
+            <button
+              id="meta-btn"
+              class="header-btn"
+              title="Edit Metadata (YAML)"
+            >
+              <i class="fas fa-tags"></i>
+            </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
             <button id="new-file" class="header-btn" title="New (⌘N)">
               <i class="fas fa-plus"></i>
@@ -1127,6 +1150,90 @@
           </div>
         </header>
         <div id="find-overlay" class="find-overlay hidden"></div>
+
+        <!-- Metadata Panel -->
+        <div
+          id="meta-panel"
+          class="absolute top-16 right-4 rounded-xl shadow-2xl p-4 z-50 hidden w-96 transition-all duration-300"
+        >
+          <div class="flex items-center justify-between mb-4">
+            <span
+              class="modal-title text-[10px] font-bold uppercase tracking-widest"
+              >Guide Metadata</span
+            >
+            <button onclick="toggleMeta()" class="close-btn transition-colors">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="space-y-4">
+            <div class="space-y-1.5">
+              <label
+                class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+                >Title</label
+              >
+              <input
+                type="text"
+                id="meta-title"
+                placeholder="Enter guide title..."
+                class="w-full text-xs p-2.5 rounded-lg border outline-none bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label
+                class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+                >Tags (comma separated)</label
+              >
+              <input
+                type="text"
+                id="meta-tags"
+                placeholder="tag1, tag2, tag3..."
+                class="w-full text-xs p-2.5 rounded-lg border outline-none bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label
+                  class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+                  >Author</label
+                >
+                <input
+                  type="text"
+                  id="meta-author"
+                  placeholder="Author name..."
+                  class="w-full text-xs p-2.5 rounded-lg border outline-none bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label
+                  class="text-[10px] font-bold uppercase tracking-widest text-apple-secondary"
+                  >Date</label
+                >
+                <input
+                  type="date"
+                  id="meta-date"
+                  class="w-full text-xs p-2.5 rounded-lg border outline-none bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10"
+                />
+              </div>
+            </div>
+            <div
+              class="pt-2 border-t border-black/5 dark:border-white/5 flex gap-2"
+            >
+              <button
+                id="save-meta"
+                class="flex-1 bg-apple-accent text-white py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-transform active:scale-95"
+              >
+                Update Metadata
+              </button>
+              <button
+                id="clear-meta"
+                class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest border border-black/10 dark:border-white/10 text-apple-secondary hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div
           id="find-replace-panel"
           class="absolute top-16 right-4 rounded-xl shadow-2xl p-4 z-50 hidden w-96 transition-all duration-300"
@@ -1650,6 +1757,111 @@
           highlightGrid(0, 0);
         }
       }
+
+      const metaPanel = document.getElementById("meta-panel");
+      const metaTitle = document.getElementById("meta-title");
+      const metaTags = document.getElementById("meta-tags");
+      const metaAuthor = document.getElementById("meta-author");
+      const metaDate = document.getElementById("meta-date");
+      const metaBtn = document.getElementById("meta-btn");
+      const saveMetaBtn = document.getElementById("save-meta");
+      const clearMetaBtn = document.getElementById("clear-meta");
+
+      let isMetaOpen = false;
+
+      function toggleMeta() {
+        isMetaOpen = !isMetaOpen;
+        metaPanel.classList.toggle("hidden", !isMetaOpen);
+        if (isMetaOpen) {
+          populateMetaFields();
+          metaTitle.focus();
+        }
+      }
+
+      function populateMetaFields() {
+        const text = editor.value;
+        const frontmatterMatch = text.match(/^---\s*\n([\s\S]*?)\n---/);
+
+        // Reset fields
+        metaTitle.value = "";
+        metaTags.value = "";
+        metaAuthor.value = "";
+        metaDate.value = "";
+
+        if (frontmatterMatch) {
+          const yaml = frontmatterMatch[1];
+          const titleMatch = yaml.match(/title:\s*(.*)/);
+          const authorMatch = yaml.match(/author:\s*(.*)/);
+          const dateMatch = yaml.match(/date:\s*(.*)/);
+
+          if (titleMatch)
+            metaTitle.value = titleMatch[1].trim().replace(/['"]/g, "");
+          if (authorMatch)
+            metaAuthor.value = authorMatch[1].trim().replace(/['"]/g, "");
+          if (dateMatch) metaDate.value = dateMatch[1].trim();
+
+          const tags = extractTags(text);
+          metaTags.value = tags.join(", ");
+        }
+      }
+
+      function updateMetadata() {
+        const text = editor.value;
+        const frontmatterMatch = text.match(/^---\s*\n([\s\S]*?)\n---/);
+
+        const title = metaTitle.value.trim();
+        const tags = metaTags.value
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t);
+        const author = metaAuthor.value.trim();
+        const date = metaDate.value;
+
+        let newFrontmatter = "---\n";
+        if (title) newFrontmatter += `title: "${title}"\n`;
+        if (author) newFrontmatter += `author: "${author}"\n`;
+        if (date) newFrontmatter += `date: ${date}\n`;
+        if (tags.length > 0) {
+          newFrontmatter += `tags: [${tags.join(", ")}]\n`;
+        }
+        newFrontmatter += "---";
+
+        if (frontmatterMatch) {
+          editor.value = text.replace(/^---\s*\n[\s\S]*?\n---/, newFrontmatter);
+        } else {
+          editor.value = newFrontmatter + "\n\n" + text;
+        }
+
+        updatePreview();
+        markAsUnsaved(true);
+        pushToHistory();
+        toggleMeta();
+        notify("Metadata updated");
+        scanDirectory(); // Refresh tags in explorer
+      }
+
+      function clearMetadata() {
+        const text = editor.value;
+        if (text.match(/^---\s*\n[\s\S]*?\n---/)) {
+          if (confirm("Remove all metadata from this file?")) {
+            editor.value = text
+              .replace(/^---\s*\n[\s\S]*?\n---/, "")
+              .replace(/^\s+/, "");
+            updatePreview();
+            markAsUnsaved(true);
+            pushToHistory();
+            toggleMeta();
+            notify("Metadata removed");
+            scanDirectory();
+          }
+        } else {
+          toggleMeta();
+        }
+      }
+
+      metaBtn.addEventListener("click", toggleMeta);
+      saveMetaBtn.addEventListener("click", updateMetadata);
+      clearMetaBtn.addEventListener("click", clearMetadata);
 
       // --- Initialization ---
       function init() {
