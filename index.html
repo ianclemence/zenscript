@@ -311,10 +311,10 @@
           @apply bg-apple-accent/10 text-apple-accent font-medium;
         }
         .dropdown-menu {
-          @apply absolute right-0 top-full mt-1 w-32 hidden group-hover:block z-20 overflow-hidden;
+          @apply absolute right-0 top-full mt-1 min-w-[180px] hidden group-hover:block z-20 overflow-hidden p-2 border rounded-xl;
         }
         .dropdown-item {
-          @apply w-full text-left px-3 py-2 text-[11px] transition-colors hover:bg-apple-accent hover:text-white;
+          @apply w-full text-left px-2 py-1 text-[10px] font-medium rounded-md bg-apple-accent/10 text-apple-accent transition-colors hover:bg-apple-accent hover:text-white;
         }
         .toolbar-btn {
           @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-accent transition-all flex items-center justify-center text-[12px];
@@ -1071,7 +1071,7 @@
                     >
                     <span
                       id="table-grid-label"
-                      class="text-[10px] font-mono text-apple-accent"
+                      class="text-[10px] font-mono px-2 py-1 rounded bg-apple-accent/10 text-apple-accent"
                       >0 x 0</span
                     >
                   </div>
@@ -2293,7 +2293,11 @@
           const link = document.createElement("a");
           link.href = `#${id}`;
           link.textContent = header.textContent;
-          link.className = `block hover:text-apple-accent transition-colors ${level === 1 ? "font-bold" : level === 2 ? "pl-3 text-apple-secondary" : "pl-6 text-apple-secondary text-[10px]"}`;
+          const baseBadge =
+            "inline-block px-2 py-1 rounded-lg text-[10px] font-medium transition-colors bg-apple-accent/10 text-apple-accent hover:bg-apple-accent hover:text-white";
+          const indent =
+            level === 1 ? "" : level === 2 ? "ml-2" : "ml-4 text-[9px]";
+          link.className = `${baseBadge} ${indent}`;
           link.onclick = (e) => {
             e.preventDefault();
             header.scrollIntoView({ behavior: "smooth" });
