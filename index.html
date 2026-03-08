@@ -324,13 +324,15 @@
         }
 
         #editor.focus-mode {
-          color: var(--md-focus-dim);
-          transition: color 0.3s ease;
+          color: transparent;
+          text-shadow: 0 0 0 var(--md-focus-dim);
+          transition: text-shadow 0.3s ease;
         }
 
         #editor.focus-mode::selection {
           background: var(--md-selection-bg);
           color: var(--md-text);
+          text-shadow: none;
         }
       }
 
@@ -1580,6 +1582,7 @@
           markAsUnsaved(true);
           handleAutosave();
           updateToolbarState();
+          if (isFocusMode) updateFocusSelection();
           if (paletteOpen) updateSlashPaletteFilter();
           handleEmojiAutocomplete();
 
@@ -1590,12 +1593,15 @@
 
         editor.addEventListener("click", () => {
           updateToolbarState();
+          if (isFocusMode) updateFocusSelection();
         });
         editor.addEventListener("keyup", () => {
           updateToolbarState();
+          if (isFocusMode) updateFocusSelection();
         });
         editor.addEventListener("mouseup", () => {
           updateToolbarState();
+          if (isFocusMode) updateFocusSelection();
         });
 
         openDirBtn.addEventListener("click", openDirectory);
@@ -2028,9 +2034,30 @@
         isFocusMode = !isFocusMode;
         focusModeBtn.classList.toggle("text-apple-accent", isFocusMode);
         editor.classList.toggle("focus-mode", isFocusMode);
+        if (isFocusMode) {
+          updateFocusSelection();
+        }
         statusBar.textContent = isFocusMode
           ? "Focus Mode Enabled"
           : "Focus Mode Disabled";
+      }
+
+      function updateFocusSelection() {
+        if (!isFocusMode) return;
+        const text = editor.value;
+        const pos = editor.selectionStart;
+
+        // Find start of paragraph (double newline)
+        let start = text.lastIndexOf("\n\n", pos - 1);
+        if (start === -1) start = 0;
+        else start += 2;
+
+        // Find end of paragraph
+        let end = text.indexOf("\n\n", pos);
+        if (end === -1) end = text.length;
+
+        // Update selection to cover the current paragraph
+        editor.setSelectionRange(start, end);
       }
 
       function toggleTOC() {
