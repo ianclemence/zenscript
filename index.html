@@ -336,6 +336,14 @@
           @apply text-apple-secondary/50;
         }
 
+        .toc-active {
+          @apply bg-apple-accent text-white shadow-md scale-105;
+        }
+
+        #editor.drag-over {
+          @apply bg-apple-accent/5 border-2 border-dashed border-apple-accent/30;
+        }
+
         #editor.focus-mode {
           color: transparent;
           text-shadow: 0 0 0 var(--md-focus-dim);
@@ -886,6 +894,17 @@
           padding: 0 !important;
         }
       }
+      .active-item {
+        background-color: rgba(0, 122, 255, 0.1);
+        border-radius: 6px;
+      }
+      .dark .active-item {
+        background-color: rgba(10, 132, 255, 0.2);
+      }
+      .file-item:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
+      }
     </style>
   </head>
   <body class="transition-colors duration-500">
@@ -894,20 +913,39 @@
       role="main"
     >
       <!-- Left Column: Explorer -->
-      <aside id="explorer" class="panel w-64 shrink-0 no-print">
-        <header class="panel-header">
+      <aside id="explorer" class="panel w-64 shrink-0 no-print flex flex-col">
+        <header
+          class="panel-header flex items-center justify-between px-4 py-2 border-b border-black/5 dark:border-white/5"
+        >
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-apple-secondary"
           >
             Explorer
           </h2>
-          <button
-            id="open-directory"
-            class="header-btn"
-            title="Open Local Directory"
-          >
-            <i class="fas fa-folder-open"></i>
-          </button>
+          <div class="flex items-center gap-1">
+            <button
+              id="new-file"
+              class="header-btn p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded"
+              title="New File"
+            >
+              <i class="fas fa-file-circle-plus text-[11px]"></i>
+            </button>
+            <button
+              id="new-folder"
+              class="header-btn p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded"
+              title="New Folder"
+            >
+              <i class="fas fa-folder-plus text-[11px]"></i>
+            </button>
+            <div class="h-3 w-px bg-black/10 dark:bg-white/10 mx-0.5"></div>
+            <button
+              id="open-directory"
+              class="header-btn p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded"
+              title="Open Local Directory"
+            >
+              <i class="fas fa-folder-open text-[11px]"></i>
+            </button>
+          </div>
         </header>
         <div class="px-3 py-2">
           <div class="relative group">
@@ -1224,9 +1262,6 @@
               <i class="fas fa-tags"></i>
             </button>
             <div class="h-4 w-px bg-black/5 dark:bg-white/5 mx-1"></div>
-            <button id="new-file" class="header-btn" title="New (⌘N)">
-              <i class="fas fa-plus"></i>
-            </button>
             <button id="save-file" class="header-btn" title="Save (⌘S)">
               <i class="fas fa-save"></i>
             </button>
@@ -1510,6 +1545,14 @@
       </aside>
     </div>
 
+    <!-- Explorer Context Menu -->
+    <div
+      id="explorer-context-menu"
+      class="fixed hidden backdrop-blur-xl border shadow-2xl rounded-xl p-1.5 z-[200] min-w-[160px] animate-in fade-in zoom-in duration-200"
+    >
+      <div id="explorer-menu-content" class="space-y-0.5"></div>
+    </div>
+
     <!-- Guidance -->
     <div
       id="guidance-container"
@@ -1666,6 +1709,12 @@
         "command-palette-list",
       );
       const explorer = document.getElementById("explorer");
+      const explorerContextMenu = document.getElementById(
+        "explorer-context-menu",
+      );
+      const explorerMenuContent = document.getElementById(
+        "explorer-menu-content",
+      );
       const viewer = document.getElementById("viewer");
       const resizer1 = document.getElementById("resizer-1");
       const resizer2 = document.getElementById("resizer-2");
@@ -1690,6 +1739,7 @@
       // Buttons
       const openDirBtn = document.getElementById("open-directory");
       const newFileBtn = document.getElementById("new-file");
+      const newFolderBtn = document.getElementById("new-folder");
       const saveFileBtn = document.getElementById("save-file");
       const exportPdfBtn = document.getElementById("export-pdf");
       const undoBtn = document.getElementById("btn-undo");
@@ -1704,6 +1754,79 @@
       let isUnsaved = false;
       let autosaveTimer = null;
       let isFocusMode = false;
+      let isZenMode = false;
+      let currentFileSource = "db"; // 'db' or 'fs'
+      let currentFolderPath = null;
+      let clipboard = null; // { type: 'cut'|'copy', entry: { path, content, type } }
+      let rightClickedEntry = null;
+
+      // IndexedDB for Explorer
+      const DB_NAME = "GuideExplorerDB";
+      const DB_VERSION = 1;
+      let db;
+
+      function initDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onerror = (e) =>
+            reject("DB Open Error: " + e.target.errorCode);
+          request.onsuccess = (e) => {
+            db = e.target.result;
+            resolve(db);
+          };
+          request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("files")) {
+              db.createObjectStore("files", { keyPath: "path" });
+            }
+          };
+        });
+      }
+
+      async function saveToDB(path, content, type = "file") {
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["files"], "readwrite");
+          const store = transaction.objectStore("files");
+          const request = store.put({
+            path,
+            content,
+            type,
+            updatedAt: Date.now(),
+          });
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function loadFromDB(path) {
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["files"], "readonly");
+          const store = transaction.objectStore("files");
+          const request = store.get(path);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function listDBFiles() {
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["files"], "readonly");
+          const store = transaction.objectStore("files");
+          const request = store.getAll();
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function deleteFromDB(path) {
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["files"], "readwrite");
+          const store = transaction.objectStore("files");
+          const request = store.delete(path);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      }
 
       // History for Undo/Redo
       const historyStack = [];
@@ -1995,7 +2118,9 @@
       clearMetaBtn.addEventListener("click", clearMetadata);
 
       // --- Initialization ---
-      function init() {
+      async function init() {
+        await initDB();
+
         if (window.marked) {
           marked.setOptions({
             gfm: true,
@@ -2015,9 +2140,17 @@
         renderHistory();
         // Periodic snapshot every 5 minutes
         setInterval(saveSnapshot, 5 * 60 * 1000);
+
+        // Load files from DB on start
+        refreshExplorer();
       }
 
       function setupEventListeners() {
+        newFileBtn.addEventListener("click", () => createNewFileInExplorer());
+        newFolderBtn.addEventListener("click", () =>
+          createNewFolderInExplorer(),
+        );
+
         const toolbar = document.getElementById("toolbar-container");
         if (toolbar) {
           toolbar.addEventListener("wheel", (e) => {
@@ -2027,6 +2160,70 @@
             }
           });
         }
+
+        // Smart TOC: Highlight section on scroll
+        previewContent.addEventListener("scroll", () => {
+          const headers = previewContent.querySelectorAll("h1, h2, h3");
+          const tocLinks = tocList.querySelectorAll("a");
+          let currentHeaderId = "";
+
+          headers.forEach((header) => {
+            const top = header.offsetTop - previewContent.scrollTop;
+            if (top < 100) {
+              currentHeaderId = header.id;
+            }
+          });
+
+          tocLinks.forEach((link) => {
+            link.classList.remove("toc-active");
+            if (link.getAttribute("href") === `#${currentHeaderId}`) {
+              link.classList.add("toc-active");
+            }
+          });
+        });
+
+        // Explorer Context Menu (Blank Space)
+        explorer.addEventListener("contextmenu", (e) => {
+          if (directoryHandle) return; // Only for DB explorer
+          e.preventDefault();
+          const item = e.target.closest(".file-item");
+          if (!item) {
+            rightClickedEntry = null;
+            showExplorerContextMenu(e.clientX, e.clientY, "blank");
+          }
+        });
+
+        document.addEventListener("click", () => {
+          explorerContextMenu.classList.add("hidden");
+        });
+
+        // Keyboard Shortcuts for Explorer
+        window.addEventListener("keydown", (e) => {
+          const focusedInExplorer = document.activeElement.closest("#explorer");
+          if (!focusedInExplorer) return;
+
+          if (e.ctrlKey || e.metaKey) {
+            if (e.key === "c") {
+              const active = explorer.querySelector(".file-item.active-item");
+              if (active) copyEntry(active.dataset.path);
+            }
+            if (e.key === "x") {
+              const active = explorer.querySelector(".file-item.active-item");
+              if (active) cutEntry(active.dataset.path);
+            }
+            if (e.key === "v") {
+              pasteEntry();
+            }
+          }
+          if (e.key === "F2") {
+            const active = explorer.querySelector(".file-item.active-item");
+            if (active) renameEntry(active.dataset.path);
+          }
+          if (e.key === "Delete") {
+            const active = explorer.querySelector(".file-item.active-item");
+            if (active) deleteEntry(active.dataset.path);
+          }
+        });
 
         let historyTimeout;
         editor.addEventListener("input", () => {
@@ -2054,6 +2251,26 @@
         editor.addEventListener("mouseup", () => {
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
+        });
+
+        // Drag & Drop for images/files
+        editor.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          editor.classList.add("drag-over");
+        });
+
+        editor.addEventListener("dragleave", () => {
+          editor.classList.remove("drag-over");
+        });
+
+        editor.addEventListener("drop", (e) => {
+          e.preventDefault();
+          editor.classList.remove("drag-over");
+          const files = e.dataTransfer.files;
+          if (files && files.length > 0) {
+            // Insert each file dropped
+            Array.from(files).forEach((f) => insertFileReference(f));
+          }
         });
 
         // Context Menu
@@ -3634,6 +3851,402 @@
       let allTags = new Map();
       let pinnedFiles = new Set();
 
+      async function refreshExplorer() {
+        if (directoryHandle) {
+          await scanDirectory();
+          return;
+        }
+
+        fileList.innerHTML = "";
+        const dbEntries = await listDBFiles();
+
+        // Sort: folders first, then alphabetical
+        dbEntries.sort((a, b) => {
+          if (a.type === "folder" && b.type !== "folder") return -1;
+          if (a.type !== "folder" && b.type === "folder") return 1;
+          return a.path.localeCompare(b.path);
+        });
+
+        if (dbEntries.length === 0) {
+          return;
+        }
+
+        dbEntries.forEach((entry) => {
+          const li = document.createElement("li");
+          li.className = "file-item group flex items-center justify-between";
+          li.tabIndex = 0; // Focusable for shortcuts
+          li.dataset.path = entry.path;
+          li.dataset.type = entry.type;
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className =
+            "flex-1 truncate cursor-pointer flex items-center gap-2";
+          const icon =
+            entry.type === "folder"
+              ? '<i class="fas fa-folder text-apple-accent/60"></i>'
+              : '<i class="far fa-file-alt text-apple-secondary"></i>';
+          nameSpan.innerHTML = `${icon} ${entry.path.split("/").pop()}`;
+          nameSpan.onclick = () => {
+            document
+              .querySelectorAll(".file-item")
+              .forEach((i) => i.classList.remove("active-item"));
+            li.classList.add("active-item");
+            if (entry.type === "folder") {
+              currentFolderPath = entry.path;
+              notify(`Selected folder: ${entry.path}`);
+            } else {
+              openFileFromDB(entry.path);
+            }
+          };
+
+          // Context menu for individual items
+          li.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            rightClickedEntry = entry;
+            showExplorerContextMenu(e.clientX, e.clientY, entry.type);
+          });
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className =
+            "p-1 opacity-0 group-hover:opacity-100 transition-opacity text-apple-secondary hover:text-red-500";
+          deleteBtn.innerHTML = '<i class="fas fa-times text-[10px]"></i>';
+          deleteBtn.onclick = async (e) => {
+            e.stopPropagation();
+            deleteEntry(entry.path);
+          };
+
+          li.appendChild(nameSpan);
+          li.appendChild(deleteBtn);
+          fileList.appendChild(li);
+        });
+      }
+
+      function showExplorerContextMenu(x, y, type) {
+        explorerMenuContent.innerHTML = "";
+        const menuItems = [];
+
+        if (type === "file") {
+          menuItems.push(
+            {
+              label: "Cut",
+              icon: "fas fa-cut",
+              action: () => cutEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Copy",
+              icon: "fas fa-copy",
+              action: () => copyEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Rename",
+              icon: "fas fa-edit",
+              action: () => renameEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Delete",
+              icon: "fas fa-trash",
+              action: () => deleteEntry(rightClickedEntry.path),
+            },
+          );
+        } else if (type === "folder") {
+          menuItems.push(
+            {
+              label: "New File",
+              icon: "fas fa-file-circle-plus",
+              action: () => createNewFileInExplorer(),
+            },
+            {
+              label: "New Folder",
+              icon: "fas fa-folder-plus",
+              action: () => createNewFolderInExplorer(),
+            },
+            {
+              label: "Paste",
+              icon: "fas fa-paste",
+              disabled: !clipboard,
+              action: () => pasteEntry(),
+            },
+            { separator: true },
+            {
+              label: "Cut",
+              icon: "fas fa-cut",
+              action: () => cutEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Copy",
+              icon: "fas fa-copy",
+              action: () => copyEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Rename",
+              icon: "fas fa-edit",
+              action: () => renameEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Delete",
+              icon: "fas fa-trash",
+              action: () => deleteEntry(rightClickedEntry.path),
+            },
+          );
+        } else if (type === "blank") {
+          menuItems.push(
+            {
+              label: "New File",
+              icon: "fas fa-file-circle-plus",
+              action: () => createNewFileInExplorer(),
+            },
+            {
+              label: "New Folder",
+              icon: "fas fa-folder-plus",
+              action: () => createNewFolderInExplorer(),
+            },
+            {
+              label: "Paste",
+              icon: "fas fa-paste",
+              disabled: !clipboard,
+              action: () => pasteEntry(),
+            },
+          );
+        }
+
+        menuItems.forEach((item) => {
+          if (item.separator) {
+            const hr = document.createElement("hr");
+            hr.className = "my-1 border-black/5 dark:border-white/5";
+            explorerMenuContent.appendChild(hr);
+            return;
+          }
+          const btn = document.createElement("button");
+          btn.className = `w-full flex items-center gap-3 px-3 py-1.5 text-xs text-left rounded-lg transition-all ${
+            item.disabled
+              ? "opacity-40 cursor-not-allowed pointer-events-none grayscale"
+              : "hover:bg-apple-accent hover:text-white"
+          }`;
+          btn.innerHTML = `<i class="${item.icon} w-4 text-center"></i> <span>${item.label}</span>`;
+          if (!item.disabled) {
+            btn.onclick = () => {
+              item.action();
+              explorerContextMenu.classList.add("hidden");
+            };
+          }
+          explorerMenuContent.appendChild(btn);
+        });
+
+        explorerContextMenu.style.left = `${x}px`;
+        explorerContextMenu.style.top = `${y}px`;
+        explorerContextMenu.classList.remove("hidden");
+      }
+
+      async function cutEntry(path) {
+        const entry = await loadFromDB(path);
+        if (entry) {
+          clipboard = { type: "cut", entry };
+          notify(`Cut: ${path.split("/").pop()}`);
+        }
+      }
+
+      async function copyEntry(path) {
+        const entry = await loadFromDB(path);
+        if (entry) {
+          clipboard = { type: "copy", entry };
+          notify(`Copied: ${path.split("/").pop()}`);
+        }
+      }
+
+      async function pasteEntry() {
+        if (!clipboard) return;
+        const parent = currentFolderPath || "";
+        const name = clipboard.entry.path.split("/").pop();
+        const newPath = parent ? `${parent}/${name}` : name;
+
+        // Check if path exists
+        const exists = await loadFromDB(newPath);
+        if (exists) {
+          if (!confirm(`Overwrite ${newPath}?`)) return;
+        }
+
+        await saveToDB(newPath, clipboard.entry.content, clipboard.entry.type);
+        if (clipboard.type === "cut") {
+          await deleteFromDB(clipboard.entry.path);
+          clipboard = null; // Clear clipboard after cut-paste
+        }
+        refreshExplorer();
+        notify(`Pasted to ${newPath}`);
+      }
+
+      async function renameEntry(oldPath) {
+        const newName = prompt("Enter new name:", oldPath.split("/").pop());
+        if (!newName) return;
+
+        const entry = await loadFromDB(oldPath);
+        if (!entry) return;
+
+        const pathParts = oldPath.split("/");
+        pathParts.pop();
+        const newPath =
+          pathParts.length > 0 ? `${pathParts.join("/")}/${newName}` : newName;
+
+        await saveToDB(newPath, entry.content, entry.type);
+        await deleteFromDB(oldPath);
+
+        if (currentFileHandle && currentFileHandle.path === oldPath) {
+          currentFileHandle.path = newPath;
+          currentFileHandle.name = newPath;
+          currentFilenameDisplay.textContent = newPath;
+        }
+
+        refreshExplorer();
+        notify(`Renamed to ${newName}`);
+      }
+
+      async function deleteEntry(path) {
+        if (confirm(`Delete ${path}?`)) {
+          await deleteFromDB(path);
+          if (currentFileHandle && currentFileHandle.path === path) {
+            createNewFile();
+          }
+          refreshExplorer();
+          notify(`Deleted ${path}`);
+        }
+      }
+
+      async function createNewFileInExplorer() {
+        if (isUnsaved && !confirm("Discard changes?")) return;
+
+        if (directoryHandle) {
+          // File System Access API path
+          const name = prompt("Enter file name (e.g. guide.md):", "note.md");
+          if (!name) return;
+          try {
+            const handle = await directoryHandle.getFileHandle(name, {
+              create: true,
+            });
+            await openFile(handle);
+            await scanDirectory();
+          } catch (err) {
+            notify("Could not create file in local directory");
+          }
+          return;
+        }
+
+        // IndexedDB path
+        const fileName = prompt("Enter file name:", "new-guide.md");
+        if (!fileName) return;
+
+        const path = currentFolderPath
+          ? `${currentFolderPath}/${fileName}`
+          : fileName;
+        await saveToDB(path, "", "file");
+        await openFileFromDB(path);
+        await refreshExplorer();
+      }
+
+      async function createNewFolderInExplorer() {
+        if (directoryHandle) {
+          alert("Please create folders directly in your local file system.");
+          return;
+        }
+
+        const folderName = prompt("Enter folder name:");
+        if (!folderName) return;
+
+        const path = currentFolderPath
+          ? `${currentFolderPath}/${folderName}`
+          : folderName;
+        await saveToDB(path, "", "folder");
+        await refreshExplorer();
+        notify(`Folder created: ${path}`);
+      }
+
+      async function openFileFromDB(path) {
+        const entry = await loadFromDB(path);
+        if (entry) {
+          editor.value = entry.content;
+          currentFileHandle = { name: path, path: path }; // Mock handle
+          currentFileSource = "db";
+          currentFilenameDisplay.textContent = path;
+          autosaveToggle.checked = true; // Auto-save ON for DB files
+          updatePreview();
+          updateWordCount();
+          markAsUnsaved(false);
+          statusBar.textContent = `Opened from DB: ${path}`;
+        }
+      }
+
+      async function openDirectory() {
+        if (isUnsaved) {
+          if (
+            !confirm(
+              "You have unsaved changes. Opening a folder will replace the current explorer view. Continue?",
+            )
+          )
+            return;
+        }
+        try {
+          directoryHandle = await window.showDirectoryPicker();
+          currentFileSource = "fs";
+          autosaveToggle.checked = false; // Auto-save OFF for opened folders
+          await scanDirectory();
+          statusBar.textContent = `Opened directory: ${directoryHandle.name}`;
+          notify("Auto-save disabled for external folder");
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function openFile(handle) {
+        if (isUnsaved && !confirm("Discard unsaved changes?")) return;
+        try {
+          const file = await handle.getFile();
+          editor.value = await file.text();
+          currentFileHandle = handle;
+          currentFileSource = "fs";
+          currentFilenameDisplay.textContent = handle.name;
+          autosaveToggle.checked = false; // Auto-save OFF for opened files
+          updatePreview();
+          updateWordCount();
+          markAsUnsaved(false);
+          updateActiveHighlight(handle.name);
+          statusBar.textContent = `Opened ${handle.name}`;
+          notify("Auto-save disabled for external file");
+        } catch (err) {
+          notify("Error reading file");
+        }
+      }
+
+      async function saveCurrentFile() {
+        if (currentFileSource === "db") {
+          await saveToDB(currentFileHandle.path, editor.value);
+          markAsUnsaved(false);
+          notify("Saved to DB");
+          return;
+        }
+
+        if (!currentFileHandle) {
+          if (!directoryHandle)
+            return notify("Open a directory or use DB first");
+          const name = prompt("Filename:", "note.md");
+          if (!name) return;
+          currentFileHandle = await directoryHandle.getFileHandle(name, {
+            create: true,
+          });
+          currentFilenameDisplay.textContent = currentFileHandle.name;
+          await scanDirectory();
+        }
+
+        try {
+          const writable = await currentFileHandle.createWritable();
+          await writable.write(editor.value);
+          await writable.close();
+          markAsUnsaved(false);
+          notify("Saved to device");
+          statusBar.textContent = `Last saved at ${new Date().toLocaleTimeString()}`;
+        } catch (err) {
+          notify("Save failed");
+        }
+      }
+
       async function scanDirectory() {
         if (!directoryHandle) return;
         fileList.innerHTML = "";
@@ -3787,49 +4400,10 @@
         });
       }
 
-      async function openFile(handle) {
-        if (isUnsaved && !confirm("Discard unsaved changes?")) return;
-        try {
-          const file = await handle.getFile();
-          editor.value = await file.text();
-          currentFileHandle = handle;
-          currentFilenameDisplay.textContent = handle.name;
-          updatePreview();
-          updateWordCount();
-          markAsUnsaved(false);
-          updateActiveHighlight(handle.name);
-          statusBar.textContent = `Opened ${handle.name}`;
-        } catch (err) {
-          notify("Error reading file");
-        }
-      }
-
-      async function saveCurrentFile() {
-        if (!currentFileHandle) {
-          if (!directoryHandle) return notify("Open a directory first");
-          const name = prompt("Filename:", "note.md");
-          if (!name) return;
-          currentFileHandle = await directoryHandle.getFileHandle(name, {
-            create: true,
-          });
-          currentFilenameDisplay.textContent = currentFileHandle.name;
-          await scanDirectory();
-        }
-        try {
-          const writable = await currentFileHandle.createWritable();
-          await writable.write(editor.value);
-          await writable.close();
-          markAsUnsaved(false);
-          notify("Saved");
-          statusBar.textContent = `Last saved at ${new Date().toLocaleTimeString()}`;
-        } catch (err) {
-          notify("Save failed");
-        }
-      }
-
       function createNewFile() {
         if (isUnsaved && !confirm("Discard changes?")) return;
         currentFileHandle = null;
+        currentFileSource = "db";
         editor.value = "";
         currentFilenameDisplay.textContent = "Untitled.md";
         updatePreview();
@@ -4005,45 +4579,46 @@
 
       function handleAttachmentSelect(e) {
         const f = e.target.files && e.target.files[0];
+        insertFileReference(f);
+        e.target.value = "";
+      }
+
+      function insertFileReference(f) {
         if (!f) return;
         const isImg = f.type && f.type.startsWith("image/");
         const alt = f.name;
+
+        // If we have a current directory handle, try to get the relative path
+        // Otherwise fallback to data URL for now (or just filename if user prefers)
+        // The user specifically asked for "file path just like how it is with github"
+        let filePath = f.name;
+
+        // In a real browser environment with File System Access API,
+        // we can't easily get the full system path for security reasons
+        // unless the file is within the opened directory.
+
         if (isImg) {
-          compressImageFile(f).then(({ dataURL }) => {
-            const insert = `\n\n![${alt}](${dataURL})\n\n`;
-            const start = editor.selectionStart || 0;
-            const end = editor.selectionEnd || 0;
-            const before = editor.value.substring(0, start);
-            const after = editor.value.substring(end);
-            editor.value = before + insert + after;
-            const pos = before.length + insert.length;
-            editor.setSelectionRange(pos, pos);
-            updatePreview();
-            markAsUnsaved(true);
-            pushToHistory();
-            const saved = Math.max(f.size - approxDataURLSizeBytes(dataURL), 0);
-            notify(`Image compressed · saved ${Math.round(saved / 1024)} KB`);
-            e.target.value = "";
-          });
+          const insert = `\n\n![${alt}](${filePath})\n\n`;
+          insertAtCursor(insert);
+          notify(`Inserted image reference: ${filePath}`);
         } else {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const url = reader.result;
-            const insert = `\n\n[${alt}](${url})\n\n`;
-            const start = editor.selectionStart || 0;
-            const end = editor.selectionEnd || 0;
-            const before = editor.value.substring(0, start);
-            const after = editor.value.substring(end);
-            editor.value = before + insert + after;
-            const pos = before.length + insert.length;
-            editor.setSelectionRange(pos, pos);
-            updatePreview();
-            markAsUnsaved(true);
-            pushToHistory();
-            e.target.value = "";
-          };
-          reader.readAsDataURL(f);
+          const insert = `\n\n[${alt}](${filePath})\n\n`;
+          insertAtCursor(insert);
+          notify(`Inserted file reference: ${filePath}`);
         }
+      }
+
+      function insertAtCursor(text) {
+        const start = editor.selectionStart || 0;
+        const end = editor.selectionEnd || 0;
+        const before = editor.value.substring(0, start);
+        const after = editor.value.substring(end);
+        editor.value = before + text + after;
+        const pos = before.length + text.length;
+        editor.setSelectionRange(pos, pos);
+        updatePreview();
+        markAsUnsaved(true);
+        pushToHistory();
       }
 
       function stylePreviewAttachments() {
