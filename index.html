@@ -311,10 +311,10 @@
           @apply bg-apple-accent/10 text-apple-accent font-medium;
         }
         .dropdown-menu {
-          @apply absolute right-0 top-full mt-1 min-w-[180px] hidden group-hover:block z-20 overflow-hidden p-2 border rounded-xl;
+          @apply absolute right-0 top-full mt-2 min-w-[180px] z-50 border p-1 rounded-xl shadow-2xl;
         }
         .dropdown-item {
-          @apply w-full text-left px-2 py-1 text-[10px] font-medium rounded-md bg-apple-accent/10 text-apple-accent transition-colors hover:bg-apple-accent hover:text-white;
+          @apply w-full text-left px-3 py-2 text-[11px] rounded-lg transition-colors hover:bg-apple-accent hover:text-white;
         }
         .toolbar-btn {
           @apply p-2 rounded-lg text-apple-secondary hover:bg-black/5 hover:text-apple-accent transition-all flex items-center justify-center text-[12px];
@@ -1131,11 +1131,15 @@
             <button id="save-file" class="header-btn" title="Save (⌘S)">
               <i class="fas fa-save"></i>
             </button>
-            <div class="relative group">
-              <button class="header-btn" title="Download/Export">
+            <div id="download-container" class="relative">
+              <button
+                id="download-toggle"
+                class="header-btn"
+                title="Download/Export"
+              >
                 <i class="fas fa-download"></i>
               </button>
-              <div class="dropdown-menu">
+              <div id="download-menu" class="dropdown-menu hidden">
                 <button id="download-md" class="dropdown-item">
                   Download .md
                 </button>
@@ -1571,6 +1575,9 @@
       const clearHistoryBtn = document.getElementById("clear-history");
       const emojiMenu = document.getElementById("emoji-menu");
       const helpModal = document.getElementById("help-modal");
+      const downloadToggleBtn = document.getElementById("download-toggle");
+      const downloadMenu = document.getElementById("download-menu");
+      const downloadContainer = document.getElementById("download-container");
       const downloadMdBtn = document.getElementById("download-md");
       const downloadHtmlBtn = document.getElementById("download-html");
       const findReplacePanel = document.getElementById("find-replace-panel");
@@ -1758,6 +1765,18 @@
         }
       }
 
+      function toggleDownloadDropdown(show) {
+        const menu = document.getElementById("download-menu");
+        if (!menu) return;
+        if (show === undefined) {
+          menu.classList.toggle("hidden");
+        } else if (show) {
+          menu.classList.remove("hidden");
+        } else {
+          menu.classList.add("hidden");
+        }
+      }
+
       const metaPanel = document.getElementById("meta-panel");
       const metaTitle = document.getElementById("meta-title");
       const metaTags = document.getElementById("meta-tags");
@@ -1927,7 +1946,10 @@
         openDirBtn.addEventListener("click", openDirectory);
         newFileBtn.addEventListener("click", createNewFile);
         saveFileBtn.addEventListener("click", saveCurrentFile);
-        exportPdfBtn.addEventListener("click", () => window.print());
+        exportPdfBtn.addEventListener("click", () => {
+          window.print();
+          if (downloadMenu) downloadMenu.classList.add("hidden");
+        });
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
         tableBtn.addEventListener("click", () => toggleTableDropdown());
@@ -1943,8 +1965,19 @@
         helpModal.addEventListener("click", (e) => {
           if (e.target === helpModal) toggleHelp();
         });
-        downloadMdBtn.addEventListener("click", downloadAsMarkdown);
-        downloadHtmlBtn.addEventListener("click", downloadAsHTML);
+        downloadMdBtn.addEventListener("click", () => {
+          downloadAsMarkdown();
+          if (downloadMenu) downloadMenu.classList.add("hidden");
+        });
+        downloadHtmlBtn.addEventListener("click", () => {
+          downloadAsHTML();
+          if (downloadMenu) downloadMenu.classList.add("hidden");
+        });
+        if (downloadToggleBtn) {
+          downloadToggleBtn.addEventListener("click", () =>
+            toggleDownloadDropdown(),
+          );
+        }
 
         globalSearchInput.addEventListener("input", performGlobalSearch);
         clearSearchBtn.addEventListener("click", clearSearch);
@@ -1994,6 +2027,12 @@
           ) {
             tocPanel.classList.add("hidden");
             toggleTocBtn.classList.remove("text-apple-accent");
+          }
+          if (
+            !e.target.closest("#download-toggle") &&
+            !e.target.closest("#download-menu")
+          ) {
+            if (downloadMenu) downloadMenu.classList.add("hidden");
           }
           if (
             !e.target.closest("#meta-btn") &&
