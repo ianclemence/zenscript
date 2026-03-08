@@ -801,11 +801,30 @@
         @apply bg-white/5 border-blue-400/30;
       }
       #command-palette {
-        @apply absolute w-48 rounded-xl border shadow-2xl backdrop-blur-xl p-1 z-50 hidden;
+        @apply absolute rounded-xl border shadow-2xl backdrop-blur-xl p-1 z-50 hidden;
+        min-width: 192px;
+      }
+      #command-palette.vertical {
+        @apply w-48;
+      }
+      #command-palette.horizontal {
+        @apply w-auto max-w-[90vw];
+      }
+      #command-palette-list {
+        @apply flex flex-col gap-0.5;
+      }
+      #command-palette.horizontal #command-palette-list {
+        @apply flex-row flex-wrap max-w-2xl;
       }
       #command-palette .item {
         @apply flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[11px] font-medium transition-all;
         color: var(--md-text);
+      }
+      #command-palette.horizontal .item {
+        @apply flex-col items-center justify-center gap-1 p-2 w-20 text-[10px] text-center;
+      }
+      #command-palette.horizontal .item i {
+        @apply text-sm mb-0.5;
       }
       #command-palette .item:hover,
       #command-palette .item.active {
@@ -813,6 +832,9 @@
       }
       #command-palette .item i {
         @apply w-4 text-center text-[10px] opacity-70;
+      }
+      #command-palette.horizontal .item i {
+        @apply w-auto opacity-70;
       }
       #command-palette .item:hover i,
       #command-palette .item.active i {
@@ -2397,7 +2419,17 @@
       let paletteSelected = 0;
       function openCommandPalette(x, y) {
         paletteOpen = true;
-        renderCommandPalette(); // Render first to get accurate height
+
+        // Determine orientation
+        const spaceBelow = window.innerHeight - y;
+        const spaceAbove = y;
+        const isHorizontal =
+          window.innerHeight < 500 || (spaceBelow < 300 && spaceAbove < 300);
+
+        commandPalette.classList.toggle("horizontal", isHorizontal);
+        commandPalette.classList.toggle("vertical", !isHorizontal);
+
+        renderCommandPalette(); // Render first to get accurate dimensions
         commandPalette.style.display = "block";
         commandPalette.classList.remove("hidden");
 
@@ -2413,6 +2445,8 @@
           left = x - width;
         }
         if (top + height + margin > window.innerHeight) {
+          // In vertical mode, try to flip up
+          // In horizontal mode, just shift up
           top = y - height;
         }
 
