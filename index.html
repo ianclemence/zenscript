@@ -367,8 +367,13 @@
         @apply bg-[#434c5e] text-[#eceff4] border-[#4c566a];
       }
 
+      .theme-nord .dropdown-item,
+      .theme-nord #command-palette .item:hover,
+      .theme-nord #command-palette .item.active {
+        @apply bg-[#88c0d0] text-[#2e3440]!;
+      }
       .theme-nord .dropdown-item {
-        @apply text-[#eceff4] hover:bg-[#88c0d0] hover:text-[#2e3440];
+        @apply text-[#eceff4];
       }
 
       /* Dracula Theme */
@@ -390,8 +395,13 @@
         @apply bg-[#44475a] text-[#f8f8f2] border-[#6272a4]/50;
       }
 
+      .theme-dracula .dropdown-item,
+      .theme-dracula #command-palette .item:hover,
+      .theme-dracula #command-palette .item.active {
+        @apply bg-[#bd93f9] text-[#282a36]!;
+      }
       .theme-dracula .dropdown-item {
-        @apply text-[#f8f8f2] hover:bg-[#bd93f9] hover:text-[#282a36];
+        @apply text-[#f8f8f2];
       }
 
       /* Midnight Theme */
@@ -413,8 +423,13 @@
         @apply bg-[#1a202c] text-white border-white/10;
       }
 
+      .theme-midnight .dropdown-item,
+      .theme-midnight #command-palette .item:hover,
+      .theme-midnight #command-palette .item.active {
+        @apply bg-apple-accent text-white!;
+      }
       .theme-midnight .dropdown-item {
-        @apply text-white hover:bg-apple-accent;
+        @apply text-white;
       }
 
       /* Retro Theme */
@@ -450,8 +465,13 @@
         @apply border-[#ffff00]/30;
       }
 
+      .theme-retro .dropdown-item,
+      .theme-retro #command-palette .item:hover,
+      .theme-retro #command-palette .item.active {
+        @apply bg-[#00ff41] text-[#0d0208]!;
+      }
       .theme-retro .dropdown-item {
-        @apply text-[#00ff41] hover:bg-[#00ff41] hover:text-[#0d0208];
+        @apply text-[#00ff41];
       }
       /* Sepia Theme */
       .theme-sepia .panel {
@@ -464,8 +484,13 @@
       .theme-sepia input {
         @apply bg-[#efe7d8] text-[#3b2f2f] border-[#7a6a5e]/40;
       }
+      .theme-sepia .dropdown-item,
+      .theme-sepia #command-palette .item:hover,
+      .theme-sepia #command-palette .item.active {
+        @apply bg-[#8b6b3d] text-[#f7f1e3]!;
+      }
       .theme-sepia .dropdown-item {
-        @apply text-[#3b2f2f] hover:bg-[#8b6b3d] hover:text-[#f7f1e3];
+        @apply text-[#3b2f2f];
       }
       .theme-sepia .header-btn:hover {
         @apply bg-[#efe7d8] text-[#3b2f2f];
@@ -776,14 +801,22 @@
         @apply bg-white/5 border-blue-400/30;
       }
       #command-palette {
-        @apply absolute top-24 right-4 w-72 rounded-xl border shadow-2xl bg-white dark:bg-black/90 border-black/10 dark:border-white/10 p-2 z-50 hidden;
+        @apply absolute w-48 rounded-xl border shadow-2xl backdrop-blur-xl p-1 z-50 hidden;
       }
       #command-palette .item {
-        @apply flex items-center justify-between px-2 py-1 rounded-md cursor-pointer text-xs;
+        @apply flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-[11px] font-medium transition-all;
+        color: var(--md-text);
       }
       #command-palette .item:hover,
       #command-palette .item.active {
         @apply bg-apple-accent text-white;
+      }
+      #command-palette .item i {
+        @apply w-4 text-center text-[10px] opacity-70;
+      }
+      #command-palette .item:hover i,
+      #command-palette .item.active i {
+        @apply opacity-100;
       }
 
       @media print {
@@ -1628,7 +1661,6 @@
           handleAutosave();
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
-          if (paletteOpen) updateSlashPaletteFilter();
           handleEmojiAutocomplete();
 
           // Debounced history push for normal typing
@@ -1647,6 +1679,12 @@
         editor.addEventListener("mouseup", () => {
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
+        });
+
+        // Context Menu
+        editor.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          openCommandPalette(e.clientX, e.clientY);
         });
 
         openDirBtn.addEventListener("click", openDirectory);
@@ -1822,10 +1860,6 @@
         editor.addEventListener("keydown", (e) => {
           if (emojiMenuOpen) {
             handleEmojiKeydown(e);
-            return;
-          }
-          if (e.key === "/" && !paletteOpen) {
-            openCommandPalette();
             return;
           }
           if (paletteOpen) {
@@ -2358,60 +2392,79 @@
       let paletteItems = [];
       let paletteFiltered = [];
       let paletteSelected = 0;
-      let slashStart = null;
-      function openCommandPalette() {
+      function openCommandPalette(x, y) {
         paletteOpen = true;
-        slashStart = editor.selectionStart;
+        renderCommandPalette(); // Render first to get accurate height
+        commandPalette.style.display = "block";
         commandPalette.classList.remove("hidden");
-        renderCommandPalette();
+
+        const width = commandPalette.offsetWidth || 192;
+        const height = commandPalette.offsetHeight || 300;
+        const margin = 10;
+
+        // Correct for viewport overflow
+        let left = x;
+        let top = y;
+
+        if (left + width + margin > window.innerWidth) {
+          left = x - width;
+        }
+        if (top + height + margin > window.innerHeight) {
+          top = y - height;
+        }
+
+        commandPalette.style.left = `${Math.max(margin, left)}px`;
+        commandPalette.style.top = `${Math.max(margin, top)}px`;
       }
       function closeCommandPalette() {
         paletteOpen = false;
         commandPalette.classList.add("hidden");
-      }
-      function updateSlashPaletteFilter() {
-        if (!paletteOpen) return;
-        const pos = editor.selectionStart;
-        const text = editor.value;
-        const lineStart = text.lastIndexOf("\n", pos - 1) + 1;
-        const qStart = Math.max(lineStart, slashStart);
-        const query = text
-          .substring(qStart + 1, pos)
-          .trim()
-          .toLowerCase();
-        paletteFiltered = paletteItems.filter((it) =>
-          it.label.toLowerCase().includes(query),
-        );
-        paletteSelected = 0;
-        renderCommandPalette();
+        commandPalette.style.display = ""; // Reset inline display
       }
       function renderCommandPalette() {
         paletteItems = [
-          { id: "h1", label: "Heading 1" },
-          { id: "bold", label: "Bold" },
-          { id: "italic", label: "Italic" },
-          { id: "quote", label: "Quote" },
-          { id: "list", label: "List" },
-          { id: "task", label: "Task" },
-          { id: "link", label: "Link" },
-          { id: "code", label: "Inline Code" },
-          { id: "table", label: "Table" },
-          { id: "attach", label: "Attach File" },
-          { id: "callout-info", label: "Callout · Info" },
-          { id: "callout-warning", label: "Callout · Warning" },
-          { id: "callout-success", label: "Callout · Success" },
-          { id: "callout-note", label: "Callout · Note" },
-          { id: "toc", label: "Toggle Outline" },
-          { id: "zen", label: "Toggle Zen Mode" },
-          { id: "snapshot", label: "Save Snapshot" },
+          { id: "h1", label: "Heading 1", icon: "fas fa-heading" },
+          { id: "bold", label: "Bold", icon: "fas fa-bold" },
+          { id: "italic", label: "Italic", icon: "fas fa-italic" },
+          { id: "quote", label: "Quote", icon: "fas fa-quote-right" },
+          { id: "list", label: "List", icon: "fas fa-list-ul" },
+          { id: "task", label: "Task List", icon: "fas fa-check-square" },
+          { id: "link", label: "Insert Link", icon: "fas fa-link" },
+          { id: "code", label: "Inline Code", icon: "fas fa-code" },
+          { id: "table", label: "Insert Table", icon: "fas fa-table" },
+          { id: "attach", label: "Attach File", icon: "fas fa-paperclip" },
+          {
+            id: "callout-info",
+            label: "Info Callout",
+            icon: "fas fa-info-circle",
+          },
+          {
+            id: "callout-warning",
+            label: "Warning Callout",
+            icon: "fas fa-exclamation-triangle",
+          },
+          {
+            id: "callout-success",
+            label: "Success Callout",
+            icon: "fas fa-check-circle",
+          },
+          {
+            id: "callout-note",
+            label: "Note Callout",
+            icon: "fas fa-sticky-note",
+          },
+          { id: "snapshot", label: "Save Snapshot", icon: "fas fa-camera" },
+          { id: "zen", label: "Zen Mode", icon: "fas fa-expand" },
+          { id: "toc", label: "Toggle Outline", icon: "fas fa-list-ol" },
         ];
-        if (!paletteFiltered.length) paletteFiltered = paletteItems.slice(0, 8);
+        paletteFiltered = paletteItems;
         commandPaletteList.innerHTML = "";
         paletteFiltered.forEach((it, idx) => {
           const li = document.createElement("li");
           li.className = `item ${idx === paletteSelected ? "active" : ""}`;
-          li.textContent = it.label;
-          li.onclick = () => {
+          li.innerHTML = `<i class="${it.icon}"></i> <span>${it.label}</span>`;
+          li.onclick = (e) => {
+            e.stopPropagation();
             paletteSelected = idx;
             applySelectedPaletteCommand();
           };
@@ -2431,14 +2484,12 @@
       }
       function performCommand(id) {
         const start = editor.selectionStart;
+        const end = editor.selectionEnd;
         const text = editor.value;
-        const lineStart = text.lastIndexOf("\n", start - 1) + 1;
-        const qStart = Math.max(lineStart, slashStart || lineStart);
-        const before = text.substring(0, qStart);
-        const after = text.substring(start);
+        const selection = text.substring(start, end);
         const insertAtCursor = (str) => {
-          editor.value = before + str + after;
-          const pos = before.length + str.length;
+          editor.value = text.substring(0, start) + str + text.substring(end);
+          const pos = start + str.length;
           editor.setSelectionRange(pos, pos);
           updatePreview();
           markAsUnsaved(true);
@@ -2501,8 +2552,6 @@
             code: () => format("code"),
             h1: () => format("h1"),
           };
-          editor.value = before + after;
-          editor.setSelectionRange(before.length, before.length);
           map[id]();
           return;
         }
