@@ -23,7 +23,7 @@
     <!-- idb-keyval for IndexedDB storage -->
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
     <!-- Mermaid.js for diagrams -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <!-- KaTeX for math formulas -->
     <link
       rel="stylesheet"
@@ -1055,6 +1055,14 @@
                 title="Task List"
               >
                 <i class="fas fa-check-square"></i>
+              </button>
+              <button
+                id="btn-mermaid"
+                class="toolbar-btn"
+                onclick="format('mermaid-flow')"
+                title="Mermaid Flowchart"
+              >
+                <i class="fas fa-project-diagram"></i>
               </button>
               <div class="relative">
                 <button id="btn-table" class="toolbar-btn" title="Insert Table">
@@ -2734,6 +2742,17 @@
           { id: "table", label: "Insert Table", icon: "fas fa-table" },
           { id: "attach", label: "Attach File", icon: "fas fa-paperclip" },
           {
+            id: "mermaid-flow",
+            label: "Flowchart",
+            icon: "fas fa-project-diagram",
+          },
+          {
+            id: "mermaid-seq",
+            label: "Sequence Diagram",
+            icon: "fas fa-exchange-alt",
+          },
+          { id: "mermaid-gantt", label: "Gantt Chart", icon: "fas fa-tasks" },
+          {
             id: "callout-info",
             label: "Info Callout",
             icon: "fas fa-info-circle",
@@ -2814,6 +2833,10 @@
         if (id === "snapshot") {
           saveSnapshot();
           notify("Snapshot saved");
+          return;
+        }
+        if (id.startsWith("mermaid-")) {
+          format(id);
           return;
         }
         if (id.startsWith("callout-")) {
@@ -2898,6 +2921,15 @@
             break;
           case "task":
             newSelection = `\n- [ ] ${selection || "task"}`;
+            break;
+          case "mermaid-flow":
+            newSelection = `\n\`\`\`mermaid\ngraph TD\n  A[Start] --> B{Is it?}\n  B -- Yes --> C[OK]\n  B -- No --> D[Not OK]\n\`\`\`\n`;
+            break;
+          case "mermaid-seq":
+            newSelection = `\n\`\`\`mermaid\nsequenceDiagram\n  Alice->>John: Hello John, how are you?\n  John-->>Alice: Great!\n  Alice-)John: See you later!\n\`\`\`\n`;
+            break;
+          case "mermaid-gantt":
+            newSelection = `\n\`\`\`mermaid\ngantt\n  title A Gantt Diagram\n  dateFormat  YYYY-MM-DD\n  section Section\n  A task           :a1, 2023-01-01, 30d\n  Another task     :after a1, 20d\n\`\`\`\n`;
             break;
         }
 
