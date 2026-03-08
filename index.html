@@ -1995,6 +1995,13 @@
             tocPanel.classList.add("hidden");
             toggleTocBtn.classList.remove("text-apple-accent");
           }
+          if (
+            !e.target.closest("#meta-btn") &&
+            !e.target.closest("#meta-panel")
+          ) {
+            isMetaOpen = false;
+            metaPanel.classList.add("hidden");
+          }
           if (emojiMenuOpen && !e.target.closest("#emoji-menu")) {
             hideEmojiMenu();
           }
