@@ -1684,6 +1684,9 @@
         // Context Menu
         editor.addEventListener("contextmenu", (e) => {
           e.preventDefault();
+          // Adjust coordinates if inside the editor
+          const rect = editor.getBoundingClientRect();
+          // Ensure coordinates are relative to the viewport
           openCommandPalette(e.clientX, e.clientY);
         });
 
@@ -2415,6 +2418,7 @@
 
         commandPalette.style.left = `${Math.max(margin, left)}px`;
         commandPalette.style.top = `${Math.max(margin, top)}px`;
+        commandPalette.style.position = "fixed"; // Ensure it stays at fixed viewport coords
       }
       function closeCommandPalette() {
         paletteOpen = false;
