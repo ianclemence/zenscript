@@ -979,6 +979,7 @@
 
         <!-- Local History Section -->
         <div
+          id="history-section"
           class="border-t border-black/5 dark:border-white/5 flex flex-col h-1/3 min-h-[150px]"
         >
           <header class="px-4 py-2 flex items-center justify-between">
@@ -1761,6 +1762,7 @@
       let currentFolderPath = null;
       let clipboard = null; // { type: 'cut'|'copy', entry: { path, content, type } }
       let rightClickedEntry = null;
+      let rightClickedHistoryIndex = null;
 
       // IndexedDB for Explorer
       const DB_NAME = "GuideExplorerDB";
@@ -2197,6 +2199,18 @@
 
         document.addEventListener("click", () => {
           explorerContextMenu.classList.add("hidden");
+        });
+
+        // History section blank space context menu
+        const historySection = document.getElementById("history-section");
+        historySection.addEventListener("contextmenu", (e) => {
+          // Only if right-clicked on the blank space (not on a history item)
+          const item = e.target.closest(".group"); // History items have 'group' class
+          if (!item) {
+            e.preventDefault();
+            rightClickedEntry = null;
+            showExplorerContextMenu(e.clientX, e.clientY, "blank");
+          }
         });
 
         // Keyboard Shortcuts for Explorer
@@ -2897,6 +2911,8 @@
           const history = (await idbKeyval.get("md-local-history")) || [];
           const currentName = currentFileHandle ? currentFileHandle.name : null;
 
+          historyList.innerHTML = "";
+
           if (history.length === 0) {
             historyList.innerHTML =
               '<div class="text-apple-secondary italic px-2 py-4 text-center">No history yet</div>';
@@ -2906,22 +2922,23 @@
           // Sort by timestamp desc
           const sorted = [...history].reverse();
 
-          historyList.innerHTML = sorted
-            .map((item, idx) => {
-              const date = new Date(item.timestamp);
-              const timeStr = date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              const dateStr = date.toLocaleDateString([], {
-                month: "short",
-                day: "numeric",
-              });
-              const isCurrent = item.name === currentName;
+          sorted.forEach((item, idx) => {
+            const date = new Date(item.timestamp);
+            const timeStr = date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const dateStr = date.toLocaleDateString([], {
+              month: "short",
+              day: "numeric",
+            });
+            const isCurrent = item.name === currentName;
+            const originalIndex = history.length - 1 - idx;
 
-              return `
-              <div class="group flex flex-col p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-all border border-transparent ${isCurrent ? "border-apple-accent/20 bg-apple-accent/5" : ""}"
-                   onclick="restoreSnapshot(${history.length - 1 - idx})">
+            const div = document.createElement("div");
+            div.className = `group flex flex-col p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-all border border-transparent ${isCurrent ? "border-apple-accent/20 bg-apple-accent/5" : ""}`;
+
+            div.innerHTML = `
                 <div class="flex items-center justify-between mb-0.5">
                   <span class="text-[10px] font-medium truncate flex-1 ${isCurrent ? "text-apple-accent" : "text-apple-text"}">${item.name}</span>
                   <span class="text-[9px] text-apple-secondary ml-2 whitespace-nowrap">${timeStr}</span>
@@ -2930,12 +2947,36 @@
                   <span class="text-[9px] text-apple-secondary">${dateStr}</span>
                   <span class="text-[9px] text-apple-secondary">${(item.size / 1024).toFixed(1)} KB</span>
                 </div>
-              </div>
             `;
-            })
-            .join("");
+
+            div.onclick = () => restoreSnapshot(originalIndex);
+
+            // Context menu for history item
+            div.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              rightClickedHistoryIndex = originalIndex;
+              showExplorerContextMenu(e.clientX, e.clientY, "history");
+            });
+
+            historyList.appendChild(div);
+          });
         } catch (err) {
           console.error("Failed to render history", err);
+        }
+      }
+
+      async function deleteHistoryItem(index) {
+        if (!confirm("Are you sure you want to delete this history item?"))
+          return;
+        try {
+          const history = (await idbKeyval.get("md-local-history")) || [];
+          history.splice(index, 1);
+          await idbKeyval.set("md-local-history", history);
+          renderHistory();
+          notify("History item deleted");
+        } catch (err) {
+          console.error("Failed to delete history item", err);
         }
       }
 
@@ -4016,6 +4057,12 @@
               action: () => pasteEntry(),
             },
           );
+        } else if (type === "history") {
+          menuItems.push({
+            label: "Delete",
+            icon: "fas fa-trash",
+            action: () => deleteHistoryItem(rightClickedHistoryIndex),
+          });
         }
 
         menuItems.forEach((item) => {
@@ -4053,6 +4100,15 @@
         explorerContextMenu.style.left = `${x}px`;
         explorerContextMenu.style.top = `${y}px`;
         explorerContextMenu.classList.remove("hidden");
+
+        // Boundary check
+        const rect = explorerContextMenu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+          explorerContextMenu.style.left = `${x - rect.width}px`;
+        }
+        if (rect.bottom > window.innerHeight) {
+          explorerContextMenu.style.top = `${y - rect.height}px`;
+        }
       }
 
       async function cutEntry(path) {
