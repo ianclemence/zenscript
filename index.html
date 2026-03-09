@@ -329,6 +329,18 @@
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          @apply bg-black/10 dark:bg-white/10 rounded-full;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          @apply bg-black/20 dark:bg-white/20;
+        }
         .toolbar-btn.active {
           @apply bg-apple-accent/10 text-apple-accent;
         }
@@ -1132,70 +1144,81 @@
                 </button>
                 <div
                   id="mermaid-dropdown"
-                  class="dropdown-menu hidden left-0 right-auto"
+                  class="dropdown-menu hidden left-0 right-auto flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar"
                 >
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-flow')"
                   >
-                    <i class="fas fa-project-diagram mr-2"></i> Flowchart
+                    <i class="fas fa-project-diagram mr-2 w-4 text-center"></i>
+                    Flowchart
                   </button>
                   <button class="dropdown-item" onclick="format('mermaid-seq')">
-                    <i class="fas fa-exchange-alt mr-2"></i> Sequence Diagram
+                    <i class="fas fa-exchange-alt mr-2 w-4 text-center"></i>
+                    Sequence
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-gantt')"
                   >
-                    <i class="fas fa-tasks mr-2"></i> Gantt Chart
+                    <i class="fas fa-tasks mr-2 w-4 text-center"></i> Gantt
+                    Chart
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-class')"
                   >
-                    <i class="fas fa-project-diagram mr-2"></i> Class Diagram
+                    <i class="fas fa-project-diagram mr-2 w-4 text-center"></i>
+                    Class Diagram
                   </button>
                   <button class="dropdown-item" onclick="format('mermaid-er')">
-                    <i class="fas fa-database mr-2"></i> ER Diagram
+                    <i class="fas fa-database mr-2 w-4 text-center"></i> ER
+                    Diagram
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-state')"
                   >
-                    <i class="fas fa-project-diagram mr-2"></i> State Diagram
+                    <i class="fas fa-project-diagram mr-2 w-4 text-center"></i>
+                    State Diagram
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-mindmap')"
                   >
-                    <i class="fas fa-brain mr-2"></i> Mindmap
+                    <i class="fas fa-brain mr-2 w-4 text-center"></i> Mindmap
                   </button>
                   <button class="dropdown-item" onclick="format('mermaid-pie')">
-                    <i class="fas fa-chart-pie mr-2"></i> Pie Chart
+                    <i class="fas fa-chart-pie mr-2 w-4 text-center"></i> Pie
+                    Chart
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-timeline')"
                   >
-                    <i class="fas fa-history mr-2"></i> Timeline
+                    <i class="fas fa-history mr-2 w-4 text-center"></i> Timeline
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-journey')"
                   >
-                    <i class="fas fa-route mr-2"></i> User Journey
+                    <i class="fas fa-route mr-2 w-4 text-center"></i> User
+                    Journey
                   </button>
                   <button class="dropdown-item" onclick="format('mermaid-git')">
-                    <i class="fas fa-code-branch mr-2"></i> Git Graph
+                    <i class="fas fa-code-branch mr-2 w-4 text-center"></i> Git
+                    Graph
                   </button>
                   <button
                     class="dropdown-item"
                     onclick="format('mermaid-sankey')"
                   >
-                    <i class="fas fa-water mr-2"></i> Sankey Diagram
+                    <i class="fas fa-water mr-2 w-4 text-center"></i> Sankey
+                    Diagram
                   </button>
                   <button class="dropdown-item" onclick="format('mermaid-xy')">
-                    <i class="fas fa-chart-line mr-2"></i> XY Chart
+                    <i class="fas fa-chart-line mr-2 w-4 text-center"></i> XY
+                    Chart
                   </button>
                 </div>
               </div>
