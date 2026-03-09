@@ -329,18 +329,6 @@
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-black/10 dark:bg-white/10 rounded-full;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          @apply bg-black/20 dark:bg-white/20;
-        }
         .toolbar-btn.active {
           @apply bg-apple-accent/10 text-apple-accent;
         }
@@ -1144,7 +1132,7 @@
                 </button>
                 <div
                   id="mermaid-dropdown"
-                  class="dropdown-menu hidden left-0 right-auto flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar"
+                  class="dropdown-menu hidden left-0 right-auto flex flex-col max-h-[400px] overflow-y-auto"
                 >
                   <button
                     class="dropdown-item"
@@ -2184,6 +2172,9 @@
         const toolbar = document.getElementById("toolbar-container");
         if (toolbar) {
           toolbar.addEventListener("wheel", (e) => {
+            // Only scroll the toolbar if we are NOT inside a dropdown menu
+            if (e.target.closest(".dropdown-menu")) return;
+
             if (e.deltaY !== 0) {
               e.preventDefault();
               toolbar.scrollLeft += e.deltaY;
