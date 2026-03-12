@@ -947,13 +947,6 @@
             >
               <i class="fas fa-folder-open text-[11px]"></i>
             </button>
-            <button
-              id="crawl-website"
-              class="header-btn p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded"
-              title="Crawl Website"
-            >
-              <i class="fas fa-link text-[11px]"></i>
-            </button>
           </div>
         </header>
         <div class="px-3 py-2">
@@ -1747,7 +1740,6 @@
 
       // Buttons
       const openDirBtn = document.getElementById("open-directory");
-      const crawlWebsiteBtn = document.getElementById("crawl-website");
       const newFileBtn = document.getElementById("new-file");
       const newFolderBtn = document.getElementById("new-folder");
       const saveFileBtn = document.getElementById("save-file");
@@ -2309,7 +2301,6 @@
         });
 
         openDirBtn.addEventListener("click", openDirectory);
-        crawlWebsiteBtn.addEventListener("click", crawlWebsite);
         newFileBtn.addEventListener("click", createNewFile);
         saveFileBtn.addEventListener("click", saveCurrentFile);
         exportPdfBtn.addEventListener("click", () => {
@@ -3585,176 +3576,6 @@
         } catch (err) {
           if (err.name !== "AbortError") notify("Error opening directory");
         }
-      }
-
-      async function crawlWebsite() {
-        const url = prompt("Enter website URL to crawl:");
-        if (!url || !url.trim()) return;
-        
-        try {
-          notify("🕷️ Starting website crawl...");
-          const results = await initiateCloudflareCrawl(url.trim());
-          
-          if (results && results.length > 0) {
-            await processCrawlResults(results);
-            notify(`✅ Crawled ${results.length} pages successfully`);
-          } else {
-            notify("No pages found or crawl failed");
-          }
-        } catch (error) {
-          console.error("Crawl error:", error);
-          notify(`❌ Crawl failed: ${error.message}`);
-        }
-      }
-
-      async function initiateCloudflareCrawl(url) {
-        const accountId = "26647187e4cc07e9372f26a9f557e73e";
-        const apiToken = "osA1_CLEXRYlCXG9AFqJvJn7Zs6DCuSzyQB1WhaU";
-        // Switching to a more robust proxy for POST requests
-        const proxyUrl = "https://api.allorigins.win/raw?url=";
-        
-        if (!accountId || !apiToken) {
-          throw new Error("Cloudflare credentials not configured");
-        }
-
-        const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering/crawl`;
-        
-        // Note: Corrected parameters to 'depth' and added 'limit' for testing
-        const startResponse = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl)}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: url,
-            depth: 2,
-            limit: 20,
-            formats: ['markdown'],
-            render: true
-          })
-        });
-
-        if (!startResponse.ok) {
-          const errorText = await startResponse.text();
-          console.error("Cloudflare Error:", errorText);
-          throw new Error(`Failed to start crawl: ${startResponse.status} ${startResponse.statusText}`);
-        }
-
-        const startData = await startResponse.json();
-        if (!startData.success) {
-          throw new Error(`Crawl start failed: ${startData.errors?.[0]?.message || 'Unknown error'}`);
-        }
-
-        // Fix: Job ID is returned directly in result, not result.id
-        const jobId = startData.result;
-        if (!jobId) throw new Error("No job ID received from Cloudflare");
-        
-        notify(`🔄 Crawl job started: ${jobId}`);
-
-        return await pollCrawlResults(accountId, apiToken, jobId);
-      }
-
-      async function pollCrawlResults(accountId, apiToken, jobId) {
-        const maxAttempts = 30;
-        let attempts = 0;
-        const proxyUrl = "https://api.allorigins.win/raw?url=";
-        
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          
-          const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering/crawl/${jobId}`;
-          const statusResponse = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl)}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${apiToken}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!statusResponse.ok) {
-            throw new Error(`Failed to check crawl status: ${statusResponse.statusText}`);
-          }
-
-          const statusData = await statusResponse.json();
-          if (!statusData.success) {
-            throw new Error(`Crawl status check failed: ${statusData.errors?.[0]?.message || 'Unknown error'}`);
-          }
-
-          const job = statusData.result;
-          
-          // The API returns the full result object once completed
-          if (job.status === 'completed') {
-            // According to docs, results are in job.records
-            return job.records || [];
-          } else if (job.status === 'errored' || job.status === 'failed') {
-            throw new Error(`Crawl failed: ${job.error || 'Unknown error'}`);
-          } else if (job.status === 'running') {
-            notify(`🔄 Crawling... (${attempts + 1}/${maxAttempts})`);
-          }
-          
-          attempts++;
-        }
-        
-        throw new Error("Crawl timeout - job took too long to complete");
-      }
-
-      async function processCrawlResults(results) {
-        let savedCount = 0;
-        for (const page of results) {
-          // Check for content in 'markdown' field as per Cloudflare /crawl format
-          if (page.markdown && page.url) {
-            const url = new URL(page.url);
-            // Clean up pathname: remove leading/trailing slashes, replace non-alphanumeric with dashes
-            let filename = url.pathname.replace(/^\/|\/$/g, '').replace(/[^a-zA-Z0-9]/g, '-') || 'index';
-            const cleanFilename = `${filename}.md`;
-            
-            // Build content with improved metadata from API
-            const title = page.metadata?.title || 'Untitled Page';
-            const markdownContent = `# ${title}
-
-**Source:** [${page.url}](${page.url})
-**Status:** ${page.status || 'completed'}
-**Crawled:** ${new Date().toLocaleString()}
-
----
-
-${page.markdown}`;
-
-            await saveToDB(cleanFilename, markdownContent, 'file');
-            savedCount++;
-          }
-        }
-        
-        await refreshExplorer();
-        if (savedCount > 0) {
-          notify(`🎉 Successfully imported ${savedCount} pages!`);
-        } else {
-          notify("⚠️ No crawl records found in results.");
-        }
-      }
-
-      function htmlToMarkdown(html) {
-        // Simple HTML to Markdown conversion
-        return html
-          .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1')
-          .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1')
-          .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1')
-          .replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1')
-          .replace(/<h5[^>]*>(.*?)<\/h5>/gi, '##### $1')
-          .replace(/<h6[^>]*>(.*?)<\/h6>/gi, '###### $1')
-          .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-          .replace(/<br[^>]*>/gi, '\n')
-          .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
-          .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
-          .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
-          .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
-          .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-          .replace(/<ul[^>]*>(.*?)<\/ul>/gi, '$1')
-          .replace(/<ol[^>]*>(.*?)<\/ol>/gi, '$1')
-          .replace(/<li[^>]*>(.*?)<\/li>/gi, '* $1\n')
-          .replace(/<[^>]+>/g, '') // Remove any remaining tags
-          .trim();
       }
 
       const emojis = {
