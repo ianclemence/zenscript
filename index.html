@@ -915,7 +915,7 @@
       role="main"
     >
       <!-- Left Column: Explorer -->
-      <aside id="explorer" class="panel w-64 shrink-0 no-print flex flex-col">
+      <aside id="explorer" class="panel w-64 shrink-0 no-print flex flex-col max-w-[400px]">
         <header
           class="panel-header flex items-center justify-between px-4 py-2 border-b border-black/5 dark:border-white/5"
         >
@@ -1475,7 +1475,7 @@
       <div class="resizer no-print" id="resizer-2"></div>
 
       <!-- Right Column: Viewer -->
-      <aside id="viewer" class="panel w-[400px] shrink-0 print-only">
+      <aside id="viewer" class="panel w-[400px] shrink-0 print-only max-w-[800px]">
         <header class="panel-header no-print">
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-apple-secondary"
@@ -2600,7 +2600,7 @@
 
       // --- Resizing Logic ---
       function setupResizers() {
-        const setupResizer = (resizerId, panelId, isRight) => {
+        const setupResizer = (resizerId, panelId, isRight, min = 150, max = 600) => {
           const resizer = document.getElementById(resizerId);
           const panel = document.getElementById(panelId);
           let startX, startWidth;
@@ -2623,13 +2623,12 @@
 
             animationFrameId = requestAnimationFrame(() => {
               const delta = e.clientX - startX;
-              const newWidth = isRight
+              let newWidth = isRight
                 ? startWidth - delta
                 : startWidth + delta;
 
-              if (newWidth > 150 && newWidth < 600) {
-                panel.style.width = `${newWidth}px`;
-              }
+              newWidth = Math.max(min, Math.min(newWidth, max));
+              panel.style.width = `${newWidth}px`;
               animationFrameId = null;
             });
           }
@@ -2646,8 +2645,8 @@
           }
         };
 
-        setupResizer("resizer-1", "explorer", false);
-        setupResizer("resizer-2", "viewer", true);
+        setupResizer("resizer-1", "explorer", false, 150, 400);
+        setupResizer("resizer-2", "viewer", true, 150, 800);
       }
 
       // --- Core Functions ---
