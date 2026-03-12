@@ -1,4 +1,4 @@
-# ZenScript 🖋️
+# ZenScript
 
 **ZenScript** is a high-performance, elegant, and utilitarian Markdown editor designed for technical writers, developers, and knowledge workers. It combines a distraction-free writing environment with a powerful suite of professional tools.
 
