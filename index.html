@@ -70,13 +70,12 @@
         }
 
         .theme-dark ::-webkit-scrollbar-thumb,
-        .theme-nord ::-webkit-scrollbar-thumb,
-        .theme-dracula ::-webkit-scrollbar-thumb,
-        .theme-midnight ::-webkit-scrollbar-thumb {
+        .theme-everforest ::-webkit-scrollbar-thumb {
           @apply bg-white/10 hover:bg-white/20;
         }
 
-        .theme-retro ::-webkit-scrollbar-thumb {
+        .theme-matrix ::-webkit-scrollbar-thumb,
+        .theme-notes ::-webkit-scrollbar-thumb {
           @apply bg-apple-accent/30 hover:bg-apple-accent/50;
         }
       }
@@ -154,134 +153,115 @@
           --table-cell-border: #0a84ff;
           --md-focus-dim: rgba(245, 246, 248, 0.1);
         }
-        .theme-sepia {
-          --md-paper: #f7f1e3;
-          --md-text: #3b2f2f;
-          --md-secondary: #7a6a5e;
-          --md-accent: #8b6b3d;
-          --md-border: rgba(59, 47, 47, 0.12);
-          --md-border-faint: rgba(59, 47, 47, 0.08);
-          --md-code-bg: #efe7d8;
-          --md-code-sep: rgba(59, 47, 47, 0.08);
-          --md-quote-bg: rgba(139, 107, 61, 0.08);
-          --md-row-alt: rgba(59, 47, 47, 0.04);
-          --md-selection-bg: rgba(139, 107, 61, 0.2);
-          --md-selection-text: #3b2f2f;
-          --md-shadow: 0 10px 28px rgba(139, 107, 61, 0.15);
+        .theme-matrix {
+          --md-paper: #0C170E;
+          --md-text: #B8FFCA;
+          --md-secondary: #5E8C6A;
+          --md-accent: #1EFF5A;
+          --md-border: rgba(30, 255, 90, 0.2);
+          --md-border-faint: rgba(30, 255, 90, 0.1);
+          --md-code-bg: #0F1F12;
+          --md-code-sep: rgba(30, 255, 90, 0.1);
+          --md-quote-bg: rgba(30, 255, 90, 0.1);
+          --md-row-alt: rgba(30, 255, 90, 0.05);
+          --md-selection-bg: rgba(30, 255, 90, 0.2);
+          --md-selection-text: #B8FFCA;
+          --md-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
           --md-radius: 16px;
-          --md-heading: #2b2222;
-          --modal-border: rgba(59, 47, 47, 0.18);
-          --modal-bg: #f7f1e3;
-          --modal-overlay: rgba(139, 107, 61, 0.12);
-          --modal-input-bg: #efe7d8;
-          --modal-input-border: rgba(59, 47, 47, 0.18);
-          --modal-input-text: #3b2f2f;
-          --modal-btn-bg: #8b6b3d;
-          --modal-btn-text: #ffffff;
-          --modal-btn-hover-bg: #72582f;
+          --md-heading: #1EFF5A;
+          --modal-border: rgba(30, 255, 90, 0.2);
+          --modal-bg: #0C170E;
+          --modal-overlay: rgba(0, 0, 0, 0.8);
+          --modal-input-bg: #0F1F12;
+          --modal-input-border: rgba(30, 255, 90, 0.2);
+          --modal-input-text: #B8FFCA;
+          --modal-btn-bg: #1EFF5A;
+          --modal-btn-text: #0C170E;
+          --modal-btn-hover-bg: #16C645;
           --modal-btn-border: transparent;
-          --modal-toggle-bg: #efe7d8;
-          --modal-toggle-border: rgba(59, 47, 47, 0.18);
-          --modal-hint-text: #7a6a5e;
-          --modal-counter-text: #7a6a5e;
-          --modal-close-color: #7a6a5e;
-          --modal-focus-ring: #8b6b3d;
-          --table-cell-highlight: rgba(139, 107, 61, 0.4);
-          --table-cell-border: #8b6b3d;
-          --md-focus-dim: rgba(59, 47, 47, 0.15);
+          --modal-toggle-bg: #0F1F12;
+          --modal-toggle-border: rgba(30, 255, 90, 0.2);
+          --modal-hint-text: #5E8C6A;
+          --modal-counter-text: #5E8C6A;
+          --modal-close-color: #5E8C6A;
+          --modal-focus-ring: #1EFF5A;
+          --table-cell-highlight: rgba(30, 255, 90, 0.2);
+          --table-cell-border: #1EFF5A;
+          --md-focus-dim: rgba(30, 255, 90, 0.1);
         }
-        .theme-nord {
-          --md-paper: #3b4252;
-          --md-text: #eceff4;
-          --md-secondary: #d8dee9;
-          --md-accent: #88c0d0;
-          --md-border: rgba(76, 86, 106, 0.5);
-          --md-border-faint: rgba(76, 86, 106, 0.3);
-          --md-code-bg: #434c5e;
-          --md-code-sep: rgba(76, 86, 106, 0.4);
-          --md-quote-bg: rgba(136, 192, 208, 0.12);
-          --md-row-alt: rgba(76, 86, 106, 0.25);
-          --md-selection-bg: rgba(136, 192, 208, 0.25);
-          --md-selection-text: #eceff4;
-          --md-shadow: 0 12px 30px rgba(67, 76, 94, 0.35);
+        .theme-notes {
+          --md-paper: #FBF0D9;
+          --md-text: #2C2C2C;
+          --md-secondary: #8F8F8F;
+          --md-accent: #D4A017;
+          --md-border: rgba(212, 160, 23, 0.2);
+          --md-border-faint: rgba(212, 160, 23, 0.1);
+          --md-code-bg: #F2E6CF;
+          --md-code-sep: rgba(212, 160, 23, 0.1);
+          --md-quote-bg: rgba(212, 160, 23, 0.1);
+          --md-row-alt: rgba(212, 160, 23, 0.05);
+          --md-selection-bg: rgba(212, 160, 23, 0.2);
+          --md-selection-text: #2C2C2C;
+          --md-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+          --md-radius: 4px;
+          --md-heading: #4A3B2A;
+          --modal-border: rgba(212, 160, 23, 0.2);
+          --modal-bg: #FBF0D9;
+          --modal-overlay: rgba(74, 59, 42, 0.5);
+          --modal-input-bg: #F2E6CF;
+          --modal-input-border: rgba(212, 160, 23, 0.2);
+          --modal-input-text: #4A3B2A;
+          --modal-btn-bg: #D4A017;
+          --modal-btn-text: #FBF0D9;
+          --modal-btn-hover-bg: #B88A14;
+          --modal-btn-border: transparent;
+          --modal-toggle-bg: #F2E6CF;
+          --modal-toggle-border: rgba(212, 160, 23, 0.2);
+          --modal-hint-text: #8F8F8F;
+          --modal-counter-text: #8F8F8F;
+          --modal-close-color: #8F8F8F;
+          --modal-focus-ring: #D4A017;
+          --table-cell-highlight: rgba(212, 160, 23, 0.3);
+          --table-cell-border: #D4A017;
+          --md-focus-dim: rgba(44, 44, 44, 0.1);
+        }
+        .theme-everforest {
+          --md-paper: #2D353B;
+          --md-text: #D3C6AA;
+          --md-secondary: #9DA9A0;
+          --md-accent: #A7C080;
+          --md-border: rgba(167, 192, 128, 0.2);
+          --md-border-faint: rgba(167, 192, 128, 0.1);
+          --md-code-bg: #333C43;
+          --md-code-sep: rgba(167, 192, 128, 0.1);
+          --md-quote-bg: rgba(167, 192, 128, 0.1);
+          --md-row-alt: rgba(167, 192, 128, 0.05);
+          --md-selection-bg: rgba(167, 192, 128, 0.2);
+          --md-selection-text: #D3C6AA;
+          --md-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
           --md-radius: 16px;
-          --md-heading: #eceff4;
-          --modal-bg: #3b4252;
-          --modal-border: rgba(76, 86, 106, 0.5);
-          --modal-overlay: rgba(46, 52, 64, 0.8);
-          --table-cell-highlight: rgba(136, 192, 208, 0.4);
-          --table-cell-border: #88c0d0;
-          --md-focus-dim: rgba(236, 239, 244, 0.1);
+          --md-heading: #D3C6AA;
+          --modal-border: rgba(167, 192, 128, 0.2);
+          --modal-bg: #2D353B;
+          --modal-overlay: rgba(0, 0, 0, 0.8);
+          --modal-input-bg: #333C43;
+          --modal-input-border: rgba(167, 192, 128, 0.2);
+          --modal-input-text: #D3C6AA;
+          --modal-btn-bg: #A7C080;
+          --modal-btn-text: #2D353B;
+          --modal-btn-hover-bg: #83C092;
+          --modal-btn-border: transparent;
+          --modal-toggle-bg: #333C43;
+          --modal-toggle-border: rgba(167, 192, 128, 0.2);
+          --modal-hint-text: #9DA9A0;
+          --modal-counter-text: #9DA9A0;
+          --modal-close-color: #9DA9A0;
+          --modal-focus-ring: #A7C080;
+          --table-cell-highlight: rgba(167, 192, 128, 0.4);
+          --table-cell-border: #A7C080;
+          --md-focus-dim: rgba(211, 198, 170, 0.1);
         }
-        .theme-dracula {
-          --md-paper: #282a36;
-          --md-text: #f8f8f2;
-          --md-secondary: #b8b8b8;
-          --md-accent: #bd93f9;
-          --md-border: rgba(68, 71, 90, 0.7);
-          --md-border-faint: rgba(68, 71, 90, 0.45);
-          --md-code-bg: #2f3242;
-          --md-code-sep: rgba(68, 71, 90, 0.5);
-          --md-quote-bg: rgba(189, 147, 249, 0.12);
-          --md-row-alt: rgba(68, 71, 90, 0.25);
-          --md-selection-bg: rgba(189, 147, 249, 0.25);
-          --md-selection-text: #f8f8f2;
-          --md-shadow: 0 12px 32px rgba(40, 42, 54, 0.6);
-          --md-radius: 16px;
-          --md-heading: #f8f8f2;
-          --modal-bg: #282a36;
-          --modal-border: rgba(68, 71, 90, 0.7);
-          --modal-overlay: rgba(40, 42, 54, 0.8);
-          --table-cell-highlight: rgba(189, 147, 249, 0.4);
-          --table-cell-border: #bd93f9;
-          --md-focus-dim: rgba(248, 248, 242, 0.1);
-        }
-        .theme-midnight {
-          --md-paper: #11151c;
-          --md-text: #ffffff;
-          --md-secondary: #c7cdd6;
-          --md-accent: #3b82f6;
-          --md-border: rgba(255, 255, 255, 0.15);
-          --md-border-faint: rgba(255, 255, 255, 0.1);
-          --md-code-bg: #1a202c;
-          --md-code-sep: rgba(255, 255, 255, 0.12);
-          --md-quote-bg: rgba(59, 130, 246, 0.12);
-          --md-row-alt: rgba(255, 255, 255, 0.06);
-          --md-selection-bg: rgba(59, 130, 246, 0.25);
-          --md-selection-text: #ffffff;
-          --md-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
-          --md-radius: 16px;
-          --md-heading: #e2e8f0;
-          --modal-bg: #11151c;
-          --modal-border: rgba(255, 255, 255, 0.15);
-          --modal-overlay: rgba(11, 14, 20, 0.8);
-          --table-cell-highlight: rgba(59, 130, 246, 0.4);
-          --table-cell-border: #3b82f6;
-          --md-focus-dim: rgba(255, 255, 255, 0.1);
-        }
-        .theme-retro {
-          --md-paper: #0d0208;
-          --md-text: #00ff41;
-          --md-secondary: #008f11;
-          --md-accent: #ffff00;
-          --md-border: rgba(0, 255, 65, 0.3);
-          --md-border-faint: rgba(0, 255, 65, 0.2);
-          --md-code-bg: rgba(0, 255, 65, 0.06);
-          --md-code-sep: rgba(0, 255, 65, 0.25);
-          --md-quote-bg: rgba(0, 255, 65, 0.08);
-          --md-row-alt: rgba(0, 255, 65, 0.05);
-          --md-selection-bg: rgba(0, 255, 65, 0.25);
-          --md-selection-text: #00ff41;
-          --md-shadow: 0 12px 32px rgba(0, 255, 65, 0.12);
-          --md-radius: 16px;
-          --md-heading: #ffff00;
-          --modal-bg: #0d0208;
-          --modal-border: rgba(0, 255, 65, 0.3);
-          --modal-overlay: rgba(13, 2, 8, 0.8);
-          --table-cell-highlight: rgba(0, 255, 65, 0.4);
-          --table-cell-border: #00ff41;
-          --md-focus-dim: rgba(0, 255, 65, 0.1);
-        }
+        /* Absolutely Theme - Removed */
         .glass {
           @apply bg-apple-sidebar backdrop-blur-xl border-r border-black/10;
         }
@@ -366,156 +346,101 @@
         --color-apple-accent: #0a84ff;
       }
 
-      /* Nord Theme */
-      .theme-nord {
-        --color-apple-bg: #2e3440;
-        --color-apple-sidebar: rgba(59, 66, 82, 0.8);
-        --color-apple-text: #eceff4;
-        --color-apple-secondary: #d8dee9;
-        --color-apple-accent: #88c0d0;
+      /* Matrix Theme */
+      .theme-matrix {
+        --color-apple-bg: #0C170E;
+        --color-apple-sidebar: rgba(12, 23, 14, 0.9);
+        --color-apple-text: #B8FFCA;
+        --color-apple-secondary: #5E8C6A;
+        --color-apple-accent: #1EFF5A;
       }
-      .theme-nord .panel {
-        @apply bg-[#3b4252] border-[#4c566a]/30;
+      .theme-matrix .panel {
+        @apply bg-[#0C170E] border-[#1EFF5A]/30;
       }
-      .theme-nord .panel-header {
-        @apply bg-gradient-to-b from-[#434c5e] to-transparent border-[#4c566a]/50;
+      .theme-matrix .panel-header {
+        @apply bg-gradient-to-b from-[#0F1F12] to-transparent border-[#1EFF5A]/30;
       }
-      .theme-nord select,
-      .theme-nord input {
-        @apply bg-[#434c5e] text-[#eceff4] border-[#4c566a];
+      .theme-matrix select,
+      .theme-matrix input {
+        @apply bg-[#0F1F12] text-[#B8FFCA] border-[#1EFF5A]/30;
       }
-
-      .theme-nord .dropdown-item:hover,
-      .theme-nord #command-palette .item:hover,
-      .theme-nord #command-palette .item.active {
-        @apply bg-[#88c0d0] text-[#2e3440]!;
+      .theme-matrix .dropdown-item:hover,
+      .theme-matrix #command-palette .item:hover,
+      .theme-matrix #command-palette .item.active {
+        @apply bg-[#1EFF5A] text-[#0C170E]!;
       }
-      .theme-nord .dropdown-item {
-        @apply text-[#eceff4] bg-transparent;
-      }
-
-      /* Dracula Theme */
-      .theme-dracula {
-        --color-apple-bg: #282a36;
-        --color-apple-sidebar: rgba(68, 71, 90, 0.8);
-        --color-apple-text: #f8f8f2;
-        --color-apple-secondary: #6272a4;
-        --color-apple-accent: #bd93f9;
-      }
-      .theme-dracula .panel {
-        @apply bg-[#282a36] border-[#44475a]/50;
-      }
-      .theme-dracula .panel-header {
-        @apply bg-gradient-to-b from-[#44475a]/30 to-transparent border-[#44475a];
-      }
-      .theme-dracula select,
-      .theme-dracula input {
-        @apply bg-[#44475a] text-[#f8f8f2] border-[#6272a4]/50;
+      .theme-matrix .dropdown-item {
+        @apply text-[#B8FFCA] bg-transparent;
       }
 
-      .theme-dracula .dropdown-item:hover,
-      .theme-dracula #command-palette .item:hover,
-      .theme-dracula #command-palette .item.active {
-        @apply bg-[#bd93f9] text-[#282a36]!;
+      /* Notes Theme (Early Apple Notes) */
+      .theme-notes {
+        --color-apple-bg: #4A3B2A;
+        --color-apple-sidebar: #3D3022;
+        --color-apple-text: #FBF0D9;
+        --color-apple-secondary: #DCC8B3;
+        --color-apple-accent: #D4A017;
       }
-      .theme-dracula .dropdown-item {
-        @apply text-[#f8f8f2] bg-transparent;
+      .theme-notes .panel {
+        @apply bg-[#FBF0D9] border-[#D4A017]/30;
       }
-
-      /* Midnight Theme */
-      .theme-midnight {
-        --color-apple-bg: #0b0e14;
-        --color-apple-sidebar: rgba(17, 21, 28, 0.85);
-        --color-apple-text: #ffffff;
-        --color-apple-secondary: #4b5563;
-        --color-apple-accent: #3b82f6;
+      .theme-notes .panel-header {
+        @apply bg-gradient-to-b from-[#F2E6CF] to-transparent border-[#D4A017]/20;
       }
-      .theme-midnight .panel {
-        @apply bg-[#11151c] border-white/5;
+      .theme-notes select,
+      .theme-notes input {
+        @apply bg-[#F2E6CF] text-[#4A3B2A] border-[#D4A017]/30;
       }
-      .theme-midnight .panel-header {
-        @apply bg-gradient-to-b from-white/[0.03] to-transparent border-white/10;
+      .theme-notes .dropdown-item {
+        @apply text-[#4A3B2A] bg-transparent;
       }
-      .theme-midnight select,
-      .theme-midnight input {
-        @apply bg-[#1a202c] text-white border-white/10;
+      .theme-notes .dropdown-item:hover,
+      .theme-notes #command-palette .item:hover,
+      .theme-notes #command-palette .item.active {
+        @apply bg-[#D4A017] text-[#4A3B2A]!;
       }
-
-      .theme-midnight .dropdown-item:hover,
-      .theme-midnight #command-palette .item:hover,
-      .theme-midnight #command-palette .item.active {
-        @apply bg-apple-accent text-white!;
+      .theme-notes .header-btn {
+        @apply text-[#4A3B2A] hover:bg-[#D4A017]/20;
       }
-      .theme-midnight .dropdown-item {
-        @apply text-white bg-transparent;
+      .theme-notes .text-apple-secondary {
+        @apply text-[#4A3B2A]/80;
       }
-
-      /* Retro Theme */
-      .theme-retro {
-        --color-apple-bg: #0d0208;
-        --color-apple-sidebar: rgba(0, 59, 0, 0.1);
-        --color-apple-text: #00ff41;
-        --color-apple-secondary: #008f11;
-        --color-apple-accent: #00ff41;
-        --font-sans: "SF Mono", "Fira Code", monospace;
+      .theme-notes .panel-header h2,
+      .theme-notes .panel-header h3 {
+        @apply text-[#4A3B2A];
       }
-      .theme-retro .panel {
-        @apply bg-[#0d0208] border-[#00ff41]/30;
-      }
-      .theme-retro .panel-header {
-        @apply bg-black border-[#00ff41]/50;
-      }
-      .theme-retro select,
-      .theme-retro input {
-        @apply bg-black text-[#00ff41] border-[#00ff41]/50;
-      }
-      .theme-retro .markdown-body h1,
-      .theme-retro .markdown-body h2,
-      .theme-retro .markdown-body h3,
-      .theme-retro .markdown-body h4,
-      .theme-retro .markdown-body h5,
-      .theme-retro .markdown-body h6,
-      .theme-retro .markdown-body strong,
-      .theme-retro .markdown-body b {
-        @apply text-[#ffff00];
-      }
-      .theme-retro .markdown-body h1 {
-        @apply border-[#ffff00]/30;
+      .theme-notes .file-item:hover {
+        @apply bg-[#D4A017]/10;
       }
 
-      .theme-retro .dropdown-item:hover,
-      .theme-retro #command-palette .item:hover,
-      .theme-retro #command-palette .item.active {
-        @apply bg-[#00ff41] text-[#0d0208]!;
+      /* Everforest Theme */
+      .theme-everforest {
+        --color-apple-bg: #2D353B;
+        --color-apple-sidebar: rgba(45, 53, 59, 0.9);
+        --color-apple-text: #D3C6AA;
+        --color-apple-secondary: #9DA9A0;
+        --color-apple-accent: #A7C080;
       }
-      .theme-retro .dropdown-item {
-        @apply text-[#00ff41] bg-transparent;
+      .theme-everforest .panel {
+        @apply bg-[#2D353B] border-[#A7C080]/30;
       }
-      /* Sepia Theme */
-      .theme-sepia .panel {
-        @apply bg-[#f7f1e3] border-[#7a6a5e]/30;
+      .theme-everforest .panel-header {
+        @apply bg-gradient-to-b from-[#333C43] to-transparent border-[#A7C080]/30;
       }
-      .theme-sepia .panel-header {
-        @apply bg-gradient-to-b from-[#efe7d8] to-transparent border-[#7a6a5e]/40;
+      .theme-everforest select,
+      .theme-everforest input {
+        @apply bg-[#333C43] text-[#D3C6AA] border-[#A7C080]/30;
       }
-      .theme-sepia select,
-      .theme-sepia input {
-        @apply bg-[#efe7d8] text-[#3b2f2f] border-[#7a6a5e]/40;
+      .theme-everforest .dropdown-item:hover,
+      .theme-everforest #command-palette .item:hover,
+      .theme-everforest #command-palette .item.active {
+        @apply bg-[#A7C080] text-[#2D353B]!;
       }
-      .theme-sepia .dropdown-item:hover,
-      .theme-sepia #command-palette .item:hover,
-      .theme-sepia #command-palette .item.active {
-        @apply bg-[#8b6b3d] text-[#f7f1e3]!;
+      .theme-everforest .dropdown-item {
+        @apply text-[#D3C6AA] bg-transparent;
       }
-      .theme-sepia .dropdown-item {
-        @apply text-[#3b2f2f] bg-transparent;
-      }
-      .theme-sepia .header-btn:hover {
-        @apply bg-[#efe7d8] text-[#3b2f2f];
-      }
-      .theme-sepia .file-item:hover {
-        @apply bg-[#efe7d8];
-      }
+
+      /* Absolutely Theme - Removed */
 
       /* Common Theme Overrides */
       [class^="theme-"] .panel {
@@ -958,7 +883,7 @@
               type="text"
               id="global-search-input"
               placeholder="Search guides..."
-              class="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-apple-accent/30 rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none transition-all"
+              class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 dark:border-transparent focus:border-apple-accent/30 rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none transition-all"
             />
             <button
               id="clear-search"
@@ -1485,15 +1410,14 @@
           <div class="flex items-center gap-2">
             <select
               id="theme-select"
-              class="text-[11px] px-2 py-1 rounded-md border border-black/10 outline-none transition-colors"
+              class="w-12 text-[11px] px-1 py-1 rounded-md border border-black/10 outline-none transition-colors"
             >
               <option value="light">Light</option>
               <option value="dark">Dark</option>
-              <option value="nord">Nord</option>
-              <option value="dracula">Dracula</option>
-              <option value="midnight">Midnight</option>
-              <option value="retro">Retro</option>
-              <option value="sepia">Sepia</option>
+              <option value="matrix">Matrix</option>
+              <option value="notes">Notes</option>
+              <option value="everforest">Everforest</option>
+              <option value="absolutely">Absolutely</option>
             </select>
             <input
               type="number"
@@ -4511,28 +4435,26 @@
         // Remove all existing theme classes
         document.body.classList.remove(
           "theme-dark",
+          "theme-matrix",
+          "theme-notes",
+          "theme-everforest",
           "theme-nord",
-          "theme-dracula",
           "theme-midnight",
           "theme-retro",
           "theme-sepia",
         );
 
         // Add the new theme class if it's not 'light'
-        const darkThemes = new Set([
-          "dark",
-          "nord",
-          "dracula",
-          "midnight",
-          "retro",
-        ]);
-        const isDark = darkThemes.has(theme);
-        if (isDark) {
+        if (theme !== "light") {
           document.body.classList.add(`theme-${theme}`);
         }
-        if (theme === "sepia") {
-          document.body.classList.add("theme-sepia");
-        }
+
+        const darkThemes = new Set([
+          "dark",
+          "matrix",
+          "everforest",
+        ]);
+        const isDark = darkThemes.has(theme);
 
         // Update highlight.js theme
         const hljsLink = document.getElementById("hljs-style");
@@ -4548,11 +4470,7 @@
 
         // Update Mermaid theme
         if (window.mermaid) {
-          const mermaidTheme = isDark
-            ? "dark"
-            : theme === "sepia"
-              ? "neutral"
-              : "default";
+          const mermaidTheme = isDark ? "dark" : "default";
           mermaid.initialize({ theme: mermaidTheme });
           updatePreview();
         }
