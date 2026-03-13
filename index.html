@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -967,6 +967,7 @@
       opacity: 0;
       transition: opacity var(--duration-base) var(--ease);
       display: none;
+      z-index: 10;
     }
     #find-overlay.active { display: block; opacity: 1; }
 
@@ -1593,6 +1594,11 @@
     .notification.hide { transform: translateY(8px); opacity: 0; }
 
     /* ============================================================
+       UTILITY
+    ============================================================ */
+    .hidden { display: none !important; }
+
+    /* ============================================================
        PRINT
     ============================================================ */
     @media print {
@@ -1646,7 +1652,7 @@
       <div id="search-results"></div>
     </nav>
 
-    <div class="history-section">
+    <div class="history-section" id="history-section">
       <div class="history-header">
         <span class="panel-title">History</span>
         <button class="icon-btn danger" id="clear-history" title="Clear History"><i class="fas fa-trash-alt"></i></button>
@@ -2217,18 +2223,34 @@
     });
 
     explorer.addEventListener('contextmenu', e => {
-      if (directoryHandle) return;
       e.preventDefault();
-      if (!e.target.closest('.file-item')) { rightClickedEntry = null; showCtxMenu(e.clientX, e.clientY, 'blank'); }
+      const fileItem = e.target.closest('.file-item');
+      if (fileItem && fileItem.dataset.type) {
+        // file or folder item in DB mode
+        rightClickedEntry = { path: fileItem.dataset.path, type: fileItem.dataset.type };
+        showCtxMenu(e.clientX, e.clientY, fileItem.dataset.type);
+      } else if (!fileItem) {
+        rightClickedEntry = null;
+        showCtxMenu(e.clientX, e.clientY, 'blank');
+      }
     });
 
     document.addEventListener('click', () => {
       explorerContextMenu.classList.remove('open');
     });
 
-    document.getElementById('history-section').addEventListener('contextmenu', e => {
-      if (!e.target.closest('.history-item')) { e.preventDefault(); rightClickedEntry = null; showCtxMenu(e.clientX, e.clientY, 'blank'); }
-    });
+    const historySec = document.getElementById('history-section');
+    if (historySec) {
+      historySec.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const item = e.target.closest('.history-item');
+        if (!item) {
+          rightClickedEntry = null;
+          showCtxMenu(e.clientX, e.clientY, 'blank');
+        }
+        // if on a history item, the item's own contextmenu handler fires
+      });
+    }
 
     let historyTimeout;
     editor.addEventListener('input', () => {
@@ -3263,13 +3285,15 @@
 
   // ─── Theme ───
   function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme === 'light' ? '' : theme);
+    // Set data-theme on both html and body so all CSS selectors work
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
     const dark = ['dark','dusk','forest','matrix'].includes(theme);
     const hljsLink = document.getElementById('hljs-style');
     if (hljsLink) hljsLink.href = dark
       ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css'
       : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css';
-    if (window.mermaid) { mermaid.initialize({ theme: dark ? 'dark' : 'default' }); updatePreview(); }
+    if (window.mermaid) { mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'default', securityLevel: 'loose' }); updatePreview(); }
     if (window.idbKeyval) idbKeyval.set('md-theme', theme);
   }
 
@@ -3291,7 +3315,14 @@
     themeSelect.value = theme;
     fontSizeInput.value = size;
     autosaveToggle.checked = autosave;
-    applyTheme(theme);
+    // Apply theme by setting attribute (no CSS transition flash on load)
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+    const dark = ['dark','dusk','forest','matrix'].includes(theme);
+    const hljsLink = document.getElementById('hljs-style');
+    if (hljsLink) hljsLink.href = dark
+      ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css'
+      : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css';
     applyFontSize(size);
   }
 
@@ -3305,6 +3336,13 @@
     requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')); });
     setTimeout(() => { el.classList.remove('show'); el.classList.add('hide'); setTimeout(() => el.remove(), 500); }, 2800);
   }
+
+  // ─── Expose functions needed by inline onclick= handlers ───
+  window.format = format;
+  window.toggleFind = toggleFind;
+  window.toggleHelp = toggleHelp;
+  window.toggleMeta = toggleMeta;
+  window.toggleTOC = toggleTOC;
 
   // ─── Boot ───
   init();
