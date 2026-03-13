@@ -74,8 +74,7 @@
           @apply bg-white/10 hover:bg-white/20;
         }
 
-        .theme-matrix ::-webkit-scrollbar-thumb,
-        .theme-notes ::-webkit-scrollbar-thumb {
+        .theme-matrix ::-webkit-scrollbar-thumb {
           @apply bg-apple-accent/30 hover:bg-apple-accent/50;
         }
       }
@@ -188,42 +187,6 @@
           --table-cell-highlight: rgba(30, 255, 90, 0.2);
           --table-cell-border: #1EFF5A;
           --md-focus-dim: rgba(30, 255, 90, 0.1);
-        }
-        .theme-notes {
-          --md-paper: #FBF0D9;
-          --md-text: #2C2C2C;
-          --md-secondary: #8F8F8F;
-          --md-accent: #D4A017;
-          --md-border: rgba(212, 160, 23, 0.2);
-          --md-border-faint: rgba(212, 160, 23, 0.1);
-          --md-code-bg: #F2E6CF;
-          --md-code-sep: rgba(212, 160, 23, 0.1);
-          --md-quote-bg: rgba(212, 160, 23, 0.1);
-          --md-row-alt: rgba(212, 160, 23, 0.05);
-          --md-selection-bg: rgba(212, 160, 23, 0.2);
-          --md-selection-text: #2C2C2C;
-          --md-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-          --md-radius: 4px;
-          --md-heading: #4A3B2A;
-          --modal-border: rgba(212, 160, 23, 0.2);
-          --modal-bg: #FBF0D9;
-          --modal-overlay: rgba(74, 59, 42, 0.5);
-          --modal-input-bg: #F2E6CF;
-          --modal-input-border: rgba(212, 160, 23, 0.2);
-          --modal-input-text: #4A3B2A;
-          --modal-btn-bg: #D4A017;
-          --modal-btn-text: #FBF0D9;
-          --modal-btn-hover-bg: #B88A14;
-          --modal-btn-border: transparent;
-          --modal-toggle-bg: #F2E6CF;
-          --modal-toggle-border: rgba(212, 160, 23, 0.2);
-          --modal-hint-text: #8F8F8F;
-          --modal-counter-text: #8F8F8F;
-          --modal-close-color: #8F8F8F;
-          --modal-focus-ring: #D4A017;
-          --table-cell-highlight: rgba(212, 160, 23, 0.3);
-          --table-cell-border: #D4A017;
-          --md-focus-dim: rgba(44, 44, 44, 0.1);
         }
         .theme-everforest {
           --md-paper: #2D353B;
@@ -372,32 +335,6 @@
         @apply text-[#B8FFCA] bg-transparent;
       }
 
-      /* Notes Theme (Early Apple Notes) */
-      .theme-notes {
-        --color-apple-bg: #4A3B2A;
-        --color-apple-sidebar: #3D3022;
-        --color-apple-text: #FBF0D9;
-        --color-apple-secondary: #DCC8B3;
-        --color-apple-accent: #D4A017;
-      }
-      .theme-notes .panel {
-        @apply bg-[#FBF0D9] border-[#D4A017]/30;
-      }
-      .theme-notes .panel-header {
-        @apply bg-gradient-to-b from-[#F2E6CF] to-transparent border-[#D4A017]/20;
-      }
-      .theme-notes select,
-      .theme-notes input {
-        @apply bg-[#F2E6CF] text-[#4A3B2A] border-[#D4A017]/30;
-      }
-      .theme-notes .dropdown-item {
-        @apply text-[#4A3B2A] bg-transparent;
-      }
-      .theme-notes .dropdown-item:hover,
-      .theme-notes #command-palette .item:hover,
-      .theme-notes #command-palette .item.active {
-        @apply bg-[#D4A017] text-[#4A3B2A]!;
-      }
       .theme-light .panel {
         @apply bg-white border-black/10;
       }
@@ -437,48 +374,6 @@
       .theme-light .divider {
         @apply bg-black/20;
       }
-      .theme-notes .header-btn {
-        @apply text-[#4A3B2A] hover:bg-[#D4A017]/20;
-      }
-      .theme-notes .search-input {
-        @apply border-[#4A3B2A]/20;
-      }
-
-      .theme-notes .divider {
-        @apply bg-[#4A3B2A]/20;
-      }
-
-      .theme-notes .markdown-body img {
-        @apply border-[#4A3B2A]/20;
-      }
-      .theme-notes .attachment-chip {
-        @apply bg-[#4A3B2A]/10 border-[#4A3B2A]/20;
-      }
-      .theme-notes .callout-info {
-        @apply bg-blue-500/10 border-blue-500/30;
-      }
-      .theme-notes .callout-success {
-        @apply bg-green-500/10 border-green-500/30;
-      }
-      .theme-notes .callout-warning {
-        @apply bg-yellow-500/10 border-yellow-500/30;
-      }
-      .theme-notes .callout-note {
-        @apply bg-purple-500/10 border-purple-500/30;
-      }
-
-      .theme-notes .text-apple-secondary {
-        @apply text-[#4A3B2A]/80;
-      }
-      .theme-notes .panel-header h2,
-      .theme-notes .panel-header h3,
-      .theme-notes #current-filename {
-        @apply text-[#4A3B2A];
-      }
-      .theme-notes .file-item:hover {
-        @apply bg-[#D4A017]/10;
-      }
-
       /* Everforest Theme */
       .theme-everforest {
         --color-apple-bg: #2D353B;
@@ -1481,7 +1376,6 @@
               <option value="light">Light</option>
               <option value="dark">Dark</option>
               <option value="matrix">Matrix</option>
-              <option value="notes">Notes</option>
               <option value="everforest">Everforest</option>
             </select>
             <input
@@ -4501,7 +4395,6 @@
         document.body.classList.remove(
           "theme-dark",
           "theme-matrix",
-          "theme-notes",
           "theme-everforest",
           "theme-nord",
           "theme-midnight",
