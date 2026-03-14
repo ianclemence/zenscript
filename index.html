@@ -2868,7 +2868,12 @@
             <button class="toolbar-btn" id="btn-attach" title="Attach File">
               <i class="fas fa-paperclip"></i>
             </button>
-            <input type="file" id="attach-input" style="display: none" />
+            <input
+              type="file"
+              id="attach-input"
+              accept="image/*"
+              style="display: none"
+            />
           </div>
 
           <!-- Right actions -->
@@ -3494,6 +3499,7 @@
       let tabs = []; // [{id, name, content, fileHandle, fileSource, unsaved}]
       let activeTabId = null;
       let tabIdCounter = 0;
+      let tabPersistTimer = null;
       // Writing goal state
       let writingGoal = 0;
       // Custom CSS state
@@ -3808,9 +3814,13 @@
         setupMobile();
         loadPreferences();
 
-        // Try to restore last active file
+        // Try to restore tabs first
         let restored = false;
         if (window.idbKeyval) {
+          restored = await restoreTabsState();
+        }
+
+        if (!restored && window.idbKeyval) {
           const lastFile = await idbKeyval.get("md-last-active-file");
           if (lastFile && lastFile.source === "db" && lastFile.path) {
             const entry = await loadFromDB(lastFile.path);
@@ -4670,6 +4680,7 @@
           const tab = tabs.find((t) => t.id === activeTabId);
           if (tab) tab.content = editor.value;
         }
+        scheduleTabPersistence();
       }
 
       // ─── File System ───
@@ -6431,6 +6442,12 @@
         if (f) await insertFileReference(f);
         e.target.value = "";
       }
+      function isImageAttachment(file) {
+        if (!file) return false;
+        if (file.type && file.type.startsWith("image/")) return true;
+        const name = (file.name || "").toLowerCase();
+        return /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(name);
+      }
       function createAttachmentId() {
         return `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       }
@@ -6444,7 +6461,11 @@
       }
       async function insertFileReference(f) {
         if (!f) return;
-        const isImg = f.type && f.type.startsWith("image/");
+        const isImg = isImageAttachment(f);
+        if (!isImg) {
+          notify("Only image attachments are allowed");
+          return;
+        }
         let insert = "";
         try {
           if (window.idbKeyval) {
@@ -6790,6 +6811,76 @@
       }
 
       // ─── Multi-Tab System ───
+      function scheduleTabPersistence() {
+        if (!window.idbKeyval) return;
+        if (tabPersistTimer) clearTimeout(tabPersistTimer);
+        tabPersistTimer = setTimeout(() => {
+          persistTabsState();
+        }, 600);
+      }
+
+      function serializeTabForStorage(tab) {
+        return {
+          id: tab.id,
+          name: tab.name,
+          content: tab.content,
+          filePath:
+            tab.filePath ||
+            (tab.fileHandle
+              ? tab.fileHandle.path || tab.fileHandle.name
+              : null),
+          fileSource: tab.fileSource || "db",
+          unsaved: !!tab.unsaved,
+          historyStack: Array.isArray(tab.historyStack)
+            ? tab.historyStack
+            : [{ content: tab.content || "", selection: { start: 0, end: 0 } }],
+          historyIndex:
+            typeof tab.historyIndex === "number" ? tab.historyIndex : 0,
+        };
+      }
+
+      function persistTabsState() {
+        if (!window.idbKeyval) return;
+        saveActiveTabState();
+        const serialized = tabs.map(serializeTabForStorage);
+        const maxId = serialized.reduce(
+          (acc, t) => Math.max(acc, t.id || 0),
+          0,
+        );
+        idbKeyval.set("md-open-tabs", {
+          tabs: serialized,
+          activeTabId,
+          tabIdCounter: Math.max(tabIdCounter, maxId),
+        });
+      }
+
+      async function restoreTabsState() {
+        if (!window.idbKeyval) return false;
+        const stored = await idbKeyval.get("md-open-tabs");
+        if (!stored || !Array.isArray(stored.tabs) || !stored.tabs.length)
+          return false;
+        tabs = stored.tabs.map((t) => ({
+          id: t.id,
+          name: t.name || "Untitled.md",
+          content: t.content || "",
+          fileHandle: null,
+          filePath: t.filePath || null,
+          fileSource: t.fileSource || "db",
+          unsaved: !!t.unsaved,
+          historyStack:
+            Array.isArray(t.historyStack) && t.historyStack.length
+              ? t.historyStack
+              : [{ content: t.content || "", selection: { start: 0, end: 0 } }],
+          historyIndex: typeof t.historyIndex === "number" ? t.historyIndex : 0,
+        }));
+        const maxId = tabs.reduce((acc, t) => Math.max(acc, t.id || 0), 0);
+        tabIdCounter = stored.tabIdCounter || maxId;
+        const targetId = stored.activeTabId;
+        const targetTab = tabs.find((t) => t.id === targetId) || tabs[0];
+        if (targetTab) activateTab(targetTab.id);
+        return true;
+      }
+
       function newTab(name, content, fileHandle, fileSource) {
         // Save current tab state first
         if (activeTabId !== null) saveActiveTabState();
@@ -6965,6 +7056,7 @@
           );
           tabBar.insertBefore(el, tabNewBtn);
         });
+        scheduleTabPersistence();
       }
 
       // Patch markAsUnsaved to also update tab state
