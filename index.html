@@ -5205,22 +5205,34 @@
       // ─── PDF Export ───
       async function exportToPDF() {
         const element = document.getElementById("preview-content");
+        const originalHeight = element.style.height;
+        const originalOverflow = element.style.overflow;
         const filename = (
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(/\.md$/, ".pdf");
         notify("Generating PDF…");
         try {
+          // Temporarily expand to full height for capture
+          element.style.height = "auto";
+          element.style.overflow = "visible";
+
           const { jsPDF } = window.jspdf;
           const pdf = new jsPDF("p", "mm", "a4");
           const pageW = pdf.internal.pageSize.getWidth(),
             pageH = pdf.internal.pageSize.getHeight();
           const margin = 15,
             contentW = pageW - 2 * margin;
+
           const canvas = await html2canvas(element, {
             scale: 2,
             useCORS: true,
             logging: false,
           });
+
+          // Restore styles immediately after capture
+          element.style.height = originalHeight;
+          element.style.overflow = originalOverflow;
+
           const imgData = canvas.toDataURL("image/jpeg", 0.95);
           const imgProps = pdf.getImageProperties(imgData);
           const imgH = (imgProps.height * contentW) / imgProps.width;
@@ -5240,17 +5252,25 @@
           pdf.save(filename);
           notify("PDF saved");
         } catch (err) {
+          element.style.height = originalHeight;
+          element.style.overflow = originalOverflow;
           notify("PDF failed: " + err.message);
         }
       }
 
       async function exportToImage() {
         const element = document.getElementById("preview-content");
+        const originalHeight = element.style.height;
+        const originalOverflow = element.style.overflow;
         const filename = (
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(/\.md$/, ".png");
         notify("Generating Image…");
         try {
+          // Temporarily expand to full height for capture
+          element.style.height = "auto";
+          element.style.overflow = "visible";
+
           const canvas = await html2canvas(element, {
             scale: 2,
             useCORS: true,
@@ -5259,12 +5279,19 @@
               .getPropertyValue("--preview-paper")
               .trim(),
           });
+
+          // Restore styles immediately after capture
+          element.style.height = originalHeight;
+          element.style.overflow = originalOverflow;
+
           const link = document.createElement("a");
           link.download = filename;
           link.href = canvas.toDataURL("image/png");
           link.click();
           notify("Image saved");
         } catch (err) {
+          element.style.height = originalHeight;
+          element.style.overflow = originalOverflow;
           notify("Image failed: " + err.message);
         }
       }
