@@ -3376,6 +3376,7 @@
       const searchResults = document.getElementById("search-results");
       const commandPalette = document.getElementById("command-palette");
       const explorer = document.getElementById("explorer");
+      const workspace = document.getElementById("workspace");
       const explorerContextMenu = document.getElementById(
         "explorer-context-menu",
       );
@@ -3921,6 +3922,30 @@
             document
               .querySelectorAll(".drop-target")
               .forEach((el) => el.classList.remove("drop-target"));
+          });
+        }
+
+        if (workspace) {
+          workspace.addEventListener("dragover", (e) => {
+            if (
+              e.dataTransfer &&
+              e.dataTransfer.types.includes("application/x-zenscript-path")
+            ) {
+              e.preventDefault();
+            }
+          });
+          workspace.addEventListener("drop", async (e) => {
+            if (!e.dataTransfer) return;
+            const path = e.dataTransfer.getData("application/x-zenscript-path");
+            if (!path) return;
+            e.preventDefault();
+            const source =
+              e.dataTransfer.getData("application/x-zenscript-source") || "db";
+            if (source === "fs") {
+              await openFileFromFsInTab(path);
+            } else {
+              await openFileFromDB(path, true);
+            }
           });
         }
 
@@ -4814,10 +4839,21 @@
               startInlineRename(node, li, nameSpan);
             });
             row.draggable = true;
-            row.addEventListener("dragstart", () => {
+            row.addEventListener("dragstart", (e) => {
               draggedEntryPath = node.path;
               draggedEntrySource = node.source || "db";
               row.classList.add("dragging");
+              if (e.dataTransfer) {
+                e.dataTransfer.setData(
+                  "application/x-zenscript-path",
+                  node.path,
+                );
+                e.dataTransfer.setData(
+                  "application/x-zenscript-source",
+                  node.source || "db",
+                );
+                e.dataTransfer.effectAllowed = "copy";
+              }
             });
             row.addEventListener("dragend", () => {
               draggedEntryPath = null;
@@ -6772,6 +6808,30 @@
           }
         }
         statusBar.textContent = `Opened: ${path}`;
+        syncExplorerActiveState();
+        renderHistory();
+      }
+
+      async function openFileFromFsInTab(path) {
+        const handle = fsEntryMap.get(path);
+        if (!handle) {
+          notify("File no longer available");
+          return;
+        }
+        if (isUnsaved) await saveSnapshot();
+        const existing = tabs.find(
+          (t) =>
+            t.fileHandle && (t.fileHandle.path || t.fileHandle.name) === path,
+        );
+        if (existing) {
+          activateTab(existing.id);
+          return;
+        }
+        const file = await handle.getFile();
+        const content = await file.text();
+        handle.path = path;
+        newTab(path, content, handle, "fs");
+        statusBar.textContent = `Opened ${path}`;
         syncExplorerActiveState();
         renderHistory();
       }
