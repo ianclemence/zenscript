@@ -23,6 +23,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
@@ -630,6 +631,45 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .file-item .file-caret {
+        width: 10px;
+        font-size: 9px;
+        color: var(--text-tertiary);
+        opacity: 0;
+        transition: opacity var(--duration-fast) var(--ease);
+      }
+      .file-item.folder .file-caret {
+        opacity: 1;
+      }
+      .file-item.collapsed .file-caret {
+        transform: rotate(-90deg);
+      }
+      .file-item .file-icon {
+        width: 12px;
+        text-align: center;
+      }
+      .file-item[data-depth="1"] {
+        padding-left: 18px;
+      }
+      .file-item[data-depth="2"] {
+        padding-left: 27px;
+      }
+      .file-item[data-depth="3"] {
+        padding-left: 36px;
+      }
+      .file-item[data-depth="4"] {
+        padding-left: 45px;
+      }
+      .file-item[data-depth="5"] {
+        padding-left: 54px;
+      }
+      .file-item.dragging {
+        opacity: 0.45;
+      }
+      .file-item.drop-target {
+        background: var(--accent-muted);
+        border: 1px dashed var(--accent);
+      }
       .file-item .file-action {
         opacity: 0;
         background: none;
@@ -670,8 +710,8 @@
         border-top: 1px solid var(--border-faint);
         display: flex;
         flex-direction: column;
-        height: 32%;
-        min-height: 140px;
+        height: 36%;
+        min-height: 180px;
       }
 
       .history-header {
@@ -685,18 +725,82 @@
       .history-list {
         flex: 1;
         overflow-y: auto;
-        padding: 0 6px 6px;
+        padding: 2px 6px 6px;
       }
 
+      .history-file-group {
+        margin-bottom: 8px;
+      }
+      .history-file-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        border: none;
+        background: transparent;
+        padding: 6px 8px;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .history-file-header:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+      .history-file-header .caret {
+        width: 10px;
+        font-size: 9px;
+        color: var(--text-tertiary);
+      }
+      .history-file-group.collapsed .history-file-header .caret {
+        transform: rotate(-90deg);
+      }
+      .history-file-path {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .history-file-count {
+        font-size: 10px;
+        color: var(--text-tertiary);
+      }
+      .history-file-items {
+        margin-left: 14px;
+        padding-left: 10px;
+        border-left: 1px solid var(--border-faint);
+      }
+      .history-file-group.collapsed .history-file-items {
+        display: none;
+      }
       .history-item {
-        padding: 8px 9px;
+        position: relative;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 7px 8px 7px 6px;
         border-radius: var(--radius-md);
         cursor: pointer;
         border: 1px solid transparent;
         transition:
           background var(--duration-fast) var(--ease),
           border-color var(--duration-fast) var(--ease);
-        margin-bottom: 2px;
+        margin: 4px 0;
+      }
+      .history-item::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        margin-top: 4px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-muted);
+        flex-shrink: 0;
       }
       .history-item:hover {
         background: var(--surface-hover);
@@ -704,6 +808,10 @@
       .history-item.current {
         border-color: var(--accent-muted);
         background: var(--surface-active);
+      }
+      .history-item-content {
+        flex: 1;
+        min-width: 0;
       }
       .history-item-name {
         font-size: 11px;
@@ -720,6 +828,7 @@
       .history-item-meta {
         display: flex;
         justify-content: space-between;
+        gap: 8px;
         font-size: 10px;
         color: var(--text-tertiary);
       }
@@ -1498,6 +1607,39 @@
       .markdown-body ::selection {
         background: var(--preview-selection);
       }
+      .markdown-body .mermaid {
+        margin: 1.2em 0;
+        padding: 12px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-faint);
+        background: var(--surface-panel);
+        overflow-x: auto;
+      }
+      .markdown-body .mermaid svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .markdown-body .mermaid svg text,
+      .markdown-body .mermaid svg tspan,
+      .markdown-body .mermaid .label {
+        fill: var(--text-primary) !important;
+        color: var(--text-primary) !important;
+      }
+      .markdown-body .mermaid svg .node rect,
+      .markdown-body .mermaid svg .node circle,
+      .markdown-body .mermaid svg .node ellipse,
+      .markdown-body .mermaid svg .node polygon {
+        stroke: var(--border-strong) !important;
+      }
+      .markdown-body .mermaid svg .edgePath path,
+      .markdown-body .mermaid svg .flowchart-link,
+      .markdown-body .mermaid svg marker path {
+        stroke: var(--text-secondary) !important;
+      }
+      .markdown-body .mermaid svg .cluster rect {
+        fill: var(--surface-input) !important;
+        stroke: var(--border-strong) !important;
+      }
 
       /* Callouts */
       .callout {
@@ -1789,6 +1931,131 @@
         height: 1px;
         background: var(--border);
         margin: 4px 0;
+      }
+
+      #history-diff-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 380;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      #history-diff-modal.open {
+        display: flex;
+      }
+      .history-diff-dialog {
+        width: min(1100px, 100%);
+        height: min(700px, 90vh);
+        background: var(--surface-panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-2xl);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .history-diff-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-faint);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .history-diff-meta {
+        min-width: 0;
+        flex: 1;
+      }
+      .history-diff-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .history-diff-subtitle {
+        margin-top: 3px;
+        font-size: 10px;
+        color: var(--text-tertiary);
+      }
+      .history-diff-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .history-diff-btn {
+        border: 1px solid var(--border);
+        background: var(--surface-input);
+        color: var(--text-secondary);
+        border-radius: var(--radius-md);
+        font-size: 11px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .history-diff-btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--text-on-accent);
+      }
+      .history-diff-body {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .history-diff-pane {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .history-diff-pane + .history-diff-pane {
+        border-left: 1px solid var(--border-faint);
+      }
+      .history-diff-pane-title {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-faint);
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+      .history-diff-lines {
+        flex: 1;
+        overflow: auto;
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      .diff-line {
+        display: grid;
+        grid-template-columns: 46px 1fr;
+        align-items: start;
+      }
+      .diff-line-num {
+        color: var(--text-tertiary);
+        border-right: 1px solid var(--border-faint);
+        padding: 2px 8px;
+        text-align: right;
+        user-select: none;
+      }
+      .diff-line-text {
+        margin: 0;
+        padding: 2px 10px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .diff-line.add .diff-line-text {
+        background: rgba(52, 199, 89, 0.15);
+      }
+      .diff-line.remove .diff-line-text {
+        background: rgba(255, 59, 48, 0.16);
+      }
+      .diff-line.empty .diff-line-text {
+        color: transparent;
       }
 
       /* ============================================================
@@ -2888,6 +3155,39 @@
       <div id="explorer-menu-content"></div>
     </div>
 
+    <div id="history-diff-modal">
+      <div class="history-diff-dialog">
+        <div class="history-diff-header">
+          <div class="history-diff-meta">
+            <div class="history-diff-title" id="history-diff-title"></div>
+            <div class="history-diff-subtitle" id="history-diff-subtitle"></div>
+          </div>
+          <div class="history-diff-actions">
+            <button class="history-diff-btn primary" id="history-diff-restore">
+              Restore Version
+            </button>
+            <button class="history-diff-btn" id="history-diff-close">
+              Close
+            </button>
+          </div>
+        </div>
+        <div class="history-diff-body">
+          <div class="history-diff-pane">
+            <div class="history-diff-pane-title" id="history-diff-left-title">
+              Snapshot
+            </div>
+            <div class="history-diff-lines" id="history-diff-left"></div>
+          </div>
+          <div class="history-diff-pane">
+            <div class="history-diff-pane-title" id="history-diff-right-title">
+              Working Tree
+            </div>
+            <div class="history-diff-lines" id="history-diff-right"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ─── HELP MODAL ─── -->
     <div id="help-modal">
       <div class="modal-box">
@@ -3042,13 +3342,7 @@
 ============================================================ -->
     <script>
       // ─── Mermaid init ───
-      if (window.mermaid) {
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose",
-        });
-      }
+      if (window.mermaid) configureMermaid();
 
       // ─── DOM refs ───
       const editor = document.getElementById("editor");
@@ -3089,6 +3383,23 @@
       const formatBtn = document.getElementById("format-btn");
       const historyList = document.getElementById("history-list");
       const clearHistoryBtn = document.getElementById("clear-history");
+      const historyDiffModal = document.getElementById("history-diff-modal");
+      const historyDiffTitle = document.getElementById("history-diff-title");
+      const historyDiffSubtitle = document.getElementById(
+        "history-diff-subtitle",
+      );
+      const historyDiffLeft = document.getElementById("history-diff-left");
+      const historyDiffRight = document.getElementById("history-diff-right");
+      const historyDiffLeftTitle = document.getElementById(
+        "history-diff-left-title",
+      );
+      const historyDiffRightTitle = document.getElementById(
+        "history-diff-right-title",
+      );
+      const historyDiffClose = document.getElementById("history-diff-close");
+      const historyDiffRestore = document.getElementById(
+        "history-diff-restore",
+      );
       const emojiMenu = document.getElementById("emoji-menu");
       const helpModal = document.getElementById("help-modal");
       const downloadToggleBtn = document.getElementById("download-toggle");
@@ -3152,6 +3463,7 @@
       // ─── State ───
       let directoryHandle = null;
       let currentFileHandle = null;
+      let currentFilePath = null;
       let isUnsaved = false;
       let autosaveTimer = null;
       let isFocusMode = false;
@@ -3163,6 +3475,13 @@
       let isMetaOpen = false;
       let isRenaming = false;
       let isCreating = false;
+      let draggedEntryPath = null;
+      let draggedEntrySource = null;
+      let rightClickedEntrySource = "db";
+      let selectedHistoryIndex = null;
+      const fsEntryMap = new Map();
+      const collapsedExplorerFolders = new Set();
+      const collapsedHistoryGroups = new Set();
 
       // Multi-tab state
       let tabs = []; // [{id, name, content, fileHandle, fileSource, unsaved}]
@@ -3172,6 +3491,34 @@
       let writingGoal = 0;
       // Custom CSS state
       let isCustomCSSOpen = false;
+
+      function themeToken(name, fallback = "") {
+        const v = getComputedStyle(document.documentElement)
+          .getPropertyValue(name)
+          .trim();
+        return v || fallback;
+      }
+      function configureMermaid() {
+        if (!window.mermaid) return;
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "base",
+          securityLevel: "loose",
+          themeVariables: {
+            primaryColor: themeToken("--surface-input", "#eceef3"),
+            primaryTextColor: themeToken("--text-primary", "#1c1c1e"),
+            primaryBorderColor: themeToken("--border-strong", "#8e8e93"),
+            lineColor: themeToken("--text-secondary", "#6c6c70"),
+            textColor: themeToken("--text-primary", "#1c1c1e"),
+            mainBkg: themeToken("--surface-panel", "#ffffff"),
+            secondBkg: themeToken("--surface-input", "#f4f4f7"),
+            tertiaryColor: themeToken("--surface-hover", "#f0f0f4"),
+            clusterBkg: themeToken("--surface-input", "#f4f4f7"),
+            clusterBorder: themeToken("--border", "#d1d1d6"),
+            edgeLabelBackground: themeToken("--surface-panel", "#ffffff"),
+          },
+        });
+      }
 
       // ─── IndexedDB ───
       const DB_NAME = "GuideExplorerDB";
@@ -3537,14 +3884,15 @@
           e.preventDefault();
           const fileItem = e.target.closest(".file-item");
           if (fileItem && fileItem.dataset.type) {
-            // file or folder item in DB mode
             rightClickedEntry = {
               path: fileItem.dataset.path,
               type: fileItem.dataset.type,
             };
+            rightClickedEntrySource = fileItem.dataset.source || "db";
             showCtxMenu(e.clientX, e.clientY, fileItem.dataset.type);
           } else if (!fileItem) {
             rightClickedEntry = null;
+            rightClickedEntrySource = directoryHandle ? "fs" : "db";
             showCtxMenu(e.clientX, e.clientY, "blank");
           }
         });
@@ -3557,12 +3905,9 @@
         if (historySec) {
           historySec.addEventListener("contextmenu", (e) => {
             e.preventDefault();
-            const item = e.target.closest(".history-item");
-            if (!item) {
-              rightClickedEntry = null;
-              showCtxMenu(e.clientX, e.clientY, "blank");
+            if (!e.target.closest(".history-item")) {
+              explorerContextMenu.classList.remove("open");
             }
-            // if on a history item, the item's own contextmenu handler fires
           });
         }
 
@@ -3688,6 +4033,14 @@
         globalSearchInput.addEventListener("input", performGlobalSearch);
         clearSearchBtn.addEventListener("click", clearSearch);
         clearHistoryBtn.addEventListener("click", clearLocalHistory);
+        historyDiffClose.addEventListener("click", closeHistoryDiff);
+        historyDiffRestore.addEventListener("click", () => {
+          if (selectedHistoryIndex !== null)
+            restoreSnapshot(selectedHistoryIndex);
+        });
+        historyDiffModal.addEventListener("click", (e) => {
+          if (e.target === historyDiffModal) closeHistoryDiff();
+        });
 
         findNextBtn.addEventListener("click", findNext);
         replaceBtn.addEventListener("click", replaceCurrent);
@@ -4265,31 +4618,237 @@
       }
 
       // ─── File System ───
+      function joinPath(parent, name) {
+        return parent ? `${parent}/${name}` : name;
+      }
+      function getParentPath(path) {
+        const parts = path.split("/");
+        parts.pop();
+        return parts.join("/");
+      }
+      function pathDepth(path) {
+        return path ? path.split("/").length - 1 : 0;
+      }
+      function isPathVisible(path) {
+        if (!path.includes("/")) return true;
+        const parts = path.split("/");
+        let curr = "";
+        for (let i = 0; i < parts.length - 1; i++) {
+          curr = joinPath(curr, parts[i]);
+          if (collapsedExplorerFolders.has(curr)) return false;
+        }
+        return true;
+      }
+      function ensureDbFolderEntries(entries) {
+        const out = [...entries];
+        const known = new Set(entries.map((e) => e.path));
+        entries.forEach((entry) => {
+          const parts = entry.path.split("/");
+          let acc = "";
+          for (let i = 0; i < parts.length - 1; i++) {
+            acc = joinPath(acc, parts[i]);
+            if (!known.has(acc)) {
+              known.add(acc);
+              out.push({ path: acc, type: "folder", content: "" });
+            }
+          }
+        });
+        return out;
+      }
+      async function scanFsRecursive(dirHandle, parent = "") {
+        const entries = [];
+        for await (const entry of dirHandle.values()) {
+          const path = joinPath(parent, entry.name);
+          if (entry.kind === "directory") {
+            entries.push({ path, type: "folder", source: "fs", handle: entry });
+            const child = await scanFsRecursive(entry, path);
+            entries.push(...child);
+          } else {
+            entries.push({ path, type: "file", source: "fs", handle: entry });
+          }
+        }
+        return entries;
+      }
+      function renderExplorerEntries(entries) {
+        fileList.innerHTML = "";
+        entries
+          .sort((a, b) => {
+            const depthA = pathDepth(a.path);
+            const depthB = pathDepth(b.path);
+            if (depthA !== depthB) return depthA - depthB;
+            if (a.type === "folder" && b.type !== "folder") return -1;
+            if (a.type !== "folder" && b.type === "folder") return 1;
+            return a.path.localeCompare(b.path);
+          })
+          .forEach((entry) => {
+            if (!isPathVisible(entry.path)) return;
+            const li = document.createElement("li");
+            li.className = `file-item ${entry.type === "folder" ? "folder" : ""} ${collapsedExplorerFolders.has(entry.path) ? "collapsed" : ""}`;
+            li.dataset.path = entry.path;
+            li.dataset.type = entry.type;
+            li.dataset.source = entry.source || (directoryHandle ? "fs" : "db");
+            li.dataset.depth = String(Math.min(pathDepth(entry.path), 5));
+            li.draggable = entry.type === "file";
+            const icon =
+              entry.type === "folder" ? "fas fa-folder" : "far fa-file-alt";
+            const name = entry.path.split("/").pop();
+            li.innerHTML = `<span class="file-caret"><i class="fas fa-chevron-down"></i></span><i class="file-icon ${icon}"></i><span class="file-name">${name}</span><button class="file-action"><i class="fas fa-times"></i></button>`;
+            const nameSpan = li.querySelector(".file-name");
+            const actionBtn = li.querySelector(".file-action");
+            const source = li.dataset.source;
+            if (entry.type === "folder") {
+              nameSpan.addEventListener("click", () => {
+                currentFolderPath = entry.path;
+                if (collapsedExplorerFolders.has(entry.path))
+                  collapsedExplorerFolders.delete(entry.path);
+                else collapsedExplorerFolders.add(entry.path);
+                refreshExplorer();
+              });
+              li.addEventListener("dragover", (e) => {
+                if (!draggedEntryPath || draggedEntryPath === entry.path)
+                  return;
+                e.preventDefault();
+                li.classList.add("drop-target");
+              });
+              li.addEventListener("dragleave", () =>
+                li.classList.remove("drop-target"),
+              );
+              li.addEventListener("drop", async (e) => {
+                e.preventDefault();
+                li.classList.remove("drop-target");
+                if (!draggedEntryPath || draggedEntryPath === entry.path)
+                  return;
+                await moveEntryToFolder(draggedEntryPath, entry.path, source);
+              });
+            } else {
+              nameSpan.addEventListener("click", async () => {
+                if (isRenaming || isCreating) return;
+                if (source === "db") {
+                  const existingTab = tabs.find(
+                    (t) => t.fileHandle && t.fileHandle.path === entry.path,
+                  );
+                  if (existingTab) activateTab(existingTab.id);
+                  else await openFileFromDB(entry.path);
+                } else if (entry.handle)
+                  await openFile(entry.handle, entry.path);
+              });
+            }
+            nameSpan.addEventListener("dblclick", (e) => {
+              e.stopPropagation();
+              if (source !== "db") return;
+              startInlineRename(entry, li, nameSpan);
+            });
+            actionBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (isRenaming || isCreating) return;
+              deleteEntry(entry.path, source);
+            });
+            li.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (isRenaming || isCreating) return;
+              rightClickedEntry = { path: entry.path, type: entry.type };
+              rightClickedEntrySource = source;
+              currentFolderPath =
+                entry.type === "folder"
+                  ? entry.path
+                  : getParentPath(entry.path);
+              showCtxMenu(e.clientX, e.clientY, entry.type);
+            });
+            li.addEventListener("dragstart", () => {
+              draggedEntryPath = entry.path;
+              draggedEntrySource = source;
+              li.classList.add("dragging");
+            });
+            li.addEventListener("dragend", () => {
+              draggedEntryPath = null;
+              draggedEntrySource = null;
+              li.classList.remove("dragging");
+              fileList
+                .querySelectorAll(".file-item.drop-target")
+                .forEach((el) => el.classList.remove("drop-target"));
+            });
+            fileList.appendChild(li);
+          });
+        syncExplorerActiveState();
+      }
+      async function moveEntryToFolder(sourcePath, folderPath, source) {
+        if (source !== draggedEntrySource) return;
+        if (source === "db") {
+          await moveDbEntryToFolder(sourcePath, folderPath);
+        } else {
+          await moveFsEntryToFolder(sourcePath, folderPath);
+        }
+      }
+      async function moveDbEntryToFolder(sourcePath, folderPath) {
+        const entry = await loadFromDB(sourcePath);
+        if (!entry || entry.type !== "file") return;
+        const targetPath = joinPath(folderPath, sourcePath.split("/").pop());
+        const exists = await loadFromDB(targetPath);
+        if (exists && !confirm(`Overwrite "${targetPath}"?`)) return;
+        await saveToDB(targetPath, entry.content, "file");
+        await deleteFromDB(sourcePath);
+        if (currentFilePath === sourcePath) {
+          currentFilePath = targetPath;
+          currentFileHandle = { name: targetPath, path: targetPath };
+          currentFilenameDisplay.textContent = targetPath;
+        }
+        notify(`Moved to ${folderPath}`);
+        refreshExplorer();
+      }
+      async function moveFsEntryToFolder(sourcePath, folderPath) {
+        const source = fsEntryMap.get(sourcePath);
+        const targetDir = fsEntryMap.get(folderPath);
+        if (
+          !source ||
+          !targetDir ||
+          source.kind !== "file" ||
+          targetDir.kind !== "directory"
+        )
+          return;
+        const file = await source.getFile();
+        const target = await targetDir.getFileHandle(file.name, {
+          create: true,
+        });
+        const writable = await target.createWritable();
+        await writable.write(await file.arrayBuffer());
+        await writable.close();
+        const sourceDir =
+          fsEntryMap.get(getParentPath(sourcePath)) || directoryHandle;
+        if (sourceDir?.removeEntry) await sourceDir.removeEntry(file.name);
+        notify(`Moved to ${folderPath}`);
+        await scanDirectory();
+      }
       async function openDirectory() {
         if (isUnsaved && !confirm("Unsaved changes. Continue?")) return;
         try {
           directoryHandle = await window.showDirectoryPicker();
           currentFileSource = "fs";
+          collapsedExplorerFolders.clear();
+          fsEntryMap.clear();
           autosaveToggle.checked = false;
           await scanDirectory();
           statusBar.textContent = `Opened: ${directoryHandle.name}`;
           notify("Folder opened");
         } catch {}
       }
-      async function openFile(handle) {
+      async function openFile(handle, filePath = handle.name) {
         if (isUnsaved && !confirm("Discard unsaved changes?")) return;
+        if (isUnsaved) await saveSnapshot();
         try {
           const file = await handle.getFile();
           editor.value = await file.text();
           currentFileHandle = handle;
+          currentFilePath = filePath;
           currentFileSource = "fs";
-          currentFilenameDisplay.textContent = handle.name;
+          currentFilenameDisplay.textContent = filePath;
           autosaveToggle.checked = false;
           updatePreview();
           updateWordCount();
           markAsUnsaved(false);
-          statusBar.textContent = `Opened ${handle.name}`;
+          statusBar.textContent = `Opened ${filePath}`;
           syncExplorerActiveState();
+          renderHistory();
         } catch {
           notify("Error reading file");
         }
@@ -4300,9 +4859,11 @@
             const path = prompt("Save as:", "untitled.md");
             if (!path) return;
             currentFileHandle = { name: path, path };
+            currentFilePath = path;
             currentFilenameDisplay.textContent = path;
           }
           await saveToDB(currentFileHandle.path, editor.value);
+          await saveSnapshot();
           markAsUnsaved(false);
           notify("Saved");
           refreshExplorer();
@@ -4315,13 +4876,15 @@
           currentFileHandle = await directoryHandle.getFileHandle(name, {
             create: true,
           });
-          currentFilenameDisplay.textContent = currentFileHandle.name;
+          currentFilePath = name;
+          currentFilenameDisplay.textContent = name;
           await scanDirectory();
         }
         try {
           const writable = await currentFileHandle.createWritable();
           await writable.write(editor.value);
           await writable.close();
+          await saveSnapshot();
           markAsUnsaved(false);
           statusBar.textContent = `Saved at ${new Date().toLocaleTimeString()}`;
           notify("Saved");
@@ -4331,35 +4894,19 @@
       }
       async function scanDirectory() {
         if (!directoryHandle) return;
-        fileList.innerHTML = "";
         allTags.clear();
-        const entries = [];
-        for await (const entry of directoryHandle.values()) {
-          if (entry.kind === "file" && entry.name.endsWith(".md"))
-            entries.push(entry);
-        }
-        entries.sort((a, b) => a.name.localeCompare(b.name));
-        for (const entry of entries) {
-          const file = await entry.getFile();
-          const text = await file.text();
-          extractTags(text).forEach((tag) => {
-            if (!allTags.has(tag)) allTags.set(tag, []);
-            allTags.get(tag).push(entry);
-          });
-          const li = document.createElement("li");
-          li.className = "file-item";
-          li.dataset.path = entry.name;
-          li.innerHTML = `<i class="far fa-file-alt"></i><span class="file-name">${entry.name}</span>`;
-          li.onclick = () => openFile(entry);
-          fileList.appendChild(li);
-        }
+        fsEntryMap.clear();
+        const entries = await scanFsRecursive(directoryHandle);
+        entries.forEach((entry) => fsEntryMap.set(entry.path, entry.handle));
         renderTags();
-        syncExplorerActiveState();
+        renderExplorerEntries(entries);
       }
       function syncExplorerActiveState() {
-        const path = currentFileHandle
-          ? currentFileHandle.path || currentFileHandle.name
-          : null;
+        const path =
+          currentFilePath ||
+          (currentFileHandle
+            ? currentFileHandle.path || currentFileHandle.name
+            : null);
         document.querySelectorAll(".file-item").forEach((el) => {
           const itemPath = el.dataset.path;
           el.classList.toggle("active-item", itemPath === path);
@@ -4371,61 +4918,13 @@
           await scanDirectory();
           return;
         }
-        fileList.innerHTML = "";
-        const entries = await listDBFiles();
-        entries.sort((a, b) => {
-          if (a.type === "folder" && b.type !== "folder") return -1;
-          if (a.type !== "folder" && b.type === "folder") return 1;
-          return a.path.localeCompare(b.path);
-        });
-        entries.forEach((entry) => {
-          const li = document.createElement("li");
-          li.className = "file-item";
-          li.dataset.path = entry.path;
-          li.dataset.type = entry.type;
-          const icon =
-            entry.type === "folder" ? "fas fa-folder" : "far fa-file-alt";
-          const name = entry.path.split("/").pop();
-          li.innerHTML = `<i class="${icon}"></i><span class="file-name">${name}</span><button class="file-action"><i class="fas fa-times"></i></button>`;
-
-          const fileNameSpan = li.querySelector(".file-name");
-
-          fileNameSpan.addEventListener("click", () => {
-            if (isRenaming || isCreating) return;
-            if (entry.type === "folder") {
-              currentFolderPath = entry.path;
-            } else {
-              const existingTab = tabs.find(
-                (t) => t.fileHandle && t.fileHandle.path === entry.path,
-              );
-              if (existingTab) {
-                activateTab(existingTab.id);
-              } else openFileFromDB(entry.path);
-            }
-          });
-
-          // Double click to rename
-          fileNameSpan.addEventListener("dblclick", (e) => {
-            e.stopPropagation();
-            if (directoryHandle) return; // Only for DB mode for now
-            startInlineRename(entry, li, fileNameSpan);
-          });
-
-          li.querySelector(".file-action").addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (isRenaming || isCreating) return;
-            deleteEntry(entry.path);
-          });
-          li.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (isRenaming || isCreating) return;
-            rightClickedEntry = entry;
-            showCtxMenu(e.clientX, e.clientY, entry.type);
-          });
-          fileList.appendChild(li);
-        });
-        syncExplorerActiveState();
+        const entries = ensureDbFolderEntries(await listDBFiles()).map(
+          (entry) => ({
+            ...entry,
+            source: "db",
+          }),
+        );
+        renderExplorerEntries(entries);
       }
 
       function startInlineRename(entry, li, nameSpan) {
@@ -4478,22 +4977,45 @@
           return;
         }
 
+        if (entry.type === "folder") {
+          const allEntries = await listDBFiles();
+          const descendants = allEntries.filter((item) =>
+            item.path.startsWith(oldPath + "/"),
+          );
+          for (const item of descendants) {
+            const movedPath = item.path.replace(oldPath + "/", newPath + "/");
+            await saveToDB(movedPath, item.content, item.type);
+            await deleteFromDB(item.path);
+          }
+        }
         await saveToDB(newPath, entry.content, entry.type);
         await deleteFromDB(oldPath);
 
-        // Update tabs
         tabs.forEach((tab) => {
-          if (tab.fileHandle && tab.fileHandle.path === oldPath) {
-            tab.fileHandle.path = newPath;
-            tab.fileHandle.name = newName;
-            tab.name = newName;
+          if (!tab.fileHandle || !tab.fileHandle.path) return;
+          if (
+            tab.fileHandle.path === oldPath ||
+            tab.fileHandle.path.startsWith(oldPath + "/")
+          ) {
+            const movedPath = tab.fileHandle.path.replace(oldPath, newPath);
+            tab.fileHandle.path = movedPath;
+            tab.fileHandle.name = movedPath.split("/").pop();
+            tab.filePath = movedPath;
+            tab.name = movedPath;
           }
         });
 
-        if (currentFileHandle && currentFileHandle.path === oldPath) {
-          currentFileHandle.path = newPath;
-          currentFileHandle.name = newName;
-          currentFilenameDisplay.textContent = newName;
+        if (
+          currentFileHandle &&
+          currentFileHandle.path &&
+          (currentFileHandle.path === oldPath ||
+            currentFileHandle.path.startsWith(oldPath + "/"))
+        ) {
+          const movedPath = currentFileHandle.path.replace(oldPath, newPath);
+          currentFileHandle.path = movedPath;
+          currentFileHandle.name = movedPath.split("/").pop();
+          currentFilePath = movedPath;
+          currentFilenameDisplay.textContent = movedPath;
         }
 
         refreshTabBar();
@@ -4501,7 +5023,7 @@
         notify(`Renamed to ${newName}`);
       }
 
-      async function startInlineCreate(type) {
+      async function startInlineCreate(type, parentPath = currentFolderPath) {
         if (isRenaming || isCreating) return;
         isCreating = true;
 
@@ -4523,12 +5045,16 @@
           if (!isCreating) return;
           const name = input.value.trim();
           if (commit && name) {
-            const path = currentFolderPath
-              ? `${currentFolderPath}/${name}`
-              : name;
-            await saveToDB(path, "", type);
-            if (type === "file") await openFileFromDB(path);
-            refreshExplorer();
+            const path = parentPath ? `${parentPath}/${name}` : name;
+            const existing = await loadFromDB(path);
+            if (existing) {
+              notify("Name already exists");
+              li.remove();
+            } else {
+              await saveToDB(path, "", type);
+              if (type === "file") await openFileFromDB(path);
+              refreshExplorer();
+            }
           } else {
             li.remove();
           }
@@ -4547,6 +5073,7 @@
         if (entry) {
           editor.value = entry.content;
           currentFileHandle = { name: path, path };
+          currentFilePath = path;
           currentFileSource = "db";
           currentFilenameDisplay.textContent = path;
           autosaveToggle.checked = true;
@@ -4554,35 +5081,58 @@
           updateWordCount();
           markAsUnsaved(false);
           statusBar.textContent = `Opened: ${path}`;
+          syncExplorerActiveState();
+          renderHistory();
         }
       }
 
       function createNewFile() {
         newTab("Untitled.md", "");
       }
-      async function createNewFileInExplorer() {
+      async function createNewFileInExplorer(
+        targetFolderPath = currentFolderPath,
+      ) {
         if (directoryHandle) {
           const name = prompt("File name:", "note.md");
           if (!name) return;
           try {
-            const handle = await directoryHandle.getFileHandle(name, {
+            const dir =
+              targetFolderPath && fsEntryMap.get(targetFolderPath)
+                ? fsEntryMap.get(targetFolderPath)
+                : directoryHandle;
+            const handle = await dir.getFileHandle(name, {
               create: true,
             });
-            await openFile(handle);
+            await openFile(handle, joinPath(targetFolderPath || "", name));
             await scanDirectory();
           } catch {
             notify("Could not create file");
           }
           return;
         }
-        await startInlineCreate("file");
+        await startInlineCreate("file", targetFolderPath || null);
       }
-      async function createNewFolderInExplorer() {
+      async function createNewFolderInExplorer(
+        targetFolderPath = currentFolderPath,
+      ) {
         if (directoryHandle) {
-          alert("Create folders in your file system.");
+          const name = prompt("Folder name:", "new-folder");
+          if (!name) return;
+          try {
+            const dir =
+              targetFolderPath && fsEntryMap.get(targetFolderPath)
+                ? fsEntryMap.get(targetFolderPath)
+                : directoryHandle;
+            await dir.getDirectoryHandle(name, { create: true });
+            collapsedExplorerFolders.delete(targetFolderPath || "");
+            await scanDirectory();
+            notify("Folder created");
+          } catch {
+            notify("Could not create folder");
+          }
           return;
         }
-        await startInlineCreate("folder");
+        await startInlineCreate("folder", targetFolderPath || null);
       }
 
       function handleAutosave() {
@@ -4653,16 +5203,19 @@
       function showCtxMenu(x, y, type) {
         explorerMenuContent.innerHTML = "";
         const items = [];
+        const isFs = rightClickedEntrySource === "fs";
         if (type === "file") {
           items.push(
             {
               label: "Cut",
               icon: "fas fa-cut",
+              disabled: isFs,
               action: () => cutEntry(rightClickedEntry.path),
             },
             {
               label: "Copy",
               icon: "fas fa-copy",
+              disabled: isFs,
               action: () => copyEntry(rightClickedEntry.path),
             },
             {
@@ -4675,7 +5228,8 @@
               label: "Delete",
               icon: "fas fa-trash",
               danger: true,
-              action: () => deleteEntry(rightClickedEntry.path),
+              action: () =>
+                deleteEntry(rightClickedEntry.path, rightClickedEntrySource),
             },
           );
         } else if (type === "folder") {
@@ -4683,18 +5237,27 @@
             {
               label: "New File",
               icon: "fas fa-file-circle-plus",
-              action: () => createNewFileInExplorer(),
+              action: () => createNewFileInExplorer(rightClickedEntry.path),
             },
             {
               label: "New Folder",
               icon: "fas fa-folder-plus",
-              action: () => createNewFolderInExplorer(),
+              action: () => createNewFolderInExplorer(rightClickedEntry.path),
             },
             {
               label: "Paste",
               icon: "fas fa-paste",
-              disabled: !clipboard,
-              action: () => pasteEntry(),
+              disabled: !clipboard || isFs,
+              action: () => pasteEntry(rightClickedEntry.path),
+            },
+            {
+              label: "Download Folder as ZIP",
+              icon: "fas fa-file-archive",
+              action: () =>
+                downloadFolderAsZip(
+                  rightClickedEntry.path,
+                  rightClickedEntrySource,
+                ),
             },
             { sep: true },
             {
@@ -4706,7 +5269,8 @@
               label: "Delete",
               icon: "fas fa-trash",
               danger: true,
-              action: () => deleteEntry(rightClickedEntry.path),
+              action: () =>
+                deleteEntry(rightClickedEntry.path, rightClickedEntrySource),
             },
           );
         } else if (type === "blank") {
@@ -4724,17 +5288,29 @@
             {
               label: "Paste",
               icon: "fas fa-paste",
-              disabled: !clipboard,
-              action: () => pasteEntry(),
+              disabled: !clipboard || isFs,
+              action: () => pasteEntry(currentFolderPath || ""),
             },
           );
         } else if (type === "history") {
-          items.push({
-            label: "Delete",
-            icon: "fas fa-trash",
-            danger: true,
-            action: () => deleteHistoryItem(rightClickedHistoryIndex),
-          });
+          items.push(
+            {
+              label: "View Diff",
+              icon: "fas fa-code-compare",
+              action: () => openHistoryDiff(rightClickedHistoryIndex),
+            },
+            {
+              label: "Restore",
+              icon: "fas fa-history",
+              action: () => restoreSnapshot(rightClickedHistoryIndex),
+            },
+            {
+              label: "Delete",
+              icon: "fas fa-trash",
+              danger: true,
+              action: () => deleteHistoryItem(rightClickedHistoryIndex),
+            },
+          );
         }
         items.forEach((item) => {
           if (item.sep) {
@@ -4782,9 +5358,9 @@
           notify(`Copied: ${path.split("/").pop()}`);
         }
       }
-      async function pasteEntry() {
-        if (!clipboard) return;
-        const parent = currentFolderPath || "";
+      async function pasteEntry(parentPath = currentFolderPath || "") {
+        if (!clipboard || rightClickedEntrySource === "fs") return;
+        const parent = parentPath;
         const name = clipboard.entry.path.split("/").pop();
         const newPath = parent ? `${parent}/${name}` : name;
         const exists = await loadFromDB(newPath);
@@ -4798,49 +5374,119 @@
         notify(`Pasted to ${newPath}`);
       }
       async function renameEntry(oldPath) {
-        if (directoryHandle) return; // Use native FS for this
+        if (rightClickedEntrySource === "fs") {
+          notify("Rename is available in DB workspace");
+          return;
+        }
         const entry = await loadFromDB(oldPath);
         if (!entry) return;
-
-        // Find the LI in explorer
         const li = document.querySelector(`.file-item[data-path="${oldPath}"]`);
         if (!li) return;
         const nameSpan = li.querySelector(".file-name");
         if (!nameSpan) return;
-
         startInlineRename(entry, li, nameSpan);
       }
-      async function deleteEntry(path) {
+      async function deleteEntry(path, source = "db") {
         if (!confirm(`Delete "${path}"?`)) return;
-        await deleteFromDB(path);
-        if (currentFileHandle && currentFileHandle.path === path)
-          createNewFile();
+        if (source === "db") {
+          const allEntries = await listDBFiles();
+          const targets = [path];
+          allEntries.forEach((entry) => {
+            if (entry.path.startsWith(path + "/")) targets.push(entry.path);
+          });
+          await Promise.all(targets.map((target) => deleteFromDB(target)));
+          if (
+            currentFilePath === path ||
+            currentFilePath?.startsWith(path + "/")
+          )
+            createNewFile();
+        } else {
+          const parentPath = getParentPath(path);
+          const parentDir = parentPath
+            ? fsEntryMap.get(parentPath)
+            : directoryHandle;
+          const name = path.split("/").pop();
+          if (!parentDir?.removeEntry) return;
+          await parentDir.removeEntry(name, { recursive: true });
+          if (
+            currentFilePath === path ||
+            currentFilePath?.startsWith(path + "/")
+          ) {
+            createNewFile();
+          }
+        }
         refreshExplorer();
         notify(`Deleted`);
+      }
+      async function downloadFolderAsZip(folderPath, source) {
+        if (!window.JSZip) return notify("ZIP library unavailable");
+        const zip = new JSZip();
+        if (source === "db") {
+          const entries = await listDBFiles();
+          const prefix = folderPath + "/";
+          entries
+            .filter(
+              (entry) => entry.type === "file" && entry.path.startsWith(prefix),
+            )
+            .forEach((entry) => {
+              const rel = entry.path.slice(prefix.length);
+              zip.file(rel, entry.content || "");
+            });
+        } else {
+          const folder = fsEntryMap.get(folderPath);
+          if (!folder || folder.kind !== "directory") return;
+          const queue = [{ handle: folder, rel: "" }];
+          while (queue.length) {
+            const { handle, rel } = queue.shift();
+            for await (const entry of handle.values()) {
+              if (entry.kind === "directory") {
+                queue.push({ handle: entry, rel: joinPath(rel, entry.name) });
+              } else {
+                const f = await entry.getFile();
+                zip.file(joinPath(rel, entry.name), await f.arrayBuffer());
+              }
+            }
+          }
+        }
+        const blob = await zip.generateAsync({ type: "blob" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${folderPath.split("/").pop() || "folder"}.zip`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        notify("ZIP downloaded");
       }
 
       // ─── Local History ───
       async function saveSnapshot() {
-        if (!currentFileHandle) return;
-        const content = editor.value,
-          name = currentFileHandle.name,
-          now = Date.now();
+        if (!currentFileHandle || !currentFilePath) return;
+        const content = editor.value;
+        const now = Date.now();
+        const source = currentFileSource || "db";
+        const filePath = currentFilePath;
+        const fileId = `${source}:${filePath}`;
         if (!window.idbKeyval) return;
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
-          const dayAgo = now - 86400000;
-          const filtered = history.filter((h) => h.timestamp > dayAgo);
+          const filtered = history.filter(
+            (h) => now - h.timestamp < 7 * 86400000,
+          );
           const last = filtered.findLast
-            ? filtered.findLast((h) => h.name === name)
-            : [...filtered].reverse().find((h) => h.name === name);
+            ? filtered.findLast((h) => (h.fileId || `db:${h.name}`) === fileId)
+            : [...filtered]
+                .reverse()
+                .find((h) => (h.fileId || `db:${h.name}`) === fileId);
           if (last && last.content === content) return;
           filtered.push({
-            name,
+            name: filePath.split("/").pop(),
+            filePath,
+            fileSource: source,
+            fileId,
             content,
             timestamp: now,
             size: content.length,
           });
-          await idbKeyval.set("md-local-history", filtered.slice(-50));
+          await idbKeyval.set("md-local-history", filtered.slice(-500));
           renderHistory();
         } catch {}
       }
@@ -4848,38 +5494,235 @@
         if (!window.idbKeyval) return;
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
-          const currentName = currentFileHandle ? currentFileHandle.name : null;
+          const currentId =
+            currentFilePath && currentFileSource
+              ? `${currentFileSource}:${currentFilePath}`
+              : null;
           historyList.innerHTML = "";
           if (!history.length) {
             historyList.innerHTML =
               '<div style="text-align:center;padding:20px 12px;font-size:11px;color:var(--text-tertiary);font-style:italic;">No history yet</div>';
             return;
           }
-          [...history].reverse().forEach((item, idx) => {
-            const originalIndex = history.length - 1 - idx;
-            const date = new Date(item.timestamp);
-            const timeStr = date.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            const dateStr = date.toLocaleDateString([], {
-              month: "short",
-              day: "numeric",
-            });
-            const isCurrent = item.name === currentName;
-            const div = document.createElement("div");
-            div.className = `history-item ${isCurrent ? "current" : ""}`;
-            div.innerHTML = `<div class="history-item-name">${item.name}</div><div class="history-item-meta"><span>${dateStr} · ${timeStr}</span><span>${(item.size / 1024).toFixed(1)}KB</span></div>`;
-            div.onclick = () => restoreSnapshot(originalIndex);
-            div.addEventListener("contextmenu", (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              rightClickedHistoryIndex = originalIndex;
-              showCtxMenu(e.clientX, e.clientY, "history");
-            });
-            historyList.appendChild(div);
+          const groups = new Map();
+          history.forEach((item, idx) => {
+            const fileSource = item.fileSource || "db";
+            const filePath = item.filePath || item.name;
+            const fileId = item.fileId || `${fileSource}:${filePath}`;
+            if (!groups.has(fileId)) {
+              groups.set(fileId, {
+                fileId,
+                filePath,
+                fileSource,
+                snapshots: [],
+                latest: 0,
+              });
+            }
+            const group = groups.get(fileId);
+            group.snapshots.push({ ...item, idx });
+            if (item.timestamp > group.latest) group.latest = item.timestamp;
+          });
+          const sortedGroups = [...groups.values()].sort(
+            (a, b) => b.latest - a.latest,
+          );
+          sortedGroups.forEach((group) => {
+            const groupEl = document.createElement("div");
+            const collapsed = collapsedHistoryGroups.has(group.fileId);
+            groupEl.className = `history-file-group ${collapsed ? "collapsed" : ""}`;
+            const groupHeader = document.createElement("button");
+            groupHeader.className = "history-file-header";
+            groupHeader.innerHTML = `<span class="caret"><i class="fas fa-chevron-down"></i></span><span class="history-file-path">${group.filePath}</span><span class="history-file-count">${group.snapshots.length}</span>`;
+            groupHeader.onclick = () => {
+              if (collapsedHistoryGroups.has(group.fileId))
+                collapsedHistoryGroups.delete(group.fileId);
+              else collapsedHistoryGroups.add(group.fileId);
+              renderHistory();
+            };
+            const itemsWrap = document.createElement("div");
+            itemsWrap.className = "history-file-items";
+            group.snapshots
+              .sort((a, b) => b.timestamp - a.timestamp)
+              .forEach((item) => {
+                const date = new Date(item.timestamp);
+                const timeStr = date.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const dateStr = date.toLocaleDateString([], {
+                  month: "short",
+                  day: "numeric",
+                });
+                const isCurrent = group.fileId === currentId;
+                const div = document.createElement("div");
+                div.className = `history-item ${isCurrent ? "current" : ""}`;
+                div.innerHTML = `<div class="history-item-content"><div class="history-item-name">${dateStr} ${timeStr}</div><div class="history-item-meta"><span>${group.fileSource.toUpperCase()}</span><span>${(item.size / 1024).toFixed(1)}KB</span></div></div>`;
+                div.onclick = () => openHistoryDiff(item.idx);
+                div.addEventListener("contextmenu", (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  rightClickedHistoryIndex = item.idx;
+                  showCtxMenu(e.clientX, e.clientY, "history");
+                });
+                itemsWrap.appendChild(div);
+              });
+            groupEl.appendChild(groupHeader);
+            groupEl.appendChild(itemsWrap);
+            historyList.appendChild(groupEl);
           });
         } catch {}
+      }
+      function closeHistoryDiff() {
+        historyDiffModal.classList.remove("open");
+        selectedHistoryIndex = null;
+      }
+      async function openHistoryDiff(index) {
+        if (!window.idbKeyval) return;
+        const history = (await idbKeyval.get("md-local-history")) || [];
+        const snap = history[index];
+        if (!snap) return;
+        const fileSource = snap.fileSource || "db";
+        const filePath = snap.filePath || snap.name;
+        const fileId = snap.fileId || `${fileSource}:${filePath}`;
+        const sameFile =
+          currentFilePath &&
+          `${currentFileSource}:${currentFilePath}` === fileId;
+        let compareContent = "";
+        let rightTitle = "Latest Snapshot";
+        if (sameFile) {
+          compareContent = editor.value;
+          rightTitle = "Working Tree";
+        } else {
+          const newer = history
+            .filter((h, i) => {
+              const id =
+                h.fileId || `${h.fileSource || "db"}:${h.filePath || h.name}`;
+              return (
+                id === fileId && i !== index && h.timestamp >= snap.timestamp
+              );
+            })
+            .sort((a, b) => b.timestamp - a.timestamp)[0];
+          compareContent = newer ? newer.content : "";
+          if (newer) rightTitle = new Date(newer.timestamp).toLocaleString();
+        }
+        historyDiffTitle.textContent = filePath;
+        historyDiffSubtitle.textContent = new Date(
+          snap.timestamp,
+        ).toLocaleString();
+        historyDiffLeftTitle.textContent = "Snapshot";
+        historyDiffRightTitle.textContent = rightTitle;
+        const rows = buildDiffRows(snap.content || "", compareContent || "");
+        historyDiffLeft.innerHTML = "";
+        historyDiffRight.innerHTML = "";
+        rows.forEach((row) => {
+          const left = document.createElement("div");
+          left.className = `diff-line ${row.leftType}`;
+          left.innerHTML = `<span class="diff-line-num">${row.leftNum || ""}</span><pre class="diff-line-text">${escapeHtml(row.leftText)}</pre>`;
+          historyDiffLeft.appendChild(left);
+          const right = document.createElement("div");
+          right.className = `diff-line ${row.rightType}`;
+          right.innerHTML = `<span class="diff-line-num">${row.rightNum || ""}</span><pre class="diff-line-text">${escapeHtml(row.rightText)}</pre>`;
+          historyDiffRight.appendChild(right);
+        });
+        selectedHistoryIndex = index;
+        historyDiffModal.classList.add("open");
+      }
+      function escapeHtml(text) {
+        return (text || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+      function buildDiffRows(leftText, rightText) {
+        const a = leftText.split("\n");
+        const b = rightText.split("\n");
+        if (a.length > 500 || b.length > 500) {
+          const rows = [];
+          const max = Math.max(a.length, b.length);
+          for (let i = 0; i < max; i++) {
+            const l = a[i] ?? "";
+            const r = b[i] ?? "";
+            rows.push({
+              leftNum: a[i] !== undefined ? i + 1 : "",
+              rightNum: b[i] !== undefined ? i + 1 : "",
+              leftText: l,
+              rightText: r,
+              leftType: l === r ? "context" : "remove",
+              rightType: l === r ? "context" : "add",
+            });
+          }
+          return rows;
+        }
+        const dp = Array.from({ length: a.length + 1 }, () =>
+          Array(b.length + 1).fill(0),
+        );
+        for (let i = a.length - 1; i >= 0; i--) {
+          for (let j = b.length - 1; j >= 0; j--) {
+            dp[i][j] =
+              a[i] === b[j]
+                ? dp[i + 1][j + 1] + 1
+                : Math.max(dp[i + 1][j], dp[i][j + 1]);
+          }
+        }
+        const rows = [];
+        let i = 0;
+        let j = 0;
+        let leftLine = 1;
+        let rightLine = 1;
+        while (i < a.length && j < b.length) {
+          if (a[i] === b[j]) {
+            rows.push({
+              leftNum: leftLine++,
+              rightNum: rightLine++,
+              leftText: a[i],
+              rightText: b[j],
+              leftType: "context",
+              rightType: "context",
+            });
+            i++;
+            j++;
+          } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+            rows.push({
+              leftNum: leftLine++,
+              rightNum: "",
+              leftText: a[i],
+              rightText: "",
+              leftType: "remove",
+              rightType: "empty",
+            });
+            i++;
+          } else {
+            rows.push({
+              leftNum: "",
+              rightNum: rightLine++,
+              leftText: "",
+              rightText: b[j],
+              leftType: "empty",
+              rightType: "add",
+            });
+            j++;
+          }
+        }
+        while (i < a.length) {
+          rows.push({
+            leftNum: leftLine++,
+            rightNum: "",
+            leftText: a[i++],
+            rightText: "",
+            leftType: "remove",
+            rightType: "empty",
+          });
+        }
+        while (j < b.length) {
+          rows.push({
+            leftNum: "",
+            rightNum: rightLine++,
+            leftText: "",
+            rightText: b[j++],
+            leftType: "empty",
+            rightType: "add",
+          });
+        }
+        return rows;
       }
       async function deleteHistoryItem(index) {
         if (!confirm("Delete this history item?")) return;
@@ -4894,18 +5737,28 @@
         const history = (await idbKeyval.get("md-local-history")) || [];
         const snap = history[index];
         if (!snap) return;
+        const fileSource = snap.fileSource || "db";
+        const filePath = snap.filePath || snap.name;
         if (
-          confirm(
+          !confirm(
             `Restore snapshot from ${new Date(snap.timestamp).toLocaleString()}?`,
           )
-        ) {
-          editor.value = snap.content;
-          updatePreview();
-          updateWordCount();
-          markAsUnsaved(true);
-          pushToHistory();
-          notify("Snapshot restored");
+        )
+          return;
+        if (fileSource === "db") {
+          await openFileFromDB(filePath);
+        } else {
+          const handle = fsEntryMap.get(filePath);
+          if (!handle) return notify("File no longer available");
+          await openFile(handle, filePath);
         }
+        editor.value = snap.content;
+        updatePreview();
+        updateWordCount();
+        markAsUnsaved(true);
+        pushToHistory();
+        closeHistoryDiff();
+        notify("Snapshot restored");
       }
       async function clearLocalHistory() {
         if (!confirm("Clear all history?")) return;
@@ -5522,7 +6375,6 @@
 
       // ─── Theme ───
       function applyTheme(theme) {
-        // Set data-theme on both html and body so all CSS selectors work
         document.documentElement.setAttribute("data-theme", theme);
         document.body.setAttribute("data-theme", theme);
         const dark = ["dark", "dusk", "forest", "matrix"].includes(theme);
@@ -5531,18 +6383,11 @@
           hljsLink.href = dark
             ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
             : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css";
-        if (window.mermaid) {
-          mermaid.initialize({
-            startOnLoad: false,
-            theme: dark ? "dark" : "default",
-            securityLevel: "loose",
+        configureMermaid();
+        if (previewContent.querySelector(".mermaid")) {
+          requestAnimationFrame(() => {
+            updatePreview();
           });
-          // Only update if there are diagrams to avoid blocking UI
-          if (previewContent.querySelector(".mermaid")) {
-            requestAnimationFrame(() => {
-              updatePreview();
-            });
-          }
         }
         if (window.idbKeyval) idbKeyval.set("md-theme", theme);
       }
@@ -5583,6 +6428,7 @@
           hljsLink.href = dark
             ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
             : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css";
+        configureMermaid();
         applyFontSize(size);
       }
 
@@ -5613,6 +6459,9 @@
           name: name || "Untitled.md",
           content: content !== undefined ? content : "",
           fileHandle: fileHandle || null,
+          filePath: fileHandle
+            ? fileHandle.path || fileHandle.name || null
+            : null,
           fileSource: fileSource || "db",
           unsaved: false,
           historyStack: [
@@ -5634,6 +6483,7 @@
           ? currentFileHandle.name
           : currentFilenameDisplay.textContent;
         tab.fileHandle = currentFileHandle;
+        tab.filePath = currentFilePath;
         tab.fileSource = currentFileSource;
         tab.unsaved = isUnsaved;
         tab.historyStack = [...historyStack];
@@ -5648,6 +6498,9 @@
         // Restore tab state
         editor.value = tab.content;
         currentFileHandle = tab.fileHandle;
+        currentFilePath =
+          tab.filePath ||
+          (tab.fileHandle ? tab.fileHandle.path || tab.fileHandle.name : null);
         currentFileSource = tab.fileSource;
         currentFilenameDisplay.textContent = tab.name;
         isUnsaved = tab.unsaved;
@@ -5662,10 +6515,15 @@
         updateToolbarState();
         refreshTabBar();
         syncExplorerActiveState();
+        renderHistory();
         // Save current active tab/file to preferences for reload
         if (window.idbKeyval) {
           idbKeyval.set("md-last-active-file", {
-            path: tab.fileHandle ? tab.fileHandle.path : null,
+            path:
+              tab.filePath ||
+              (tab.fileHandle
+                ? tab.fileHandle.path || tab.fileHandle.name
+                : null),
             name: tab.name,
             source: tab.fileSource,
           });
@@ -5732,6 +6590,7 @@
       // Patch openFileFromDB and openFile to open in current tab or new tab
       const _origOpenFileFromDB = openFileFromDB;
       async function openFileFromDB(path, forceNewTab) {
+        if (isUnsaved) await saveSnapshot();
         const entry = await loadFromDB(path);
         if (!entry) return;
         if (
@@ -5751,6 +6610,7 @@
         } else {
           editor.value = entry.content;
           currentFileHandle = { name: path, path };
+          currentFilePath = path;
           currentFileSource = "db";
           currentFilenameDisplay.textContent = path;
           autosaveToggle.checked = true;
@@ -5762,6 +6622,7 @@
             if (tab) {
               tab.name = path;
               tab.fileHandle = currentFileHandle;
+              tab.filePath = path;
               tab.fileSource = "db";
               refreshTabBar();
             }
@@ -5769,6 +6630,7 @@
         }
         statusBar.textContent = `Opened: ${path}`;
         syncExplorerActiveState();
+        renderHistory();
       }
 
       // ─── Writing Goal ───
