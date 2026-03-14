@@ -10,6 +10,7 @@
 
 - **Elegant UI**: A modern, Apple-inspired interface with multiple professional themes (Light, Dark, Dusk, Forest, Matrix).
 - **Zen Mode**: Focus entirely on your content with a distraction-free writing environment.
+- **Focus Mode**: Dims non-active lines to keep your attention on the current sentence or paragraph.
 - **Side-by-Side Preview**: Real-time rendering of your Markdown with synchronized scrolling.
 - **Command Palette**: Quick access to all formatting tools and commands via **Right Click** in the editor.
 
@@ -27,6 +28,8 @@
 
 - **Live Outline**: Automatic Table of Contents generation for easy navigation of long documents.
 - **Smart Formatting**: Built-in Prettier integration for perfectly formatted Markdown.
+- **Find & Replace**: Advanced search with match-case and regex support.
+- **Autosave**: Keep your work safe with automatic background saving.
 - **Table Builder**: Interactive grid-based table insertion tool.
 - **Metadata Management**: Add and manage front-matter metadata for your guides.
 
@@ -40,26 +43,36 @@
 
 ## 🛠️ Technical Stack
 
-| Component      | Technology             |
-| :------------- | :--------------------- |
-| **Framework**  | Tailwind CSS 4         |
-| **Parsing**    | Marked.js              |
-| **Diagrams**   | Mermaid.js (Internal)  |
-| **Formulas**   | KaTeX                  |
-| **Storage**    | IndexedDB (idb-keyval) |
-| **Formatting** | Prettier               |
-| **Icons**      | Font Awesome 6         |
+| Component      | Technology                 |
+| :------------- | :------------------------- |
+| **Styling**    | Custom CSS (Design Tokens) |
+| **Parsing**    | Marked.js                  |
+| **Diagrams**   | Mermaid.js (Internal)      |
+| **Formulas**   | KaTeX                      |
+| **Storage**    | IndexedDB (idb-keyval)     |
+| **Formatting** | Prettier                   |
+| **Exporting**  | jsPDF & html2canvas-pro    |
+| **Icons**      | Font Awesome 6             |
 
 ---
 
 ## ⌨️ Shortcuts
 
-| Shortcut      | Action               |
-| :------------ | :------------------- |
-| `Ctrl + S`    | Save current file    |
-| `Right Click` | Open Command Palette |
-| `Ctrl + J`    | Toggle Zen Mode      |
-| `Ctrl + /`    | Toggle Help          |
+| Shortcut          | Action               |
+| :---------------- | :------------------- |
+| `Ctrl + S`        | Save current file    |
+| `Ctrl + N`        | Create new file      |
+| `Ctrl + F`        | Find & Replace       |
+| `Ctrl + J`        | Toggle Zen Mode      |
+| `Ctrl + H`        | Toggle Focus Mode    |
+| `Ctrl + B`        | **Bold**             |
+| `Ctrl + I`        | _Italic_             |
+| `Ctrl + K`        | Insert Link          |
+| `Ctrl + Z`        | Undo                 |
+| `Ctrl + Y`        | Redo                 |
+| `Shift + Alt + F` | Format Document      |
+| `Right Click`     | Open Command Palette |
+| `Ctrl + /`        | Toggle Help          |
 
 ---
 
