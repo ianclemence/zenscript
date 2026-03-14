@@ -37,6 +37,90 @@
     <style id="custom-preview-style"></style>
 
     <style>
+      /* Refactored Explorer Styles */
+      .file-list,
+      .file-sublist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .file-sublist {
+        padding-left: 10px;
+        border-left: 1px solid var(--border-faint);
+        margin-left: 10px;
+      }
+      .file-item {
+        display: block;
+        padding: 0;
+        background: transparent !important;
+      }
+      .file-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: background var(--duration-fast) var(--ease);
+        user-select: none;
+      }
+      .file-row:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+      .file-row.active {
+        background: var(--surface-active);
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .file-row .file-caret {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--text-tertiary);
+        transition: transform var(--duration-fast);
+      }
+      .file-row .file-caret.hidden {
+        visibility: hidden;
+      }
+      .file-item.collapsed > .file-sublist {
+        display: none;
+      }
+      .file-item.collapsed > .file-row .file-caret {
+        transform: rotate(-90deg);
+      }
+      .file-icon {
+        width: 16px;
+        text-align: center;
+        color: var(--accent);
+      }
+      .file-row.active .file-icon {
+        color: var(--accent);
+      }
+      .file-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+      }
+      .inline-input {
+        width: 100%;
+        background: var(--surface-input);
+        border: 1px solid var(--accent);
+        border-radius: var(--radius-sm);
+        padding: 2px 4px;
+        font-size: 13px;
+        color: var(--text-primary);
+        outline: none;
+      }
+    </style>
+
+    <style>
       /* ============================================================
        DESIGN TOKEN SYSTEM
        Every theme maps these tokens. Adding a new theme = one block.
@@ -592,104 +676,7 @@
         padding: 6px;
       }
 
-      .file-item {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        padding: 7px 9px;
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 400;
-        color: var(--text-secondary);
-        transition:
-          background var(--duration-fast) var(--ease),
-          color var(--duration-fast) var(--ease);
-        position: relative;
-        user-select: none;
-      }
-      .file-item:hover {
-        background: var(--surface-hover);
-        color: var(--text-primary);
-      }
-      .file-item.active-item {
-        background: var(--surface-active);
-        color: var(--accent);
-        font-weight: 500;
-      }
-      .file-item i {
-        font-size: 11px;
-        flex-shrink: 0;
-        color: var(--text-tertiary);
-      }
-      .file-item.active-item i {
-        color: var(--accent);
-      }
-      .file-item .file-name {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .file-item .file-caret {
-        width: 10px;
-        font-size: 9px;
-        color: var(--text-tertiary);
-        opacity: 0;
-        transition: opacity var(--duration-fast) var(--ease);
-      }
-      .file-item.folder .file-caret {
-        opacity: 1;
-      }
-      .file-item.collapsed .file-caret {
-        transform: rotate(-90deg);
-      }
-      .file-item .file-icon {
-        width: 12px;
-        text-align: center;
-      }
-      .file-item[data-depth="1"] {
-        padding-left: 18px;
-      }
-      .file-item[data-depth="2"] {
-        padding-left: 27px;
-      }
-      .file-item[data-depth="3"] {
-        padding-left: 36px;
-      }
-      .file-item[data-depth="4"] {
-        padding-left: 45px;
-      }
-      .file-item[data-depth="5"] {
-        padding-left: 54px;
-      }
-      .file-item.dragging {
-        opacity: 0.45;
-      }
-      .file-item.drop-target {
-        background: var(--accent-muted);
-        border: 1px dashed var(--accent);
-      }
-      .file-item .file-action {
-        opacity: 0;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--text-tertiary);
-        font-size: 10px;
-        padding: 2px 4px;
-        border-radius: var(--radius-sm);
-        transition:
-          opacity var(--duration-fast) var(--ease),
-          color var(--duration-fast) var(--ease);
-        flex-shrink: 0;
-      }
-      .file-item:hover .file-action {
-        opacity: 1;
-      }
-      .file-item .file-action:hover {
-        color: var(--danger);
-      }
+      /* Removed legacy .file-item styles to prevent conflicts with new tree view */
 
       /* Inline Input */
       .inline-input {
@@ -4618,6 +4605,8 @@
       }
 
       // ─── File System ───
+      let fileSystemTree = [];
+
       function joinPath(parent, name) {
         return parent ? `${parent}/${name}` : name;
       }
@@ -4626,35 +4615,49 @@
         parts.pop();
         return parts.join("/");
       }
-      function pathDepth(path) {
-        return path ? path.split("/").length - 1 : 0;
-      }
-      function isPathVisible(path) {
-        if (!path.includes("/")) return true;
-        const parts = path.split("/");
-        let curr = "";
-        for (let i = 0; i < parts.length - 1; i++) {
-          curr = joinPath(curr, parts[i]);
-          if (collapsedExplorerFolders.has(curr)) return false;
-        }
-        return true;
-      }
-      function ensureDbFolderEntries(entries) {
-        const out = [...entries];
-        const known = new Set(entries.map((e) => e.path));
-        entries.forEach((entry) => {
-          const parts = entry.path.split("/");
-          let acc = "";
-          for (let i = 0; i < parts.length - 1; i++) {
-            acc = joinPath(acc, parts[i]);
-            if (!known.has(acc)) {
-              known.add(acc);
-              out.push({ path: acc, type: "folder", content: "" });
+
+      async function buildFileTree() {
+        let entries = [];
+        if (directoryHandle) {
+          entries = await scanFsRecursive(directoryHandle);
+        } else {
+          entries = await listDBFiles();
+          const folderPaths = new Set();
+          entries.forEach((e) => {
+            const parts = e.path.split("/");
+            let current = "";
+            for (let i = 0; i < parts.length - 1; i++) {
+              current = current ? `${current}/${parts[i]}` : parts[i];
+              folderPaths.add(current);
             }
+          });
+          folderPaths.forEach((p) => {
+            if (!entries.find((e) => e.path === p)) {
+              entries.push({ path: p, type: "folder", source: "db" });
+            }
+          });
+        }
+
+        const root = [];
+        const map = {};
+
+        entries.forEach((e) => {
+          map[e.path] = { ...e, name: e.path.split("/").pop(), children: [] };
+        });
+
+        entries.forEach((e) => {
+          const node = map[e.path];
+          const parentPath = getParentPath(e.path);
+          if (parentPath && map[parentPath]) {
+            map[parentPath].children.push(node);
+          } else if (!parentPath) {
+            root.push(node);
           }
         });
-        return out;
+
+        return root;
       }
+
       async function scanFsRecursive(dirHandle, parent = "") {
         const entries = [];
         for await (const entry of dirHandle.values()) {
@@ -4669,109 +4672,156 @@
         }
         return entries;
       }
-      function renderExplorerEntries(entries) {
+
+      function renderExplorer() {
         fileList.innerHTML = "";
-        entries
-          .sort((a, b) => {
-            const depthA = pathDepth(a.path);
-            const depthB = pathDepth(b.path);
-            if (depthA !== depthB) return depthA - depthB;
-            if (a.type === "folder" && b.type !== "folder") return -1;
-            if (a.type !== "folder" && b.type === "folder") return 1;
-            return a.path.localeCompare(b.path);
-          })
-          .forEach((entry) => {
-            if (!isPathVisible(entry.path)) return;
-            const li = document.createElement("li");
-            li.className = `file-item ${entry.type === "folder" ? "folder" : ""} ${collapsedExplorerFolders.has(entry.path) ? "collapsed" : ""}`;
-            li.dataset.path = entry.path;
-            li.dataset.type = entry.type;
-            li.dataset.source = entry.source || (directoryHandle ? "fs" : "db");
-            li.dataset.depth = String(Math.min(pathDepth(entry.path), 5));
-            li.draggable = entry.type === "file";
-            const icon =
-              entry.type === "folder" ? "fas fa-folder" : "far fa-file-alt";
-            const name = entry.path.split("/").pop();
-            li.innerHTML = `<span class="file-caret"><i class="fas fa-chevron-down"></i></span><i class="file-icon ${icon}"></i><span class="file-name">${name}</span><button class="file-action"><i class="fas fa-times"></i></button>`;
-            const nameSpan = li.querySelector(".file-name");
-            const actionBtn = li.querySelector(".file-action");
-            const source = li.dataset.source;
-            if (entry.type === "folder") {
-              nameSpan.addEventListener("click", () => {
-                currentFolderPath = entry.path;
-                if (collapsedExplorerFolders.has(entry.path))
-                  collapsedExplorerFolders.delete(entry.path);
-                else collapsedExplorerFolders.add(entry.path);
-                refreshExplorer();
-              });
-              li.addEventListener("dragover", (e) => {
-                if (!draggedEntryPath || draggedEntryPath === entry.path)
-                  return;
-                e.preventDefault();
-                li.classList.add("drop-target");
-              });
-              li.addEventListener("dragleave", () =>
-                li.classList.remove("drop-target"),
-              );
-              li.addEventListener("drop", async (e) => {
-                e.preventDefault();
-                li.classList.remove("drop-target");
-                if (!draggedEntryPath || draggedEntryPath === entry.path)
-                  return;
-                await moveEntryToFolder(draggedEntryPath, entry.path, source);
-              });
-            } else {
-              nameSpan.addEventListener("click", async () => {
-                if (isRenaming || isCreating) return;
-                if (source === "db") {
-                  const existingTab = tabs.find(
-                    (t) => t.fileHandle && t.fileHandle.path === entry.path,
-                  );
-                  if (existingTab) activateTab(existingTab.id);
-                  else await openFileFromDB(entry.path);
-                } else if (entry.handle)
-                  await openFile(entry.handle, entry.path);
-              });
-            }
-            nameSpan.addEventListener("dblclick", (e) => {
-              e.stopPropagation();
-              if (source !== "db") return;
-              startInlineRename(entry, li, nameSpan);
-            });
-            actionBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              if (isRenaming || isCreating) return;
-              deleteEntry(entry.path, source);
-            });
-            li.addEventListener("contextmenu", (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (isRenaming || isCreating) return;
-              rightClickedEntry = { path: entry.path, type: entry.type };
-              rightClickedEntrySource = source;
-              currentFolderPath =
-                entry.type === "folder"
-                  ? entry.path
-                  : getParentPath(entry.path);
-              showCtxMenu(e.clientX, e.clientY, entry.type);
-            });
-            li.addEventListener("dragstart", () => {
-              draggedEntryPath = entry.path;
-              draggedEntrySource = source;
-              li.classList.add("dragging");
-            });
-            li.addEventListener("dragend", () => {
-              draggedEntryPath = null;
-              draggedEntrySource = null;
-              li.classList.remove("dragging");
-              fileList
-                .querySelectorAll(".file-item.drop-target")
-                .forEach((el) => el.classList.remove("drop-target"));
-            });
-            fileList.appendChild(li);
-          });
+        renderTreeNodes(fileSystemTree, fileList);
         syncExplorerActiveState();
       }
+
+      function renderTreeNodes(nodes, container) {
+        nodes.sort((a, b) => {
+          if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+          return a.name.localeCompare(b.name, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        });
+
+        nodes.forEach((node) => {
+          if (activeTag) {
+            // Simple filter for tags (only files)
+            // This logic might need refinement for tree view, but for now:
+            if (node.type === "file") {
+              const handles = allTags.get(activeTag) || [];
+              const match = handles.some((h) => h.name === node.name);
+              if (!match) return;
+            } else {
+              // If folder, check if it has matching children?
+              // For simplicity, just show everything or filter?
+              // Let's skip tag filtering for folders for now or implement deeper logic
+            }
+          }
+
+          const li = document.createElement("li");
+          li.className = `file-item ${node.type === "folder" ? "folder" : "file"}`;
+          if (
+            node.type === "folder" &&
+            collapsedExplorerFolders.has(node.path)
+          ) {
+            li.classList.add("collapsed");
+          }
+          li.dataset.path = node.path;
+
+          const row = document.createElement("div");
+          row.className = "file-row";
+          row.dataset.path = node.path;
+
+          const caret = document.createElement("span");
+          caret.className = `file-caret ${node.type === "folder" ? "" : "hidden"}`;
+          caret.innerHTML = '<i class="fas fa-chevron-down"></i>';
+          row.appendChild(caret);
+
+          const icon = document.createElement("i");
+          icon.className = `file-icon ${node.type === "folder" ? "fas fa-folder" : "far fa-file-alt"}`;
+          row.appendChild(icon);
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "file-name";
+          nameSpan.textContent = node.name;
+          row.appendChild(nameSpan);
+
+          if (node.type === "folder") {
+            row.onclick = (e) => {
+              e.stopPropagation();
+              toggleFolder(li, node.path);
+            };
+            row.addEventListener("dragover", (e) => {
+              if (!draggedEntryPath || draggedEntryPath === node.path) return;
+              e.preventDefault();
+              row.classList.add("drop-target");
+            });
+            row.addEventListener("dragleave", () =>
+              row.classList.remove("drop-target"),
+            );
+            row.addEventListener("drop", async (e) => {
+              e.preventDefault();
+              row.classList.remove("drop-target");
+              if (!draggedEntryPath || draggedEntryPath === node.path) return;
+              await moveEntryToFolder(
+                draggedEntryPath,
+                node.path,
+                node.source || "db",
+              );
+            });
+          } else {
+            row.onclick = async (e) => {
+              e.stopPropagation();
+              if (isRenaming || isCreating) return;
+              if (node.source === "db") {
+                const existingTab = tabs.find(
+                  (t) => t.fileHandle && t.fileHandle.path === node.path,
+                );
+                if (existingTab) activateTab(existingTab.id);
+                else await openFileFromDB(node.path);
+              } else {
+                await openFile(node.handle, node.path);
+              }
+            };
+            row.addEventListener("dblclick", (e) => {
+              e.stopPropagation();
+              if (node.source !== "db") return;
+              startInlineRename(node, li, nameSpan);
+            });
+            row.draggable = true;
+            row.addEventListener("dragstart", () => {
+              draggedEntryPath = node.path;
+              draggedEntrySource = node.source || "db";
+              row.classList.add("dragging");
+            });
+            row.addEventListener("dragend", () => {
+              draggedEntryPath = null;
+              draggedEntrySource = null;
+              row.classList.remove("dragging");
+              document
+                .querySelectorAll(".drop-target")
+                .forEach((el) => el.classList.remove("drop-target"));
+            });
+          }
+
+          row.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            rightClickedEntry = { path: node.path, type: node.type };
+            rightClickedEntrySource = node.source || "db";
+            currentFolderPath =
+              node.type === "folder" ? node.path : getParentPath(node.path);
+            showCtxMenu(e.clientX, e.clientY, node.type);
+          });
+
+          li.appendChild(row);
+
+          if (node.type === "folder") {
+            const ul = document.createElement("ul");
+            ul.className = "file-sublist";
+            renderTreeNodes(node.children, ul);
+            li.appendChild(ul);
+          }
+
+          container.appendChild(li);
+        });
+      }
+
+      function toggleFolder(li, path) {
+        if (collapsedExplorerFolders.has(path)) {
+          collapsedExplorerFolders.delete(path);
+          li.classList.remove("collapsed");
+        } else {
+          collapsedExplorerFolders.add(path);
+          li.classList.add("collapsed");
+        }
+      }
+
       async function moveEntryToFolder(sourcePath, folderPath, source) {
         if (source !== draggedEntrySource) return;
         if (source === "db") {
@@ -4899,7 +4949,7 @@
         const entries = await scanFsRecursive(directoryHandle);
         entries.forEach((entry) => fsEntryMap.set(entry.path, entry.handle));
         renderTags();
-        renderExplorerEntries(entries);
+        await refreshExplorer();
       }
       function syncExplorerActiveState() {
         const path =
@@ -4907,24 +4957,15 @@
           (currentFileHandle
             ? currentFileHandle.path || currentFileHandle.name
             : null);
-        document.querySelectorAll(".file-item").forEach((el) => {
+        document.querySelectorAll(".file-row").forEach((el) => {
           const itemPath = el.dataset.path;
-          el.classList.toggle("active-item", itemPath === path);
+          el.classList.toggle("active", itemPath === path);
         });
       }
 
       async function refreshExplorer() {
-        if (directoryHandle) {
-          await scanDirectory();
-          return;
-        }
-        const entries = ensureDbFolderEntries(await listDBFiles()).map(
-          (entry) => ({
-            ...entry,
-            source: "db",
-          }),
-        );
-        renderExplorerEntries(entries);
+        fileSystemTree = await buildFileTree();
+        renderExplorer();
       }
 
       function startInlineRename(entry, li, nameSpan) {
@@ -5023,17 +5064,50 @@
         notify(`Renamed to ${newName}`);
       }
 
-      async function startInlineCreate(type, parentPath = currentFolderPath) {
+      async function startInlineCreate(type, parentPath) {
         if (isRenaming || isCreating) return;
         isCreating = true;
 
+        // Ensure parent is expanded
+        if (parentPath && collapsedExplorerFolders.has(parentPath)) {
+          collapsedExplorerFolders.delete(parentPath);
+          await refreshExplorer();
+        }
+
+        let container = fileList;
+        if (parentPath) {
+          const parentRow = document.querySelector(
+            `.file-row[data-path="${parentPath}"]`,
+          );
+          if (parentRow) {
+            const parentLi = parentRow.parentElement;
+            let sub = parentLi.querySelector(".file-sublist");
+            if (!sub) {
+              sub = document.createElement("ul");
+              sub.className = "file-sublist";
+              parentLi.appendChild(sub);
+              const caret = parentRow.querySelector(".file-caret");
+              if (caret) {
+                caret.classList.remove("hidden");
+                caret.innerHTML = '<i class="fas fa-chevron-down"></i>';
+              }
+            }
+            container = sub;
+          }
+        }
+
         const li = document.createElement("li");
         li.className = "file-item";
-        const icon = type === "folder" ? "fas fa-folder" : "far fa-file-alt";
-        li.innerHTML = `<i class="${icon}"></i><span class="file-name"></span>`;
-        fileList.prepend(li);
 
-        const nameSpan = li.querySelector(".file-name");
+        const row = document.createElement("div");
+        row.className = "file-row";
+        const icon = type === "folder" ? "fas fa-folder" : "far fa-file-alt";
+        row.innerHTML = `<span class="file-caret hidden"></span><i class="file-icon ${icon}"></i><span class="file-name"></span>`;
+        li.appendChild(row);
+
+        container.prepend(li);
+
+        const nameSpan = row.querySelector(".file-name");
         const input = document.createElement("input");
         input.type = "text";
         input.className = "inline-input";
@@ -5043,8 +5117,9 @@
 
         const finishCreate = async (commit) => {
           if (!isCreating) return;
-          const name = input.value.trim();
+          let name = input.value.trim();
           if (commit && name) {
+            if (type === "file" && !name.endsWith(".md")) name += ".md";
             const path = parentPath ? `${parentPath}/${name}` : name;
             const existing = await loadFromDB(path);
             if (existing) {
@@ -5089,42 +5164,41 @@
       function createNewFile() {
         newTab("Untitled.md", "");
       }
-      async function createNewFileInExplorer(
-        targetFolderPath = currentFolderPath,
-      ) {
+      async function createNewFileInExplorer(targetFolderPath) {
+        const folder = targetFolderPath || currentFolderPath;
         if (directoryHandle) {
-          const name = prompt("File name:", "note.md");
+          let name = prompt("File name:", "note.md");
           if (!name) return;
+          if (!name.endsWith(".md")) name += ".md";
           try {
             const dir =
-              targetFolderPath && fsEntryMap.get(targetFolderPath)
-                ? fsEntryMap.get(targetFolderPath)
+              folder && fsEntryMap.get(folder)
+                ? fsEntryMap.get(folder)
                 : directoryHandle;
             const handle = await dir.getFileHandle(name, {
               create: true,
             });
-            await openFile(handle, joinPath(targetFolderPath || "", name));
+            await openFile(handle, joinPath(folder || "", name));
             await scanDirectory();
           } catch {
             notify("Could not create file");
           }
           return;
         }
-        await startInlineCreate("file", targetFolderPath || null);
+        await startInlineCreate("file", folder || null);
       }
-      async function createNewFolderInExplorer(
-        targetFolderPath = currentFolderPath,
-      ) {
+      async function createNewFolderInExplorer(targetFolderPath) {
+        const folder = targetFolderPath || currentFolderPath;
         if (directoryHandle) {
           const name = prompt("Folder name:", "new-folder");
           if (!name) return;
           try {
             const dir =
-              targetFolderPath && fsEntryMap.get(targetFolderPath)
-                ? fsEntryMap.get(targetFolderPath)
+              folder && fsEntryMap.get(folder)
+                ? fsEntryMap.get(folder)
                 : directoryHandle;
             await dir.getDirectoryHandle(name, { create: true });
-            collapsedExplorerFolders.delete(targetFolderPath || "");
+            if (folder) collapsedExplorerFolders.delete(folder);
             await scanDirectory();
             notify("Folder created");
           } catch {
@@ -5132,7 +5206,7 @@
           }
           return;
         }
-        await startInlineCreate("folder", targetFolderPath || null);
+        await startInlineCreate("folder", folder || null);
       }
 
       function handleAutosave() {
@@ -5185,17 +5259,22 @@
         });
       }
       function filterFileList() {
-        fileList.querySelectorAll(".file-item").forEach((item) => {
-          if (!activeTag) {
+        if (!activeTag) {
+          document
+            .querySelectorAll(".file-item")
+            .forEach((item) => (item.style.display = ""));
+          return;
+        }
+        const handles = allTags.get(activeTag) || [];
+        const allowedNames = new Set(handles.map((h) => h.name));
+
+        document.querySelectorAll(".file-item").forEach((item) => {
+          if (item.classList.contains("folder")) {
             item.style.display = "";
-            return;
+          } else {
+            const name = item.querySelector(".file-name").textContent;
+            item.style.display = allowedNames.has(name) ? "" : "none";
           }
-          const handles = allTags.get(activeTag) || [];
-          item.style.display = handles.some(
-            (h) => h.name === item.querySelector(".file-name").textContent,
-          )
-            ? ""
-            : "none";
         });
       }
 
