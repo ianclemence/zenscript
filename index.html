@@ -4621,7 +4621,7 @@
         if (directoryHandle) {
           entries = await scanFsRecursive(directoryHandle);
         } else {
-          entries = await listDBFiles();
+          entries = (await listDBFiles()).map((e) => ({ ...e, source: "db" }));
           const folderPaths = new Set();
           entries.forEach((e) => {
             const parts = e.path.split("/");
@@ -4758,7 +4758,7 @@
             row.onclick = async (e) => {
               e.stopPropagation();
               if (isRenaming || isCreating) return;
-              if (node.source === "db") {
+              if (node.source !== "fs") {
                 const existingTab = tabs.find(
                   (t) => t.fileHandle && t.fileHandle.path === node.path,
                 );
