@@ -3903,6 +3903,27 @@
           }
         });
 
+        if (fileList) {
+          fileList.addEventListener("dragover", (e) => {
+            if (!draggedEntryPath) return;
+            e.preventDefault();
+          });
+          fileList.addEventListener("drop", async (e) => {
+            if (!draggedEntryPath) return;
+            e.preventDefault();
+            await moveEntryToFolder(
+              draggedEntryPath,
+              "",
+              draggedEntrySource || "db",
+            );
+            draggedEntryPath = null;
+            draggedEntrySource = null;
+            document
+              .querySelectorAll(".drop-target")
+              .forEach((el) => el.classList.remove("drop-target"));
+          });
+        }
+
         document.addEventListener("click", () => {
           explorerContextMenu.classList.remove("open");
         });
@@ -4867,7 +4888,9 @@
       }
       async function moveFsEntryToFolder(sourcePath, folderPath) {
         const source = fsEntryMap.get(sourcePath);
-        const targetDir = fsEntryMap.get(folderPath);
+        const targetDir = folderPath
+          ? fsEntryMap.get(folderPath)
+          : directoryHandle;
         if (
           !source ||
           !targetDir ||
@@ -4885,7 +4908,8 @@
         const sourceDir =
           fsEntryMap.get(getParentPath(sourcePath)) || directoryHandle;
         if (sourceDir?.removeEntry) await sourceDir.removeEntry(file.name);
-        notify(`Moved to ${folderPath}`);
+        const destination = folderPath || directoryHandle?.name || "root";
+        notify(`Moved to ${destination}`);
         await scanDirectory();
       }
       async function openDirectory() {
@@ -5025,6 +5049,8 @@
         if (!entry) return;
         const parts = oldPath.split("/");
         parts.pop();
+        if (entry.type === "file" && !newName.endsWith(".md"))
+          newName = `${newName}.md`;
         const newPath = parts.length
           ? `${parts.join("/")}/${newName}`
           : newName;
