@@ -8,7 +8,7 @@
 
 ### 🎨 Visual & Experience
 
-- **Elegant UI**: A modern, Apple-inspired interface with multiple professional themes (Dark, Nord, Dracula, Midnight, Retro, Sepia).
+- **Elegant UI**: A modern, Apple-inspired interface with multiple professional themes (Light, Dark, Dusk, Forest, Matrix).
 - **Zen Mode**: Focus entirely on your content with a distraction-free writing environment.
 - **Side-by-Side Preview**: Real-time rendering of your Markdown with synchronized scrolling.
 - **Command Palette**: Quick access to all formatting tools and commands via **Right Click** in the editor.
