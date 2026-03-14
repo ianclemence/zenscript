@@ -3455,7 +3455,24 @@
           }
         }
 
-        if (!restored) {
+        if (restored) {
+          if (window.idbKeyval) {
+            const explorerWidth = await idbKeyval.get("panel-width-explorer");
+            const viewerWidth = await idbKeyval.get("panel-width-viewer");
+            if (explorerWidth)
+              document.getElementById("explorer").style.width = explorerWidth;
+            if (viewerWidth)
+              document.getElementById("viewer").style.width = viewerWidth;
+          }
+        } else {
+          // Reset to defaults if new file
+          document.getElementById("explorer").style.width = "240px";
+          document.getElementById("viewer").style.width = "380px";
+          // Also clear saved widths
+          if (window.idbKeyval) {
+            idbKeyval.del("panel-width-explorer");
+            idbKeyval.del("panel-width-viewer");
+          }
           // Boot with one default tab if nothing restored
           newTab("Untitled.md", "");
         }
@@ -3887,6 +3904,10 @@
             document.removeEventListener("mousemove", onMove);
             document.removeEventListener("mouseup", onUp);
             if (raf) cancelAnimationFrame(raf);
+            // Save panel width
+            if (window.idbKeyval) {
+              idbKeyval.set(`panel-width-${panelId}`, panel.style.width);
+            }
           }
         };
         setupResizer("resizer-1", "explorer", false, 150, 400);
