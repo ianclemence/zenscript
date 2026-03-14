@@ -3997,13 +3997,14 @@
         editor.addEventListener("dragleave", () =>
           editor.classList.remove("drag-over"),
         );
-        editor.addEventListener("drop", (e) => {
+        editor.addEventListener("drop", async (e) => {
           e.preventDefault();
           editor.classList.remove("drag-over");
-          if (e.dataTransfer.files)
-            Array.from(e.dataTransfer.files).forEach((f) =>
-              insertFileReference(f),
-            );
+          if (e.dataTransfer.files) {
+            for (const f of Array.from(e.dataTransfer.files)) {
+              await insertFileReference(f);
+            }
+          }
         });
 
         editor.addEventListener("contextmenu", (e) => {
@@ -6424,17 +6425,33 @@
       }
 
       // ─── Attachments ───
-      function handleAttachmentSelect(e) {
+      async function handleAttachmentSelect(e) {
         const f = e.target.files && e.target.files[0];
-        if (f) insertFileReference(f);
+        if (f) await insertFileReference(f);
         e.target.value = "";
       }
-      function insertFileReference(f) {
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      }
+      async function insertFileReference(f) {
         if (!f) return;
         const isImg = f.type && f.type.startsWith("image/");
-        const insert = isImg
-          ? `\n\n![${f.name}](${f.name})\n\n`
-          : `\n\n[${f.name}](${f.name})\n\n`;
+        let insert = "";
+        if (isImg) {
+          try {
+            const dataUrl = await readFileAsDataUrl(f);
+            insert = `\n\n![${f.name}](${dataUrl})\n\n`;
+          } catch {
+            insert = `\n\n![${f.name}](${f.name})\n\n`;
+          }
+        } else {
+          insert = `\n\n[${f.name}](${f.name})\n\n`;
+        }
         insertAtCursor(insert);
         notify(`Inserted: ${f.name}`);
       }
