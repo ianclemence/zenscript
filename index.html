@@ -4367,6 +4367,7 @@
         }
         generateTOC();
         stylePreviewAttachments();
+        resolvePreviewImages();
         applyCallouts();
       }
 
@@ -6430,6 +6431,9 @@
         if (f) await insertFileReference(f);
         e.target.value = "";
       }
+      function createAttachmentId() {
+        return `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      }
       function readFileAsDataUrl(file) {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -6444,8 +6448,19 @@
         let insert = "";
         if (isImg) {
           try {
-            const dataUrl = await readFileAsDataUrl(f);
-            insert = `\n\n![${f.name}](${dataUrl})\n\n`;
+            if (window.idbKeyval) {
+              const id = createAttachmentId();
+              const buffer = await f.arrayBuffer();
+              await idbKeyval.set(`attachment:${id}`, {
+                name: f.name,
+                type: f.type,
+                data: buffer,
+              });
+              insert = `\n\n![${f.name}](attachment://${id})\n\n`;
+            } else {
+              const dataUrl = await readFileAsDataUrl(f);
+              insert = `\n\n![${f.name}](${dataUrl})\n\n`;
+            }
           } catch {
             insert = `\n\n![${f.name}](${f.name})\n\n`;
           }
@@ -6454,6 +6469,26 @@
         }
         insertAtCursor(insert);
         notify(`Inserted: ${f.name}`);
+      }
+      async function resolvePreviewImages() {
+        if (!window.idbKeyval) return;
+        const images = previewContent.querySelectorAll(
+          'img[src^="attachment://"]',
+        );
+        for (const img of images) {
+          const src = img.getAttribute("src");
+          const id = src ? src.replace("attachment://", "") : "";
+          if (!id) continue;
+          try {
+            const entry = await idbKeyval.get(`attachment:${id}`);
+            if (!entry || !entry.data) continue;
+            const blob = new Blob([entry.data], {
+              type: entry.type || "image/*",
+            });
+            const url = URL.createObjectURL(blob);
+            img.src = url;
+          } catch {}
+        }
       }
       function insertAtCursor(text) {
         const s = editor.selectionStart || 0,
