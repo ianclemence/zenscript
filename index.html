@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZenScript</title>
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("md-theme");
+        if (storedTheme)
+          document.documentElement.setAttribute("data-theme", storedTheme);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,6 +27,18 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css"
       id="hljs-style"
     />
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("md-theme");
+        if (!storedTheme) return;
+        const darkThemes = ["dark", "dusk", "forest", "matrix"];
+        if (!darkThemes.includes(storedTheme)) return;
+        const hljsLink = document.getElementById("hljs-style");
+        if (!hljsLink) return;
+        hljsLink.href =
+          "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css";
+      })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -6486,6 +6505,7 @@
           });
         }
         if (window.idbKeyval) idbKeyval.set("md-theme", theme);
+        localStorage.setItem("md-theme", theme);
       }
 
       function applyFontSize(size) {
@@ -6515,6 +6535,7 @@
         themeSelect.value = theme;
         fontSizeInput.value = size;
         autosaveToggle.checked = autosave;
+        localStorage.setItem("md-theme", theme);
         // Apply theme by setting attribute (no CSS transition flash on load)
         document.documentElement.setAttribute("data-theme", theme);
         document.body.setAttribute("data-theme", theme);
