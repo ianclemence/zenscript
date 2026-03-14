@@ -4272,6 +4272,7 @@
           updateWordCount();
           markAsUnsaved(false);
           statusBar.textContent = `Opened ${handle.name}`;
+          syncExplorerActiveState();
         } catch {
           notify("Error reading file");
         }
@@ -4330,12 +4331,24 @@
           });
           const li = document.createElement("li");
           li.className = "file-item";
+          li.dataset.path = entry.name;
           li.innerHTML = `<i class="far fa-file-alt"></i><span class="file-name">${entry.name}</span>`;
           li.onclick = () => openFile(entry);
           fileList.appendChild(li);
         }
         renderTags();
+        syncExplorerActiveState();
       }
+      function syncExplorerActiveState() {
+        const path = currentFileHandle
+          ? currentFileHandle.path || currentFileHandle.name
+          : null;
+        document.querySelectorAll(".file-item").forEach((el) => {
+          const itemPath = el.dataset.path;
+          el.classList.toggle("active-item", itemPath === path);
+        });
+      }
+
       async function refreshExplorer() {
         if (directoryHandle) {
           await scanDirectory();
@@ -4357,10 +4370,6 @@
             entry.type === "folder" ? "fas fa-folder" : "far fa-file-alt";
           li.innerHTML = `<i class="${icon}"></i><span class="file-name">${entry.path.split("/").pop()}</span><button class="file-action"><i class="fas fa-times"></i></button>`;
           li.querySelector(".file-name").addEventListener("click", () => {
-            document
-              .querySelectorAll(".file-item")
-              .forEach((i) => i.classList.remove("active-item"));
-            li.classList.add("active-item");
             if (entry.type === "folder") {
               currentFolderPath = entry.path;
             } else {
@@ -4385,6 +4394,7 @@
           });
           fileList.appendChild(li);
         });
+        syncExplorerActiveState();
       }
 
       async function openFileFromDB(path) {
@@ -5525,6 +5535,7 @@
         updateWordCount();
         updateToolbarState();
         refreshTabBar();
+        syncExplorerActiveState();
         // Save current active tab/file to preferences for reload
         if (window.idbKeyval) {
           idbKeyval.set("md-last-active-file", {
@@ -5631,6 +5642,7 @@
           }
         }
         statusBar.textContent = `Opened: ${path}`;
+        syncExplorerActiveState();
       }
 
       // ─── Writing Goal ───
