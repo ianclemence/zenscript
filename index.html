@@ -4366,8 +4366,8 @@
           });
         }
         generateTOC();
+        resolvePreviewAttachments();
         stylePreviewAttachments();
-        resolvePreviewImages();
         applyCallouts();
       }
 
@@ -6446,31 +6446,33 @@
         if (!f) return;
         const isImg = f.type && f.type.startsWith("image/");
         let insert = "";
-        if (isImg) {
-          try {
-            if (window.idbKeyval) {
-              const id = createAttachmentId();
-              const buffer = await f.arrayBuffer();
-              await idbKeyval.set(`attachment:${id}`, {
-                name: f.name,
-                type: f.type,
-                data: buffer,
-              });
-              insert = `\n\n![${f.name}](attachment://${id})\n\n`;
-            } else {
-              const dataUrl = await readFileAsDataUrl(f);
-              insert = `\n\n![${f.name}](${dataUrl})\n\n`;
-            }
-          } catch {
-            insert = `\n\n![${f.name}](${f.name})\n\n`;
+        try {
+          if (window.idbKeyval) {
+            const id = createAttachmentId();
+            const buffer = await f.arrayBuffer();
+            await idbKeyval.set(`attachment:${id}`, {
+              name: f.name,
+              type: f.type,
+              data: buffer,
+            });
+            insert = isImg
+              ? `\n\n![${f.name}](attachment://${id})\n\n`
+              : `\n\n[${f.name}](attachment://${id})\n\n`;
+          } else if (isImg) {
+            const dataUrl = await readFileAsDataUrl(f);
+            insert = `\n\n![${f.name}](${dataUrl})\n\n`;
+          } else {
+            insert = `\n\n[${f.name}](${f.name})\n\n`;
           }
-        } else {
-          insert = `\n\n[${f.name}](${f.name})\n\n`;
+        } catch {
+          insert = isImg
+            ? `\n\n![${f.name}](${f.name})\n\n`
+            : `\n\n[${f.name}](${f.name})\n\n`;
         }
         insertAtCursor(insert);
         notify(`Inserted: ${f.name}`);
       }
-      async function resolvePreviewImages() {
+      async function resolvePreviewAttachments() {
         if (!window.idbKeyval) return;
         const images = previewContent.querySelectorAll(
           'img[src^="attachment://"]',
@@ -6487,6 +6489,50 @@
             });
             const url = URL.createObjectURL(blob);
             img.src = url;
+            img.dataset.attachmentName = entry.name || "";
+          } catch {}
+        }
+        const links = previewContent.querySelectorAll(
+          'a[href^="attachment://"]',
+        );
+        for (const link of links) {
+          const href = link.getAttribute("href");
+          const id = href ? href.replace("attachment://", "") : "";
+          if (!id) continue;
+          try {
+            const entry = await idbKeyval.get(`attachment:${id}`);
+            if (!entry || !entry.data) continue;
+            const type = entry.type || "";
+            const name = entry.name || link.textContent || "attachment";
+            const blob = new Blob([entry.data], {
+              type: type || "application/octet-stream",
+            });
+            const url = URL.createObjectURL(blob);
+            const ext = name.split(".").pop().toLowerCase();
+            if (type.startsWith("audio/")) {
+              const audio = document.createElement("audio");
+              audio.controls = true;
+              audio.src = url;
+              link.replaceWith(audio);
+              continue;
+            }
+            if (type.startsWith("video/")) {
+              const video = document.createElement("video");
+              video.controls = true;
+              video.src = url;
+              video.style.maxWidth = "100%";
+              link.replaceWith(video);
+              continue;
+            }
+            link.dataset.attachmentName = name;
+            link.dataset.attachmentType = type;
+            link.href = url;
+            if (type === "application/pdf" || ext === "pdf") {
+              link.target = "_blank";
+              link.rel = "noopener";
+            } else {
+              link.download = name;
+            }
           } catch {}
         }
       }
@@ -6504,12 +6550,15 @@
       function stylePreviewAttachments() {
         previewContent.querySelectorAll("a[href]").forEach((a) => {
           const href = a.getAttribute("href") || "";
+          const name = a.dataset.attachmentName || a.textContent || "";
+          const ext = name.split(".").pop().toLowerCase();
           if (
             href.startsWith("data:") ||
-            /\.(pdf|txt|md|zip|mp3|mp4|doc|xls)$/.test(href)
+            href.startsWith("blob:") ||
+            /\.(pdf|txt|md|zip|mp3|mp4|doc|xls)$/.test(href) ||
+            /^(pdf|txt|md|zip|mp3|mp4|doc|xls)$/.test(ext)
           ) {
             a.classList.add("attachment-chip");
-            const ext = href.split(".").pop().toLowerCase();
             const icon =
               ext === "pdf"
                 ? "fa-file-pdf"
@@ -6518,7 +6567,7 @@
                   : ext === "mp4"
                     ? "fa-file-video"
                     : "fa-file";
-            a.innerHTML = `<i class="fas ${icon}"></i>${a.textContent}`;
+            a.innerHTML = `<i class="fas ${icon}"></i>${name || a.textContent}`;
           }
         });
       }
