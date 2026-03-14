@@ -3436,8 +3436,30 @@
         setupTemplates();
         setupMobile();
         loadPreferences();
-        // Boot with one tab
-        newTab("Untitled.md", "");
+
+        // Try to restore last active file
+        let restored = false;
+        if (window.idbKeyval) {
+          const lastFile = await idbKeyval.get("md-last-active-file");
+          if (lastFile && lastFile.source === "db" && lastFile.path) {
+            const entry = await loadFromDB(lastFile.path);
+            if (entry) {
+              newTab(
+                lastFile.path,
+                entry.content,
+                { name: lastFile.path, path: lastFile.path },
+                "db",
+              );
+              restored = true;
+            }
+          }
+        }
+
+        if (!restored) {
+          // Boot with one default tab if nothing restored
+          newTab("Untitled.md", "");
+        }
+
         updateWordCount();
         updateToolbarState();
         renderHistory();
@@ -5477,6 +5499,14 @@
         updateWordCount();
         updateToolbarState();
         refreshTabBar();
+        // Save current active tab/file to preferences for reload
+        if (window.idbKeyval) {
+          idbKeyval.set("md-last-active-file", {
+            path: tab.fileHandle ? tab.fileHandle.path : null,
+            name: tab.name,
+            source: tab.fileSource,
+          });
+        }
       }
 
       function closeTab(id, e) {
