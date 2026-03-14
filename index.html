@@ -2615,30 +2615,6 @@
             <button class="icon-btn" id="save-file" title="Save (⌘S)">
               <i class="fas fa-cloud-arrow-up"></i>
             </button>
-            <!-- Export dropdown (consolidated) -->
-            <div class="dropdown-wrap">
-              <button class="icon-btn" id="download-toggle" title="Export">
-                <i class="fas fa-arrow-down-to-bracket"></i>
-              </button>
-              <div class="dropdown-menu" id="download-menu">
-                <button class="dropdown-item" id="download-md">
-                  <i class="fas fa-file-lines"></i>Download .md
-                </button>
-                <button class="dropdown-item" id="download-html">
-                  <i class="fas fa-file-code"></i>Download .html
-                </button>
-                <button class="dropdown-item" id="export-pdf">
-                  <i class="fas fa-file-pdf"></i>Export as PDF
-                </button>
-                <button class="dropdown-item" id="export-image">
-                  <i class="fas fa-image"></i>Export as Image
-                </button>
-                <div class="dropdown-sep"></div>
-                <button class="dropdown-item" id="copy-html-menu">
-                  <i class="far fa-copy"></i>Copy HTML
-                </button>
-              </div>
-            </div>
             <button class="icon-btn" id="templates-btn" title="Templates">
               <i class="fas fa-scroll"></i>
             </button>
@@ -2821,6 +2797,31 @@
             <button class="icon-btn" id="toggle-toc" title="Table of Contents">
               <i class="fas fa-list-ul"></i>
             </button>
+            <div class="divider-v"></div>
+            <!-- Export dropdown (consolidated) -->
+            <div class="dropdown-wrap">
+              <button class="icon-btn" id="download-toggle" title="Export">
+                <i class="fas fa-download"></i>
+              </button>
+              <div class="dropdown-menu" id="download-menu">
+                <button class="dropdown-item" id="download-md">
+                  <i class="fas fa-file-lines"></i>Download .md
+                </button>
+                <button class="dropdown-item" id="download-html">
+                  <i class="fas fa-file-code"></i>Download .html
+                </button>
+                <button class="dropdown-item" id="export-pdf">
+                  <i class="fas fa-file-pdf"></i>Export as PDF
+                </button>
+                <button class="dropdown-item" id="export-image">
+                  <i class="fas fa-image"></i>Export as Image
+                </button>
+                <div class="dropdown-sep"></div>
+                <button class="dropdown-item" id="copy-html-menu">
+                  <i class="far fa-copy"></i>Copy HTML
+                </button>
+              </div>
+            </div>
             <button
               class="icon-btn mobile-close-preview"
               id="mobile-preview-close"
@@ -5240,6 +5241,31 @@
           notify("PDF saved");
         } catch (err) {
           notify("PDF failed: " + err.message);
+        }
+      }
+
+      async function exportToImage() {
+        const element = document.getElementById("preview-content");
+        const filename = (
+          currentFileHandle ? currentFileHandle.name : "document"
+        ).replace(/\.md$/, ".png");
+        notify("Generating Image…");
+        try {
+          const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: getComputedStyle(document.body)
+              .getPropertyValue("--preview-paper")
+              .trim(),
+          });
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+          notify("Image saved");
+        } catch (err) {
+          notify("Image failed: " + err.message);
         }
       }
 
