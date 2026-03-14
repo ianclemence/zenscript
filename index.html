@@ -651,6 +651,20 @@
         color: var(--danger);
       }
 
+      /* Inline Input */
+      .inline-input {
+        flex: 1;
+        background: var(--surface-input);
+        border: 1px solid var(--accent);
+        border-radius: var(--radius-sm);
+        padding: 2px 6px;
+        font-family: var(--font-sans);
+        font-size: 12px;
+        color: var(--text-primary);
+        outline: none;
+        width: 100%;
+      }
+
       /* History */
       .history-section {
         border-top: 1px solid var(--border-faint);
@@ -3147,6 +3161,9 @@
       let rightClickedEntry = null;
       let rightClickedHistoryIndex = null;
       let isMetaOpen = false;
+      let isRenaming = false;
+      let isCreating = false;
+
       // Multi-tab state
       let tabs = []; // [{id, name, content, fileHandle, fileSource, unsaved}]
       let activeTabId = null;
@@ -4368,12 +4385,16 @@
           li.dataset.type = entry.type;
           const icon =
             entry.type === "folder" ? "fas fa-folder" : "far fa-file-alt";
-          li.innerHTML = `<i class="${icon}"></i><span class="file-name">${entry.path.split("/").pop()}</span><button class="file-action"><i class="fas fa-times"></i></button>`;
-          li.querySelector(".file-name").addEventListener("click", () => {
+          const name = entry.path.split("/").pop();
+          li.innerHTML = `<i class="${icon}"></i><span class="file-name">${name}</span><button class="file-action"><i class="fas fa-times"></i></button>`;
+
+          const fileNameSpan = li.querySelector(".file-name");
+
+          fileNameSpan.addEventListener("click", () => {
+            if (isRenaming || isCreating) return;
             if (entry.type === "folder") {
               currentFolderPath = entry.path;
             } else {
-              // If already open in a tab, switch to it; otherwise load into current tab
               const existingTab = tabs.find(
                 (t) => t.fileHandle && t.fileHandle.path === entry.path,
               );
@@ -4382,19 +4403,143 @@
               } else openFileFromDB(entry.path);
             }
           });
+
+          // Double click to rename
+          fileNameSpan.addEventListener("dblclick", (e) => {
+            e.stopPropagation();
+            if (directoryHandle) return; // Only for DB mode for now
+            startInlineRename(entry, li, fileNameSpan);
+          });
+
           li.querySelector(".file-action").addEventListener("click", (e) => {
             e.stopPropagation();
+            if (isRenaming || isCreating) return;
             deleteEntry(entry.path);
           });
           li.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (isRenaming || isCreating) return;
             rightClickedEntry = entry;
             showCtxMenu(e.clientX, e.clientY, entry.type);
           });
           fileList.appendChild(li);
         });
         syncExplorerActiveState();
+      }
+
+      function startInlineRename(entry, li, nameSpan) {
+        if (isRenaming || isCreating) return;
+        isRenaming = true;
+        const oldName = entry.path.split("/").pop();
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "inline-input";
+        input.value = oldName;
+
+        const originalContent = nameSpan.innerHTML;
+        nameSpan.innerHTML = "";
+        nameSpan.appendChild(input);
+        input.focus();
+        input.select();
+
+        const finishRename = async (commit) => {
+          if (!isRenaming) return;
+          const newName = input.value.trim();
+          if (commit && newName && newName !== oldName) {
+            await performRename(entry.path, newName);
+          } else {
+            nameSpan.innerHTML = oldName;
+          }
+          isRenaming = false;
+        };
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") finishRename(true);
+          if (e.key === "Escape") finishRename(false);
+        });
+        input.addEventListener("blur", () => finishRename(true));
+      }
+
+      async function performRename(oldPath, newName) {
+        const entry = await loadFromDB(oldPath);
+        if (!entry) return;
+        const parts = oldPath.split("/");
+        parts.pop();
+        const newPath = parts.length
+          ? `${parts.join("/")}/${newName}`
+          : newName;
+
+        // Check if exists
+        const exists = await loadFromDB(newPath);
+        if (exists) {
+          notify("File already exists");
+          refreshExplorer();
+          return;
+        }
+
+        await saveToDB(newPath, entry.content, entry.type);
+        await deleteFromDB(oldPath);
+
+        // Update tabs
+        tabs.forEach((tab) => {
+          if (tab.fileHandle && tab.fileHandle.path === oldPath) {
+            tab.fileHandle.path = newPath;
+            tab.fileHandle.name = newName;
+            tab.name = newName;
+          }
+        });
+
+        if (currentFileHandle && currentFileHandle.path === oldPath) {
+          currentFileHandle.path = newPath;
+          currentFileHandle.name = newName;
+          currentFilenameDisplay.textContent = newName;
+        }
+
+        refreshTabBar();
+        refreshExplorer();
+        notify(`Renamed to ${newName}`);
+      }
+
+      async function startInlineCreate(type) {
+        if (isRenaming || isCreating) return;
+        isCreating = true;
+
+        const li = document.createElement("li");
+        li.className = "file-item";
+        const icon = type === "folder" ? "fas fa-folder" : "far fa-file-alt";
+        li.innerHTML = `<i class="${icon}"></i><span class="file-name"></span>`;
+        fileList.prepend(li);
+
+        const nameSpan = li.querySelector(".file-name");
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "inline-input";
+        input.placeholder = type === "folder" ? "New Folder" : "new-file.md";
+        nameSpan.appendChild(input);
+        input.focus();
+
+        const finishCreate = async (commit) => {
+          if (!isCreating) return;
+          const name = input.value.trim();
+          if (commit && name) {
+            const path = currentFolderPath
+              ? `${currentFolderPath}/${name}`
+              : name;
+            await saveToDB(path, "", type);
+            if (type === "file") await openFileFromDB(path);
+            refreshExplorer();
+          } else {
+            li.remove();
+          }
+          isCreating = false;
+        };
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") finishCreate(true);
+          if (e.key === "Escape") finishCreate(false);
+        });
+        input.addEventListener("blur", () => finishCreate(true));
       }
 
       async function openFileFromDB(path) {
@@ -4430,26 +4575,14 @@
           }
           return;
         }
-        const fileName = prompt("File name:", "new-file.md");
-        if (!fileName) return;
-        const path = currentFolderPath
-          ? `${currentFolderPath}/${fileName}`
-          : fileName;
-        await saveToDB(path, "", "file");
-        await openFileFromDB(path);
-        await refreshExplorer();
+        await startInlineCreate("file");
       }
       async function createNewFolderInExplorer() {
         if (directoryHandle) {
           alert("Create folders in your file system.");
           return;
         }
-        const name = prompt("Folder name:");
-        if (!name) return;
-        const path = currentFolderPath ? `${currentFolderPath}/${name}` : name;
-        await saveToDB(path, "", "folder");
-        await refreshExplorer();
-        notify(`Folder created: ${path}`);
+        await startInlineCreate("folder");
       }
 
       function handleAutosave() {
@@ -4665,24 +4798,17 @@
         notify(`Pasted to ${newPath}`);
       }
       async function renameEntry(oldPath) {
-        const newName = prompt("New name:", oldPath.split("/").pop());
-        if (!newName) return;
+        if (directoryHandle) return; // Use native FS for this
         const entry = await loadFromDB(oldPath);
         if (!entry) return;
-        const parts = oldPath.split("/");
-        parts.pop();
-        const newPath = parts.length
-          ? `${parts.join("/")}/${newName}`
-          : newName;
-        await saveToDB(newPath, entry.content, entry.type);
-        await deleteFromDB(oldPath);
-        if (currentFileHandle && currentFileHandle.path === oldPath) {
-          currentFileHandle.path = newPath;
-          currentFileHandle.name = newPath;
-          currentFilenameDisplay.textContent = newPath;
-        }
-        refreshExplorer();
-        notify(`Renamed to ${newName}`);
+
+        // Find the LI in explorer
+        const li = document.querySelector(`.file-item[data-path="${oldPath}"]`);
+        if (!li) return;
+        const nameSpan = li.querySelector(".file-name");
+        if (!nameSpan) return;
+
+        startInlineRename(entry, li, nameSpan);
       }
       async function deleteEntry(path) {
         if (!confirm(`Delete "${path}"?`)) return;
@@ -5755,8 +5881,25 @@
             if (activeTabId !== null) {
               const tab = tabs.find((t2) => t2.id === activeTabId);
               if (tab) {
-                tab.name = t.name + ".md";
+                const oldName = tab.name;
+                const newName = t.name + ".md";
+                tab.name = newName;
                 tab.content = t.content;
+
+                // Update file handle if it was from DB
+                if (tab.fileSource === "db" && tab.fileHandle) {
+                  const oldPath = tab.fileHandle.path;
+                  const parts = oldPath.split("/");
+                  parts.pop();
+                  const newPath = parts.length
+                    ? `${parts.join("/")}/${newName}`
+                    : newName;
+
+                  // We don't save to DB yet, just update handle so saveCurrentFile works correctly
+                  tab.fileHandle = { name: newName, path: newPath };
+                  currentFileHandle = tab.fileHandle;
+                }
+
                 refreshTabBar();
               }
             }
