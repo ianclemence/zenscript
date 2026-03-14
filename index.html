@@ -320,8 +320,8 @@
         background: var(--surface-app);
         color: var(--text-primary);
         transition:
-          background-color var(--duration-slow) var(--ease),
-          color var(--duration-slow) var(--ease);
+          background-color var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
@@ -365,9 +365,9 @@
         flex-direction: column;
         box-shadow: var(--shadow-md);
         transition:
-          background-color var(--duration-slow) var(--ease),
-          border-color var(--duration-slow) var(--ease),
-          box-shadow var(--duration-slow) var(--ease);
+          background-color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease),
+          box-shadow var(--duration-fast) var(--ease);
       }
 
       #explorer {
@@ -902,7 +902,7 @@
         resize: none;
         outline: none;
         caret-color: var(--accent);
-        transition: color var(--duration-slow) var(--ease);
+        transition: color var(--duration-fast) var(--ease);
       }
       #editor::placeholder {
         color: var(--text-tertiary);
@@ -961,8 +961,8 @@
         width: 360px;
         display: none;
         transition:
-          background-color var(--duration-slow) var(--ease),
-          border-color var(--duration-slow) var(--ease);
+          background-color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease);
       }
       .overlay-panel.open {
         display: block;
@@ -1308,7 +1308,7 @@
         padding: clamp(20px, 3vw, 40px);
         background: var(--preview-paper);
         transition:
-          background-color var(--duration-slow) var(--ease),
+          background-color var(--duration-fast) var(--ease),
           font-size var(--duration-base) var(--ease);
       }
 
@@ -5401,7 +5401,12 @@
             theme: dark ? "dark" : "default",
             securityLevel: "loose",
           });
-          updatePreview();
+          // Only update if there are diagrams to avoid blocking UI
+          if (previewContent.querySelector(".mermaid")) {
+            requestAnimationFrame(() => {
+              updatePreview();
+            });
+          }
         }
         if (window.idbKeyval) idbKeyval.set("md-theme", theme);
       }
