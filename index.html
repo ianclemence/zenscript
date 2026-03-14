@@ -5494,6 +5494,7 @@
             createNewFile();
           }
         }
+        await deleteHistoryForPath(path, source);
         refreshExplorer();
         notify(`Deleted`);
       }
@@ -5537,6 +5538,22 @@
       }
 
       // ─── Local History ───
+      async function deleteHistoryForPath(path, source) {
+        if (!window.idbKeyval) return;
+        try {
+          const history = (await idbKeyval.get("md-local-history")) || [];
+          const newHistory = history.filter((h) => {
+            const hSource = h.fileSource || "db";
+            const hPath = h.filePath || h.name;
+            if (hSource !== source) return true;
+            if (hPath === path || hPath.startsWith(path + "/")) return false;
+            return true;
+          });
+          await idbKeyval.set("md-local-history", newHistory);
+          renderHistory();
+        } catch {}
+      }
+
       async function saveSnapshot() {
         if (!currentFileHandle || !currentFilePath) return;
         const content = editor.value;
