@@ -3853,6 +3853,7 @@
         renderHistory();
         setInterval(saveSnapshot, 5 * 60 * 1000);
         refreshExplorer();
+        startDeletionWatcher();
       }
 
       // ─── Event Listeners ───
@@ -4671,6 +4672,9 @@
 
       // ─── File System ───
       let fileSystemTree = [];
+      let lastKnownDbPaths = new Set();
+      let lastKnownFsPaths = new Set();
+      let deletionWatcher = null;
 
       function joinPath(parent, name) {
         return parent ? `${parent}/${name}` : name;
@@ -4742,6 +4746,59 @@
         fileList.innerHTML = "";
         renderTreeNodes(fileSystemTree, fileList);
         syncExplorerActiveState();
+      }
+
+      function collectFilePaths(nodes, dbSet, fsSet) {
+        nodes.forEach((node) => {
+          if (node.type === "file") {
+            if (node.source === "fs") fsSet.add(node.path);
+            else dbSet.add(node.path);
+          }
+          if (node.children && node.children.length) {
+            collectFilePaths(node.children, dbSet, fsSet);
+          }
+        });
+      }
+
+      function updateKnownPathsFromTree() {
+        const dbSet = new Set();
+        const fsSet = new Set();
+        collectFilePaths(fileSystemTree, dbSet, fsSet);
+        lastKnownDbPaths = dbSet;
+        lastKnownFsPaths = fsSet;
+      }
+
+      async function checkDeletedFiles() {
+        try {
+          if (directoryHandle) {
+            const entries = await scanFsRecursive(directoryHandle);
+            const currentFs = new Set(
+              entries.filter((e) => e.type === "file").map((e) => e.path),
+            );
+            const deleted = [...lastKnownFsPaths].filter(
+              (p) => !currentFs.has(p),
+            );
+            if (deleted.length)
+              deleted.forEach((p) => closeTabsForPath(p, "fs"));
+            lastKnownFsPaths = currentFs;
+            return;
+          }
+          const entries = await listDBFiles();
+          const currentDb = new Set(
+            entries.filter((e) => e.type === "file").map((e) => e.path),
+          );
+          const deleted = [...lastKnownDbPaths].filter(
+            (p) => !currentDb.has(p),
+          );
+          if (deleted.length) deleted.forEach((p) => closeTabsForPath(p, "db"));
+          lastKnownDbPaths = currentDb;
+        } catch {}
+      }
+
+      function startDeletionWatcher() {
+        if (deletionWatcher) clearInterval(deletionWatcher);
+        deletionWatcher = setInterval(checkDeletedFiles, 4000);
+        checkDeletedFiles();
       }
 
       function renderTreeNodes(nodes, container) {
@@ -4957,6 +5014,7 @@
           fsEntryMap.clear();
           autosaveToggle.checked = false;
           await scanDirectory();
+          startDeletionWatcher();
           statusBar.textContent = `Opened: ${directoryHandle.name}`;
           notify("Folder opened");
         } catch {}
@@ -5045,6 +5103,7 @@
       async function refreshExplorer() {
         fileSystemTree = await buildFileTree();
         renderExplorer();
+        updateKnownPathsFromTree();
       }
 
       function startInlineRename(entry, li, nameSpan) {
@@ -5576,6 +5635,7 @@
           }
         }
         await deleteHistoryForPath(path, source);
+        closeTabsForPathPrefix(path, source);
         refreshExplorer();
         notify(`Deleted`);
       }
@@ -6729,6 +6789,60 @@
         const nextTab = tabs[Math.min(idx, tabs.length - 1)];
         activateTab(nextTab.id);
         refreshTabBar();
+      }
+
+      function closeTabSilently(id) {
+        const tab = tabs.find((t) => t.id === id);
+        if (!tab) return false;
+        const idx = tabs.indexOf(tab);
+        tabs.splice(idx, 1);
+        if (tabs.length === 0) {
+          activeTabId = null;
+          newTab("Untitled.md", "");
+          return true;
+        }
+        if (activeTabId === id) {
+          const nextTab = tabs[Math.min(idx, tabs.length - 1)];
+          if (nextTab) activateTab(nextTab.id);
+        } else {
+          refreshTabBar();
+        }
+        return true;
+      }
+
+      function closeTabsForPath(path, source) {
+        const matches = tabs.filter((t) => {
+          const tabPath =
+            t.filePath ||
+            (t.fileHandle ? t.fileHandle.path || t.fileHandle.name : null);
+          return t.fileSource === source && tabPath === path;
+        });
+        if (!matches.length) return;
+        const unsavedCount = matches.filter((t) => t.unsaved).length;
+        matches.forEach((t) => closeTabSilently(t.id));
+        const msg = unsavedCount
+          ? `Closed ${matches.length} tab(s) for deleted file (${unsavedCount} unsaved)`
+          : `Closed ${matches.length} tab(s) for deleted file`;
+        notify(msg);
+      }
+
+      function closeTabsForPathPrefix(path, source) {
+        const matches = tabs.filter((t) => {
+          const tabPath =
+            t.filePath ||
+            (t.fileHandle ? t.fileHandle.path || t.fileHandle.name : null);
+          return (
+            t.fileSource === source &&
+            (tabPath === path || tabPath?.startsWith(path + "/"))
+          );
+        });
+        if (!matches.length) return;
+        const unsavedCount = matches.filter((t) => t.unsaved).length;
+        matches.forEach((t) => closeTabSilently(t.id));
+        const msg = unsavedCount
+          ? `Closed ${matches.length} tab(s) for deleted items (${unsavedCount} unsaved)`
+          : `Closed ${matches.length} tab(s) for deleted items`;
+        notify(msg);
       }
 
       function refreshTabBar() {
