@@ -2615,6 +2615,30 @@
             <button class="icon-btn" id="save-file" title="Save (⌘S)">
               <i class="fas fa-cloud-arrow-up"></i>
             </button>
+            <!-- Export dropdown (consolidated) -->
+            <div class="dropdown-wrap">
+              <button class="icon-btn" id="download-toggle" title="Export">
+                <i class="fas fa-arrow-down-to-bracket"></i>
+              </button>
+              <div class="dropdown-menu" id="download-menu">
+                <button class="dropdown-item" id="download-md">
+                  <i class="fas fa-file-lines"></i>Download .md
+                </button>
+                <button class="dropdown-item" id="download-html">
+                  <i class="fas fa-file-code"></i>Download .html
+                </button>
+                <button class="dropdown-item" id="export-pdf">
+                  <i class="fas fa-file-pdf"></i>Export as PDF
+                </button>
+                <button class="dropdown-item" id="export-image">
+                  <i class="fas fa-image"></i>Export as Image
+                </button>
+                <div class="dropdown-sep"></div>
+                <button class="dropdown-item" id="copy-html-menu">
+                  <i class="far fa-copy"></i>Copy HTML
+                </button>
+              </div>
+            </div>
             <button class="icon-btn" id="templates-btn" title="Templates">
               <i class="fas fa-scroll"></i>
             </button>
@@ -2797,31 +2821,6 @@
             <button class="icon-btn" id="toggle-toc" title="Table of Contents">
               <i class="fas fa-list-ul"></i>
             </button>
-            <div class="divider-v"></div>
-            <!-- Export dropdown (consolidated) -->
-            <div class="dropdown-wrap">
-              <button class="icon-btn" id="download-toggle" title="Export">
-                <i class="fas fa-download"></i>
-              </button>
-              <div class="dropdown-menu" id="download-menu">
-                <button class="dropdown-item" id="download-md">
-                  <i class="fas fa-file-lines"></i>Download .md
-                </button>
-                <button class="dropdown-item" id="download-html">
-                  <i class="fas fa-file-code"></i>Download .html
-                </button>
-                <button class="dropdown-item" id="export-pdf">
-                  <i class="fas fa-file-pdf"></i>Export as PDF
-                </button>
-                <button class="dropdown-item" id="export-image">
-                  <i class="fas fa-image"></i>Export as Image
-                </button>
-                <div class="dropdown-sep"></div>
-                <button class="dropdown-item" id="copy-html-menu">
-                  <i class="far fa-copy"></i>Copy HTML
-                </button>
-              </div>
-            </div>
             <button
               class="icon-btn mobile-close-preview"
               id="mobile-preview-close"
@@ -5203,100 +5202,139 @@
       }
 
       // ─── PDF Export ───
+      // ─── Export helpers ───
+      async function captureFullPreview() {
+        // Clone the preview content into an off-screen container with no scroll
+        // constraints so html2canvas captures the full content, not just the viewport.
+        const source = document.getElementById("preview-content");
+        const clone = source.cloneNode(true);
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = [
+          "position:fixed",
+          "left:-9999px",
+          "top:0",
+          `width:${source.offsetWidth}px`,
+          "height:auto",
+          "overflow:visible",
+          "background:" + getComputedStyle(source).backgroundColor,
+          "padding:" + getComputedStyle(source).padding,
+          "font-size:" + getComputedStyle(source).fontSize,
+          "font-family:" + getComputedStyle(source).fontFamily,
+          "color:" + getComputedStyle(source).color,
+          "line-height:" + getComputedStyle(source).lineHeight,
+        ].join(";");
+        clone.style.cssText = "height:auto;overflow:visible;max-height:none;";
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+
+        // Wait a frame for layout to settle
+        await new Promise((r) =>
+          requestAnimationFrame(() => requestAnimationFrame(r)),
+        );
+
+        const canvas = await html2canvas(wrapper, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: getComputedStyle(source).backgroundColor,
+          width: source.offsetWidth,
+          height: wrapper.scrollHeight,
+          windowWidth: source.offsetWidth,
+        });
+        document.body.removeChild(wrapper);
+        return canvas;
+      }
+
       async function exportToPDF() {
-        const element = document.getElementById("preview-content");
-        const originalHeight = element.style.height;
-        const originalOverflow = element.style.overflow;
+        notify("Generating PDF…");
         const filename = (
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(/\.md$/, ".pdf");
-        notify("Generating PDF…");
         try {
-          // Temporarily expand to full height for capture
-          element.style.height = "auto";
-          element.style.overflow = "visible";
-
+          const canvas = await captureFullPreview();
           const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF("p", "mm", "a4");
-          const pageW = pdf.internal.pageSize.getWidth(),
-            pageH = pdf.internal.pageSize.getHeight();
-          const margin = 15,
-            contentW = pageW - 2 * margin;
+          const pdf = new jsPDF("p", "pt", "a4"); // use pt so pixel math is exact
+          const pageW = pdf.internal.pageSize.getWidth();
+          const pageH = pdf.internal.pageSize.getHeight();
+          const margin = 40; // pt
+          const contentW = pageW - margin * 2;
+          const contentH = pageH - margin * 2;
 
-          const canvas = await html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-          });
+          // Scale canvas width → contentW, find resulting full height in pt
+          const scale = contentW / canvas.width;
+          const fullHeightPt = canvas.height * scale;
+          const totalPages = Math.ceil(fullHeightPt / contentH);
 
-          // Restore styles immediately after capture
-          element.style.height = originalHeight;
-          element.style.overflow = originalOverflow;
+          // How many canvas px fit in one page of content
+          const pxPerPage = contentH / scale;
 
-          const imgData = canvas.toDataURL("image/jpeg", 0.95);
-          const imgProps = pdf.getImageProperties(imgData);
-          const imgH = (imgProps.height * contentW) / imgProps.width;
-          const printH = pageH - 2 * margin;
-          const totalPages = Math.ceil(imgH / printH);
-          let position = margin;
-          for (let i = 1; i <= totalPages; i++) {
-            pdf.addImage(imgData, "JPEG", margin, position, contentW, imgH);
+          for (let i = 0; i < totalPages; i++) {
+            if (i > 0) pdf.addPage();
+
+            // Slice exactly one page worth of pixels from the source canvas
+            const srcY = Math.round(i * pxPerPage);
+            const srcH = Math.round(Math.min(pxPerPage, canvas.height - srcY));
+
+            const pageCanvas = document.createElement("canvas");
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = Math.ceil(pxPerPage); // full page height in px
+            const ctx = pageCanvas.getContext("2d");
+            // Fill with same background so no white gaps on last page
+            ctx.fillStyle = getComputedStyle(
+              document.getElementById("preview-content"),
+            ).backgroundColor;
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(
+              canvas,
+              0,
+              srcY,
+              canvas.width,
+              srcH,
+              0,
+              0,
+              canvas.width,
+              srcH,
+            );
+
+            const imgData = pageCanvas.toDataURL("image/jpeg", 0.92);
+            pdf.addImage(imgData, "JPEG", margin, margin, contentW, contentH);
+
+            // Page number
             pdf.setFontSize(8);
-            pdf.setTextColor(150);
-            pdf.text(`${i} / ${totalPages}`, pageW / 2, pageH - 8, {
+            pdf.setTextColor(160);
+            pdf.text(`${i + 1} / ${totalPages}`, pageW / 2, pageH - 16, {
               align: "center",
             });
-            position -= printH;
-            if (i < totalPages) pdf.addPage();
           }
+
           pdf.save(filename);
           notify("PDF saved");
         } catch (err) {
-          element.style.height = originalHeight;
-          element.style.overflow = originalOverflow;
           notify("PDF failed: " + err.message);
         }
       }
 
-      async function exportToImage() {
-        const element = document.getElementById("preview-content");
-        const originalHeight = element.style.height;
-        const originalOverflow = element.style.overflow;
-        const filename = (
-          currentFileHandle ? currentFileHandle.name : "document"
-        ).replace(/\.md$/, ".png");
-        notify("Generating Image…");
+      async function exportAsImage() {
+        if (!window.html2canvas) {
+          notify("html2canvas not loaded");
+          return;
+        }
+        notify("Generating image…");
         try {
-          // Temporarily expand to full height for capture
-          element.style.height = "auto";
-          element.style.overflow = "visible";
-
-          const canvas = await html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: getComputedStyle(document.body)
-              .getPropertyValue("--preview-paper")
-              .trim(),
+          const canvas = await captureFullPreview();
+          const link = Object.assign(document.createElement("a"), {
+            href: canvas.toDataURL("image/png"),
+            download:
+              (currentFileHandle
+                ? currentFileHandle.name.replace(/\.md$/, "")
+                : "document") + ".png",
           });
-
-          // Restore styles immediately after capture
-          element.style.height = originalHeight;
-          element.style.overflow = originalOverflow;
-
-          const link = document.createElement("a");
-          link.download = filename;
-          link.href = canvas.toDataURL("image/png");
           link.click();
           notify("Image saved");
         } catch (err) {
-          element.style.height = originalHeight;
-          element.style.overflow = originalOverflow;
-          notify("Image failed: " + err.message);
+          notify("Image export failed: " + err.message);
         }
       }
-
-      // ─── Helpers ───
       function markAsUnsaved(v) {
         isUnsaved = v;
         unsavedIndicator.classList.toggle("visible", v);
@@ -5591,34 +5629,7 @@
       }
 
       // ─── Export as Image ───
-      async function exportAsImage() {
-        if (!window.html2canvas) {
-          notify("html2canvas not loaded");
-          return;
-        }
-        notify("Generating image…");
-        try {
-          const canvas = await html2canvas(previewContent, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: getComputedStyle(previewContent).backgroundColor,
-          });
-          const link = Object.assign(document.createElement("a"), {
-            href: canvas.toDataURL("image/png"),
-            download:
-              (currentFileHandle
-                ? currentFileHandle.name.replace(/\.md$/, "")
-                : "document") + ".png",
-          });
-          link.click();
-          notify("Image saved");
-        } catch (err) {
-          notify("Image export failed: " + err.message);
-        }
-      }
-
-      // ─── Templates ───
+      // ─── Helpers ───
       const TEMPLATES = [
         {
           icon: "📝",
