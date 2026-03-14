@@ -33,6 +33,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"></script>
+    <style id="custom-preview-style"></style>
 
     <style>
       /* ============================================================
@@ -1909,6 +1910,356 @@
       }
 
       /* ============================================================
+       TABS
+    ============================================================ */
+      .tab-bar {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 0 8px;
+        border-bottom: 1px solid var(--border-faint);
+        background: linear-gradient(
+          180deg,
+          var(--surface-hover) 0%,
+          transparent 100%
+        );
+        flex-shrink: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+        min-height: 36px;
+      }
+      .tab-bar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 12px 0 14px;
+        height: 36px;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        border-right: 1px solid var(--border-faint);
+        flex-shrink: 0;
+        max-width: 160px;
+        position: relative;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+        user-select: none;
+      }
+      .tab:hover {
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+      }
+      .tab.active {
+        background: var(--surface-panel);
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--accent);
+        border-radius: 1px 1px 0 0;
+      }
+      .tab-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tab-dirty {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+      .tab-close {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        border: none;
+        background: transparent;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        font-size: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        opacity: 0;
+        transition:
+          opacity var(--duration-fast) var(--ease),
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .tab:hover .tab-close {
+        opacity: 1;
+      }
+      .tab-close:hover {
+        background: var(--surface-hover);
+        color: var(--danger);
+        opacity: 1;
+      }
+      .tab-new {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: transparent;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        font-size: 12px;
+        flex-shrink: 0;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .tab-new:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+
+      /* ============================================================
+       WRITING GOAL
+    ============================================================ */
+      .goal-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .goal-progress {
+        width: 60px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .goal-bar {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 999px;
+        transition:
+          width var(--duration-base) var(--ease),
+          background var(--duration-base) var(--ease);
+        width: 0%;
+      }
+      .goal-bar.done {
+        background: var(--success);
+      }
+      .goal-text {
+        font-size: 10px;
+        font-family: var(--font-mono);
+        color: var(--text-tertiary);
+        white-space: nowrap;
+      }
+      #goal-input-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      /* ============================================================
+       TEMPLATES MODAL
+    ============================================================ */
+      .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .template-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 14px 14px 12px;
+        cursor: pointer;
+        transition:
+          border-color var(--duration-fast) var(--ease),
+          background var(--duration-fast) var(--ease),
+          transform var(--duration-fast) var(--ease-spring);
+      }
+      .template-card:hover {
+        border-color: var(--accent);
+        background: var(--accent-muted);
+        transform: translateY(-1px);
+      }
+      .template-icon {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
+      .template-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 3px;
+      }
+      .template-desc {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+       CUSTOM CSS PANEL
+    ============================================================ */
+      #custom-css-panel {
+        position: absolute;
+        top: 58px;
+        right: 14px;
+        background: var(--surface-overlay);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        padding: 16px;
+        z-index: 50;
+        width: 320px;
+        display: none;
+      }
+      #custom-css-panel.open {
+        display: block;
+      }
+      #custom-css-input {
+        width: 100%;
+        height: 160px;
+        background: var(--surface-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 10px 12px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-primary);
+        outline: none;
+        resize: vertical;
+        line-height: 1.6;
+        transition: border-color var(--duration-fast) var(--ease);
+      }
+      #custom-css-input:focus {
+        border-color: var(--accent);
+      }
+      #custom-css-input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      /* ============================================================
+       MOBILE
+    ============================================================ */
+      @media (max-width: 768px) {
+        .app {
+          padding: 0;
+          gap: 0;
+          border-radius: 0;
+        }
+        .panel {
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+        }
+        #explorer {
+          display: none;
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 280px !important;
+          z-index: 600;
+          border-radius: 0 var(--radius-xl) var(--radius-xl) 0 !important;
+          box-shadow: var(--shadow-xl);
+        }
+        #explorer.mobile-open {
+          display: flex;
+        }
+        #viewer {
+          display: none;
+          position: fixed;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          width: 100vw !important;
+          z-index: 600;
+          border-radius: var(--radius-xl) 0 0 var(--radius-xl) !important;
+          box-shadow: var(--shadow-xl);
+        }
+        #viewer.mobile-open {
+          display: flex;
+        }
+        #resizer-1,
+        #resizer-2 {
+          display: none !important;
+        }
+        .mobile-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          z-index: 599;
+          backdrop-filter: blur(4px);
+        }
+        .mobile-overlay.active {
+          display: block;
+        }
+        .workspace-header {
+          flex-wrap: wrap;
+          padding: 4px 8px;
+          gap: 4px;
+        }
+        .toolbar {
+          padding: 0 4px;
+        }
+        .mobile-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 10px;
+          height: 44px;
+          border-bottom: 1px solid var(--border-faint);
+          flex-shrink: 0;
+        }
+        .mobile-bar-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: var(--radius-md);
+          border: none;
+          background: transparent;
+          color: var(--text-secondary);
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .mobile-bar-btn:hover {
+          background: var(--surface-hover);
+          color: var(--text-primary);
+        }
+        #mobile-preview-close {
+          display: inline-flex !important;
+        }
+      }
+      @media (min-width: 769px) {
+        .mobile-bar {
+          display: none;
+        }
+        .mobile-overlay {
+          display: none !important;
+        }
+      }
+
+      /* ============================================================
        PRINT
     ============================================================ */
       @media print {
@@ -2014,6 +2365,42 @@
 
       <!-- ─── WORKSPACE ─── -->
       <section class="panel" id="workspace" style="flex: 1; position: relative">
+        <!-- Mobile top bar (hidden on desktop) -->
+        <div class="mobile-bar">
+          <button
+            class="mobile-bar-btn"
+            id="mobile-explorer-toggle"
+            title="Explorer"
+          >
+            <i class="fas fa-bars"></i>
+          </button>
+          <span
+            class="filename"
+            id="mobile-filename"
+            style="
+              font-size: 13px;
+              font-weight: 500;
+              color: var(--text-primary);
+            "
+            >Untitled.md</span
+          >
+          <button
+            class="mobile-bar-btn"
+            id="mobile-preview-toggle"
+            title="Preview"
+          >
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar" id="tab-bar">
+          <!-- tabs injected by JS -->
+          <button class="tab-new" id="tab-new" title="New Tab">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+
         <header class="workspace-header no-print">
           <!-- File label -->
           <div class="file-label">
@@ -2228,7 +2615,7 @@
             <button class="icon-btn" id="save-file" title="Save (⌘S)">
               <i class="fas fa-cloud-arrow-up"></i>
             </button>
-            <!-- Download dropdown -->
+            <!-- Export dropdown (consolidated) -->
             <div class="dropdown-wrap">
               <button class="icon-btn" id="download-toggle" title="Export">
                 <i class="fas fa-arrow-down-to-bracket"></i>
@@ -2241,10 +2628,20 @@
                   <i class="fas fa-file-code"></i>Download .html
                 </button>
                 <button class="dropdown-item" id="export-pdf">
-                  <i class="fas fa-file-pdf"></i>Print to PDF
+                  <i class="fas fa-file-pdf"></i>Export as PDF
+                </button>
+                <button class="dropdown-item" id="export-image">
+                  <i class="fas fa-image"></i>Export as Image
+                </button>
+                <div class="dropdown-sep"></div>
+                <button class="dropdown-item" id="copy-html-menu">
+                  <i class="far fa-copy"></i>Copy HTML
                 </button>
               </div>
             </div>
+            <button class="icon-btn" id="templates-btn" title="Templates">
+              <i class="fas fa-scroll"></i>
+            </button>
           </div>
         </header>
 
@@ -2362,6 +2759,20 @@
             <span class="status-text" id="reading-time">0 min read</span>
             <span class="status-text" id="char-count">0 chars</span>
             <span class="status-text" id="word-count">0 words</span>
+            <div class="goal-wrap" id="goal-wrap" style="display: none">
+              <div class="goal-progress">
+                <div class="goal-bar" id="goal-bar"></div>
+              </div>
+              <span class="goal-text" id="goal-text"></span>
+            </div>
+            <button
+              class="icon-btn"
+              id="goal-btn"
+              title="Set Writing Goal"
+              style="width: 20px; height: 20px; font-size: 9px"
+            >
+              <i class="fas fa-flag"></i>
+            </button>
           </div>
         </footer>
       </section>
@@ -2400,11 +2811,23 @@
               title="Font size"
             />
             <div class="divider-v"></div>
+            <button
+              class="icon-btn"
+              id="custom-css-btn"
+              title="Custom Preview CSS"
+            >
+              <i class="fas fa-palette"></i>
+            </button>
             <button class="icon-btn" id="toggle-toc" title="Table of Contents">
               <i class="fas fa-list-ul"></i>
             </button>
-            <button class="icon-btn" id="copy-html" title="Copy HTML">
-              <i class="far fa-copy"></i>
+            <button
+              class="icon-btn mobile-close-preview"
+              id="mobile-preview-close"
+              title="Close Preview"
+              style="display: none"
+            >
+              <i class="fas fa-times"></i>
             </button>
           </div>
         </header>
@@ -2420,6 +2843,27 @@
             </button>
           </div>
           <div id="toc-list"></div>
+        </div>
+
+        <!-- Custom CSS panel (lives inside viewer, positioned like TOC) -->
+        <div id="custom-css-panel">
+          <div class="overlay-title">
+            Custom Preview CSS
+            <button class="icon-btn" onclick="toggleCustomCSS()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Inject CSS into preview</label>
+            <textarea
+              id="custom-css-input"
+              placeholder=".markdown-body h1 { color: #e74c3c; }&#10;.markdown-body { font-family: Georgia, serif; }"
+            ></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn-primary" id="apply-custom-css">Apply</button>
+            <button class="btn-ghost" id="clear-custom-css">Clear</button>
+          </div>
         </div>
       </aside>
     </div>
@@ -2495,6 +2939,89 @@
     <!-- ─── NOTIFICATIONS ─── -->
     <div id="notify-container"></div>
 
+    <!-- ─── WRITING GOAL MODAL ─── -->
+    <div
+      id="goal-modal"
+      style="
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(6px);
+        z-index: 400;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      "
+    >
+      <div class="modal-box" style="max-width: 320px">
+        <div class="modal-header">
+          <span class="modal-title">Writing Goal</span>
+          <button
+            class="icon-btn"
+            onclick="
+              document.getElementById('goal-modal').style.display = 'none'
+            "
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Target word count</label>
+            <input
+              type="number"
+              class="form-input"
+              id="goal-input"
+              placeholder="e.g. 500"
+              min="1"
+              max="100000"
+            />
+          </div>
+          <div class="btn-row">
+            <button class="btn-primary" id="goal-set-btn">Set Goal</button>
+            <button class="btn-ghost" id="goal-clear-btn">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TEMPLATES MODAL ─── -->
+    <div
+      id="templates-modal"
+      style="
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(6px);
+        z-index: 400;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      "
+    >
+      <div class="modal-box" style="max-width: 640px">
+        <div class="modal-header">
+          <span class="modal-title">Template Gallery</span>
+          <button
+            class="icon-btn"
+            onclick="
+              document.getElementById('templates-modal').style.display = 'none'
+            "
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="template-grid" id="template-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MOBILE OVERLAY ─── -->
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
     <!-- ============================================================
      JAVASCRIPT
 ============================================================ -->
@@ -2526,7 +3053,6 @@
       const focusModeBtn = document.getElementById("focus-mode");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
-      const copyHtmlBtn = document.getElementById("copy-html");
       const tocPanel = document.getElementById("toc-panel");
       const tocList = document.getElementById("toc-list");
       const tagsContainer = document.getElementById("tags-container");
@@ -2579,6 +3105,34 @@
       const metaBtn = document.getElementById("meta-btn");
       const saveMetaBtn = document.getElementById("save-meta");
       const clearMetaBtn = document.getElementById("clear-meta");
+      // New feature refs
+      const tabBar = document.getElementById("tab-bar");
+      const tabNewBtn = document.getElementById("tab-new");
+      const copyHtmlMenuBtn = document.getElementById("copy-html-menu");
+      const exportImageBtn = document.getElementById("export-image");
+      const templatesBtnEl = document.getElementById("templates-btn");
+      const customCssBtnEl = document.getElementById("custom-css-btn");
+      const customCssPanel = document.getElementById("custom-css-panel");
+      const customCssInput = document.getElementById("custom-css-input");
+      const applyCustomCssBtn = document.getElementById("apply-custom-css");
+      const clearCustomCssBtn = document.getElementById("clear-custom-css");
+      const goalWrap = document.getElementById("goal-wrap");
+      const goalBar = document.getElementById("goal-bar");
+      const goalText = document.getElementById("goal-text");
+      const goalBtnEl = document.getElementById("goal-btn");
+      const goalInput = document.getElementById("goal-input");
+      const goalSetBtn = document.getElementById("goal-set-btn");
+      const goalClearBtn = document.getElementById("goal-clear-btn");
+      const goalModal = document.getElementById("goal-modal");
+      const templatesModal = document.getElementById("templates-modal");
+      const templateGrid = document.getElementById("template-grid");
+      const mobileOverlay = document.getElementById("mobile-overlay");
+      const mobileExplorerToggle = document.getElementById(
+        "mobile-explorer-toggle",
+      );
+      const mobilePreviewToggle = document.getElementById(
+        "mobile-preview-toggle",
+      );
 
       // ─── State ───
       let directoryHandle = null;
@@ -2592,6 +3146,14 @@
       let rightClickedEntry = null;
       let rightClickedHistoryIndex = null;
       let isMetaOpen = false;
+      // Multi-tab state
+      let tabs = []; // [{id, name, content, fileHandle, fileSource, unsaved}]
+      let activeTabId = null;
+      let tabIdCounter = 0;
+      // Writing goal state
+      let writingGoal = 0;
+      // Custom CSS state
+      let isCustomCSSOpen = false;
 
       // ─── IndexedDB ───
       const DB_NAME = "GuideExplorerDB";
@@ -2868,12 +3430,13 @@
             headerIds: true,
             mangle: false,
           });
-        editor.value = "";
-        pushToHistory();
         setupEventListeners();
         setupResizers();
+        setupTemplates();
+        setupMobile();
         loadPreferences();
-        updatePreview();
+        // Boot with one tab
+        newTab("Untitled.md", "");
         updateWordCount();
         updateToolbarState();
         renderHistory();
@@ -2999,6 +3562,14 @@
           exportToPDF();
           toggleDropdown("download-menu", false);
         });
+        exportImageBtn.addEventListener("click", () => {
+          exportAsImage();
+          toggleDropdown("download-menu", false);
+        });
+        copyHtmlMenuBtn.addEventListener("click", () => {
+          copyAsHTML();
+          toggleDropdown("download-menu", false);
+        });
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
         tableBtn.addEventListener("click", (e) => {
@@ -3014,7 +3585,6 @@
         zenModeBtn.addEventListener("click", toggleZenMode);
         focusModeBtn.addEventListener("click", toggleFocusMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
-        copyHtmlBtn.addEventListener("click", copyAsHTML);
         helpBtn.addEventListener("click", toggleHelp);
         formatBtn.addEventListener("click", formatDocument);
         helpModal.addEventListener("click", (e) => {
@@ -3032,6 +3602,31 @@
           e.stopPropagation();
           toggleDropdown("download-menu");
         });
+        templatesBtnEl.addEventListener("click", () => {
+          templatesModal.style.display = "flex";
+        });
+        templatesModal.addEventListener("click", (e) => {
+          if (e.target === templatesModal)
+            templatesModal.style.display = "none";
+        });
+        customCssBtnEl.addEventListener("click", toggleCustomCSS);
+        applyCustomCssBtn.addEventListener("click", applyCustomCSS);
+        clearCustomCssBtn.addEventListener("click", clearCustomCSS);
+        goalBtnEl.addEventListener("click", () => {
+          goalModal.style.display = "flex";
+          goalInput.value = writingGoal || "";
+          goalInput.focus();
+        });
+        goalModal.addEventListener("click", (e) => {
+          if (e.target === goalModal) goalModal.style.display = "none";
+        });
+        goalSetBtn.addEventListener("click", setWritingGoal);
+        goalClearBtn.addEventListener("click", clearWritingGoal);
+        goalInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") setWritingGoal();
+          if (e.key === "Escape") goalModal.style.display = "none";
+        });
+        tabNewBtn.addEventListener("click", () => newTab());
 
         globalSearchInput.addEventListener("input", performGlobalSearch);
         clearSearchBtn.addEventListener("click", clearSearch);
@@ -3097,6 +3692,14 @@
           ) {
             isMetaOpen = false;
             metaPanel.classList.remove("open");
+          }
+          if (
+            !e.target.closest("#custom-css-btn") &&
+            !e.target.closest("#custom-css-panel")
+          ) {
+            isCustomCSSOpen = false;
+            customCssPanel.classList.remove("open");
+            customCssBtnEl?.classList.remove("active");
           }
           if (emojiMenuOpen && !e.target.closest("#emoji-menu"))
             hideEmojiMenu();
@@ -3386,6 +3989,12 @@
           "active",
           tocPanel.classList.contains("open"),
         );
+        // Close custom CSS panel if open
+        if (tocPanel.classList.contains("open")) {
+          isCustomCSSOpen = false;
+          customCssPanel.classList.remove("open");
+          customCssBtnEl.classList.remove("active");
+        }
       }
       async function copyAsHTML() {
         try {
@@ -3577,6 +4186,21 @@
         wordCountDisplay.textContent = `${words}w`;
         charCountDisplay.textContent = `${chars}c / ${lines}l`;
         readingTimeDisplay.textContent = `${mins}m read`;
+        // Writing goal
+        if (writingGoal > 0) {
+          const pct = Math.min(100, Math.round((words / writingGoal) * 100));
+          goalBar.style.width = pct + "%";
+          goalBar.classList.toggle("done", words >= writingGoal);
+          goalText.textContent = `${words}/${writingGoal}`;
+          goalWrap.style.display = "flex";
+        } else {
+          goalWrap.style.display = "none";
+        }
+        // Sync active tab content
+        if (activeTabId !== null) {
+          const tab = tabs.find((t) => t.id === activeTabId);
+          if (tab) tab.content = editor.value;
+        }
       }
 
       // ─── File System ───
@@ -3695,7 +4319,15 @@
             li.classList.add("active-item");
             if (entry.type === "folder") {
               currentFolderPath = entry.path;
-            } else openFileFromDB(entry.path);
+            } else {
+              // If already open in a tab, switch to it; otherwise load into current tab
+              const existingTab = tabs.find(
+                (t) => t.fileHandle && t.fileHandle.path === entry.path,
+              );
+              if (existingTab) {
+                activateTab(existingTab.id);
+              } else openFileFromDB(entry.path);
+            }
           });
           li.querySelector(".file-action").addEventListener("click", (e) => {
             e.stopPropagation();
@@ -3727,15 +4359,7 @@
       }
 
       function createNewFile() {
-        if (isUnsaved && !confirm("Discard changes?")) return;
-        currentFileHandle = null;
-        currentFileSource = "db";
-        editor.value = "";
-        currentFilenameDisplay.textContent = "Untitled.md";
-        updatePreview();
-        updateWordCount();
-        markAsUnsaved(false);
-        editor.focus();
+        newTab("Untitled.md", "");
       }
       async function createNewFileInExplorer() {
         if (directoryHandle) {
@@ -4660,9 +5284,16 @@
           const t = await idbKeyval.get("md-theme");
           const s = await idbKeyval.get("md-font-size");
           const a = await idbKeyval.get("md-autosave");
+          const g = await idbKeyval.get("md-writing-goal");
+          const css = await idbKeyval.get("md-custom-css");
           if (t) theme = t;
           if (s) size = s;
           if (a !== undefined) autosave = a;
+          if (g) writingGoal = g;
+          if (css) {
+            customCssInput.value = css;
+            document.getElementById("custom-preview-style").textContent = css;
+          }
         }
         themeSelect.value = theme;
         fontSizeInput.value = size;
@@ -4696,6 +5327,348 @@
         }, 2800);
       }
 
+      // ─── Multi-Tab System ───
+      function newTab(name, content, fileHandle, fileSource) {
+        // Save current tab state first
+        if (activeTabId !== null) saveActiveTabState();
+        const id = ++tabIdCounter;
+        const tab = {
+          id,
+          name: name || "Untitled.md",
+          content: content !== undefined ? content : "",
+          fileHandle: fileHandle || null,
+          fileSource: fileSource || "db",
+          unsaved: false,
+          historyStack: [
+            { content: content || "", selection: { start: 0, end: 0 } },
+          ],
+          historyIndex: 0,
+        };
+        tabs.push(tab);
+        activateTab(id);
+        refreshTabBar();
+      }
+
+      function saveActiveTabState() {
+        if (activeTabId === null) return;
+        const tab = tabs.find((t) => t.id === activeTabId);
+        if (!tab) return;
+        tab.content = editor.value;
+        tab.name = currentFileHandle
+          ? currentFileHandle.name
+          : currentFilenameDisplay.textContent;
+        tab.fileHandle = currentFileHandle;
+        tab.fileSource = currentFileSource;
+        tab.unsaved = isUnsaved;
+        tab.historyStack = [...historyStack];
+        tab.historyIndex = historyIndex;
+      }
+
+      function activateTab(id) {
+        saveActiveTabState();
+        activeTabId = id;
+        const tab = tabs.find((t) => t.id === id);
+        if (!tab) return;
+        // Restore tab state
+        editor.value = tab.content;
+        currentFileHandle = tab.fileHandle;
+        currentFileSource = tab.fileSource;
+        currentFilenameDisplay.textContent = tab.name;
+        isUnsaved = tab.unsaved;
+        unsavedIndicator.classList.toggle("visible", isUnsaved);
+        // Restore history
+        historyStack.length = 0;
+        tab.historyStack.forEach((s) => historyStack.push(s));
+        historyIndex = tab.historyIndex;
+        updateHistoryButtons();
+        updatePreview();
+        updateWordCount();
+        updateToolbarState();
+        refreshTabBar();
+      }
+
+      function closeTab(id, e) {
+        if (e) e.stopPropagation();
+        const tab = tabs.find((t) => t.id === id);
+        if (!tab) return;
+        if (
+          tab.unsaved &&
+          !confirm(`Close "${tab.name}" with unsaved changes?`)
+        )
+          return;
+        const idx = tabs.indexOf(tab);
+        tabs.splice(idx, 1);
+        if (tabs.length === 0) {
+          activeTabId = null;
+          newTab("Untitled.md", "");
+          return;
+        }
+        // Activate adjacent tab
+        const nextTab = tabs[Math.min(idx, tabs.length - 1)];
+        activateTab(nextTab.id);
+        refreshTabBar();
+      }
+
+      function refreshTabBar() {
+        const existing = tabBar.querySelectorAll(".tab");
+        existing.forEach((el) => el.remove());
+        tabs.forEach((tab) => {
+          const el = document.createElement("div");
+          el.className = "tab" + (tab.id === activeTabId ? " active" : "");
+          el.title = tab.name;
+          el.innerHTML = `
+        ${tab.unsaved ? '<div class="tab-dirty"></div>' : ""}
+        <span class="tab-name">${tab.name}</span>
+        <button class="tab-close" title="Close"><i class="fas fa-times"></i></button>`;
+          el.addEventListener("click", () => {
+            if (tab.id !== activeTabId) activateTab(tab.id);
+          });
+          el.querySelector(".tab-close").addEventListener("click", (e) =>
+            closeTab(tab.id, e),
+          );
+          tabBar.insertBefore(el, tabNewBtn);
+        });
+      }
+
+      // Patch markAsUnsaved to also update tab state
+      const _origMarkAsUnsaved = markAsUnsaved;
+      function markAsUnsaved(v) {
+        isUnsaved = v;
+        unsavedIndicator.classList.toggle("visible", v);
+        if (activeTabId !== null) {
+          const tab = tabs.find((t) => t.id === activeTabId);
+          if (tab) {
+            tab.unsaved = v;
+            refreshTabBar();
+          }
+        }
+      }
+
+      // Patch openFileFromDB and openFile to open in current tab or new tab
+      const _origOpenFileFromDB = openFileFromDB;
+      async function openFileFromDB(path, forceNewTab) {
+        const entry = await loadFromDB(path);
+        if (!entry) return;
+        if (
+          forceNewTab ||
+          (activeTabId !== null &&
+            tabs.find((t) => t.id === activeTabId)?.content)
+        ) {
+          // Check if already open in a tab
+          const existing = tabs.find(
+            (t) => t.fileHandle && t.fileHandle.path === path,
+          );
+          if (existing) {
+            activateTab(existing.id);
+            return;
+          }
+          newTab(path, entry.content, { name: path, path }, "db");
+        } else {
+          editor.value = entry.content;
+          currentFileHandle = { name: path, path };
+          currentFileSource = "db";
+          currentFilenameDisplay.textContent = path;
+          autosaveToggle.checked = true;
+          updatePreview();
+          updateWordCount();
+          markAsUnsaved(false);
+          if (activeTabId !== null) {
+            const tab = tabs.find((t) => t.id === activeTabId);
+            if (tab) {
+              tab.name = path;
+              tab.fileHandle = currentFileHandle;
+              tab.fileSource = "db";
+              refreshTabBar();
+            }
+          }
+        }
+        statusBar.textContent = `Opened: ${path}`;
+      }
+
+      // ─── Writing Goal ───
+      function setWritingGoal() {
+        const val = parseInt(goalInput.value);
+        if (!val || val < 1) {
+          notify("Enter a valid word count");
+          return;
+        }
+        writingGoal = val;
+        goalModal.style.display = "none";
+        if (window.idbKeyval) idbKeyval.set("md-writing-goal", val);
+        updateWordCount();
+        notify(`Goal set: ${val} words`);
+      }
+
+      function clearWritingGoal() {
+        writingGoal = 0;
+        goalModal.style.display = "none";
+        goalWrap.style.display = "none";
+        if (window.idbKeyval) idbKeyval.set("md-writing-goal", 0);
+        notify("Writing goal cleared");
+      }
+
+      // ─── Custom Preview CSS ───
+      function toggleCustomCSS() {
+        isCustomCSSOpen = !isCustomCSSOpen;
+        customCssPanel.classList.toggle("open", isCustomCSSOpen);
+        customCssBtnEl.classList.toggle("active", isCustomCSSOpen);
+        // Close TOC if open
+        if (isCustomCSSOpen) {
+          tocPanel.classList.remove("open");
+          toggleTocBtn.classList.remove("active");
+        }
+      }
+
+      function applyCustomCSS() {
+        const css = customCssInput.value.trim();
+        document.getElementById("custom-preview-style").textContent = css
+          ? `#preview-content { ${""} } ${css}`
+          : "";
+        if (window.idbKeyval) idbKeyval.set("md-custom-css", css);
+        notify("Custom CSS applied");
+        toggleCustomCSS();
+      }
+
+      function clearCustomCSS() {
+        customCssInput.value = "";
+        document.getElementById("custom-preview-style").textContent = "";
+        if (window.idbKeyval) idbKeyval.set("md-custom-css", "");
+        notify("Custom CSS cleared");
+        toggleCustomCSS();
+      }
+
+      // ─── Export as Image ───
+      async function exportAsImage() {
+        if (!window.html2canvas) {
+          notify("html2canvas not loaded");
+          return;
+        }
+        notify("Generating image…");
+        try {
+          const canvas = await html2canvas(previewContent, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: getComputedStyle(previewContent).backgroundColor,
+          });
+          const link = Object.assign(document.createElement("a"), {
+            href: canvas.toDataURL("image/png"),
+            download:
+              (currentFileHandle
+                ? currentFileHandle.name.replace(/\.md$/, "")
+                : "document") + ".png",
+          });
+          link.click();
+          notify("Image saved");
+        } catch (err) {
+          notify("Image export failed: " + err.message);
+        }
+      }
+
+      // ─── Templates ───
+      const TEMPLATES = [
+        {
+          icon: "📝",
+          name: "Blog Post",
+          desc: "Front-matter ready blog post",
+          content: `---\ntitle: "My Blog Post"\nauthor: "Your Name"\ndate: ${new Date().toISOString().slice(0, 10)}\ntags: [blog, writing]\n---\n\n# My Blog Post\n\n## Introduction\n\nWrite your introduction here.\n\n## Main Content\n\nDevelop your ideas here.\n\n## Conclusion\n\nWrap up your thoughts.\n`,
+        },
+        {
+          icon: "📋",
+          name: "Meeting Notes",
+          desc: "Structured meeting minutes",
+          content: `# Meeting Notes\n\n**Date:** ${new Date().toLocaleDateString()}\n**Attendees:**\n**Facilitator:**\n\n## Agenda\n\n- [ ] Item 1\n- [ ] Item 2\n- [ ] Item 3\n\n## Discussion\n\n### Topic 1\n\n### Topic 2\n\n## Action Items\n\n| Task | Owner | Due Date |\n| --- | --- | --- |\n| | | |\n\n## Next Meeting\n\n`,
+        },
+        {
+          icon: "⚙️",
+          name: "Tech Spec",
+          desc: "Technical specification doc",
+          content: `# Technical Specification\n\n**Version:** 1.0\n**Status:** Draft\n**Author:**\n\n## Overview\n\nBrief description of the feature or system.\n\n## Goals\n\n- Goal 1\n- Goal 2\n\n## Non-Goals\n\n- Out of scope item\n\n## Design\n\n### Architecture\n\n\`\`\`mermaid\ngraph TD\n  A[Client] --> B[API]\n  B --> C[Database]\n\`\`\`\n\n### API\n\n## Implementation Plan\n\n- [ ] Phase 1\n- [ ] Phase 2\n\n## Open Questions\n\n`,
+        },
+        {
+          icon: "📦",
+          name: "README",
+          desc: "GitHub-style README",
+          content: `# Project Name\n\n> Short project description.\n\n## Features\n\n- Feature 1\n- Feature 2\n\n## Installation\n\n\`\`\`bash\nnpm install project-name\n\`\`\`\n\n## Usage\n\n\`\`\`js\nconst project = require('project-name');\n\`\`\`\n\n## Contributing\n\nPull requests are welcome.\n\n## License\n\nMIT\n`,
+        },
+        {
+          icon: "📓",
+          name: "Daily Journal",
+          desc: "Personal daily log",
+          content: `# ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}\n\n## Morning Intentions\n\n- \n\n## Today's Focus\n\n> [!INFO] Priority\n> What is the one thing that would make today successful?\n\n## Notes & Thoughts\n\n\n\n## Evening Reflection\n\n**What went well:**\n\n**What could improve:**\n\n**Gratitude:**\n\n`,
+        },
+        {
+          icon: "🗺️",
+          name: "Project Plan",
+          desc: "Roadmap with timeline",
+          content: `# Project Plan\n\n**Project:** \n**Start:** \n**Target:** \n\n## Summary\n\n## Milestones\n\n\`\`\`mermaid\ngantt\n  title Project Roadmap\n  dateFormat YYYY-MM-DD\n  section Phase 1\n  Planning :a1, 2024-01-01, 14d\n  section Phase 2\n  Development :a2, after a1, 30d\n  section Phase 3\n  Testing :a3, after a2, 14d\n\`\`\`\n\n## Risks\n\n| Risk | Likelihood | Impact | Mitigation |\n| --- | --- | --- | --- |\n| | | | |\n\n`,
+        },
+      ];
+
+      function setupTemplates() {
+        templateGrid.innerHTML = "";
+        TEMPLATES.forEach((t) => {
+          const card = document.createElement("div");
+          card.className = "template-card";
+          card.innerHTML = `<div class="template-icon">${t.icon}</div><div class="template-name">${t.name}</div><div class="template-desc">${t.desc}</div>`;
+          card.addEventListener("click", () => {
+            if (
+              editor.value.trim() &&
+              !confirm("Replace current content with template?")
+            )
+              return;
+            // Open in current tab
+            editor.value = t.content;
+            if (activeTabId !== null) {
+              const tab = tabs.find((t2) => t2.id === activeTabId);
+              if (tab) {
+                tab.name = t.name + ".md";
+                tab.content = t.content;
+                refreshTabBar();
+              }
+            }
+            currentFilenameDisplay.textContent = t.name + ".md";
+            updatePreview();
+            updateWordCount();
+            pushToHistory();
+            markAsUnsaved(true);
+            templatesModal.style.display = "none";
+            notify(`Template "${t.name}" loaded`);
+          });
+          templateGrid.appendChild(card);
+        });
+      }
+
+      // ─── Mobile Setup ───
+      function setupMobile() {
+        if (!mobileExplorerToggle) return;
+        const mobilePreviewClose = document.getElementById(
+          "mobile-preview-close",
+        );
+
+        mobileExplorerToggle.addEventListener("click", () => {
+          const open = explorer.classList.toggle("mobile-open");
+          viewer.classList.remove("mobile-open");
+          mobileOverlay.classList.toggle("active", open);
+        });
+        mobilePreviewToggle.addEventListener("click", () => {
+          const open = viewer.classList.toggle("mobile-open");
+          explorer.classList.remove("mobile-open");
+          mobileOverlay.classList.toggle("active", open);
+        });
+        if (mobilePreviewClose) {
+          mobilePreviewClose.addEventListener("click", () => {
+            viewer.classList.remove("mobile-open");
+            mobileOverlay.classList.remove("active");
+          });
+        }
+        mobileOverlay.addEventListener("click", () => {
+          explorer.classList.remove("mobile-open");
+          viewer.classList.remove("mobile-open");
+          mobileOverlay.classList.remove("active");
+        });
+      }
+
       // ─── Expose functions needed by inline onclick= handlers ───
       window.format = format;
       window.toggleFind = toggleFind;
@@ -4703,6 +5676,7 @@
       window.toggleMeta = toggleMeta;
       window.toggleTOC = toggleTOC;
       window.toggleDropdown = toggleDropdown;
+      window.toggleCustomCSS = toggleCustomCSS;
 
       // ─── Boot ───
       init();
