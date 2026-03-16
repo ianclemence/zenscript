@@ -3195,11 +3195,8 @@
                 <button class="dropdown-item" id="download-md">
                   <i class="fas fa-file-lines"></i>Download .md
                 </button>
-                <button class="dropdown-item" id="download-html">
-                  <i class="fas fa-file-code"></i>Download .html
-                </button>
                 <button class="dropdown-item" id="download-html-embed">
-                  <i class="fas fa-file-code"></i>Export HTML (embedded)
+                  <i class="fas fa-file-code"></i>Export HTML
                 </button>
                 <button class="dropdown-item" id="export-pdf">
                   <i class="fas fa-file-pdf"></i>Export as PDF
@@ -3519,7 +3516,6 @@
       const downloadToggleBtn = document.getElementById("download-toggle");
       const downloadMenu = document.getElementById("download-menu");
       const downloadMdBtn = document.getElementById("download-md");
-      const downloadHtmlBtn = document.getElementById("download-html");
       const downloadHtmlEmbedBtn = document.getElementById(
         "download-html-embed",
       );
@@ -4191,10 +4187,6 @@
         });
         downloadMdBtn.addEventListener("click", () => {
           downloadAsMarkdown();
-          toggleDropdown("download-menu", false);
-        });
-        downloadHtmlBtn.addEventListener("click", () => {
-          downloadAsHTML();
           toggleDropdown("download-menu", false);
         });
         downloadToggleBtn.addEventListener("click", (e) => {
