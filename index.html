@@ -3361,6 +3361,7 @@
       const fileList = document.getElementById("file-list");
       const currentFilenameDisplay =
         document.getElementById("current-filename");
+      const mobileFilenameDisplay = document.getElementById("mobile-filename");
       const unsavedIndicator = document.getElementById("unsaved-indicator");
       const themeSelect = document.getElementById("theme-select");
       const fontSizeInput = document.getElementById("font-size");
@@ -5196,6 +5197,11 @@
             tab.fileHandle.name = movedPath.split("/").pop();
             tab.filePath = movedPath;
             tab.name = movedPath;
+            if (tab.id === activeTabId) {
+              currentFilenameDisplay.textContent = movedPath;
+              if (mobileFilenameDisplay)
+                mobileFilenameDisplay.textContent = movedPath;
+            }
           }
         });
 
@@ -5210,8 +5216,11 @@
           currentFileHandle.name = movedPath.split("/").pop();
           currentFilePath = movedPath;
           currentFilenameDisplay.textContent = movedPath;
+          if (mobileFilenameDisplay)
+            mobileFilenameDisplay.textContent = movedPath;
         }
 
+        await updateHistoryForPathRename(oldPath, newPath, "db");
         refreshTabBar();
         refreshExplorer();
         notify(`Renamed to ${newName}`);
@@ -5705,6 +5714,34 @@
           });
           await idbKeyval.set("md-local-history", newHistory);
           renderHistory();
+        } catch {}
+      }
+      async function updateHistoryForPathRename(oldPath, newPath, source) {
+        if (!window.idbKeyval) return;
+        try {
+          const history = (await idbKeyval.get("md-local-history")) || [];
+          let changed = false;
+          const updated = history.map((h) => {
+            const hSource = h.fileSource || "db";
+            if (hSource !== source) return h;
+            const hPath = h.filePath || h.name;
+            if (!hPath) return h;
+            if (hPath === oldPath || hPath.startsWith(oldPath + "/")) {
+              const newPathValue = hPath.replace(oldPath, newPath);
+              changed = true;
+              return {
+                ...h,
+                name: newPathValue.split("/").pop(),
+                filePath: newPathValue,
+                fileId: `${hSource}:${newPathValue}`,
+              };
+            }
+            return h;
+          });
+          if (changed) {
+            await idbKeyval.set("md-local-history", updated);
+            renderHistory();
+          }
         } catch {}
       }
 
