@@ -727,6 +727,16 @@
         padding: 10px 14px 6px;
         flex-shrink: 0;
       }
+      .history-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #history-retention {
+        height: 26px;
+        font-size: 11px;
+        padding: 2px 6px;
+      }
 
       .history-list {
         flex: 1;
@@ -773,6 +783,48 @@
         font-weight: 500;
       }
       .history-file-count {
+        font-size: 10px;
+        color: var(--text-tertiary);
+      }
+      .attachments-meta {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin: 6px 0 10px;
+      }
+      .attachments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 220px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+      .attachment-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface-input);
+      }
+      .attachment-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow: hidden;
+      }
+      .attachment-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 240px;
+      }
+      .attachment-size {
         font-size: 10px;
         color: var(--text-tertiary);
       }
@@ -2623,13 +2675,27 @@
         <div class="history-section" id="history-section">
           <div class="history-header">
             <span class="panel-title">History</span>
-            <button
-              class="icon-btn danger"
-              id="clear-history"
-              title="Clear History"
-            >
-              <i class="fas fa-trash-alt"></i>
-            </button>
+            <div class="history-actions">
+              <select
+                class="select-control"
+                id="history-retention"
+                title="History retention"
+              >
+                <option value="7">7 days</option>
+                <option value="30">30 days</option>
+                <option value="90">90 days</option>
+              </select>
+              <button class="icon-btn" id="attachments-btn" title="Attachments">
+                <i class="fas fa-paperclip"></i>
+              </button>
+              <button
+                class="icon-btn danger"
+                id="clear-history"
+                title="Clear History"
+              >
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
           </div>
           <div id="history-list" class="history-list">
             <div
@@ -2963,6 +3029,23 @@
           </div>
         </div>
 
+        <div class="overlay-panel" id="attachments-panel">
+          <div class="overlay-title">
+            Attachments
+            <button class="icon-btn" onclick="toggleAttachmentsPanel()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="attachments-meta" id="attachments-meta"></div>
+          <div class="attachments-list" id="attachments-list"></div>
+          <div class="btn-row">
+            <button class="btn-primary" id="attachments-refresh">
+              Refresh
+            </button>
+            <button class="btn-ghost" id="attachments-close">Close</button>
+          </div>
+        </div>
+
         <!-- Find & Replace panel -->
         <div class="overlay-panel" id="find-replace-panel">
           <div class="overlay-title">
@@ -3089,6 +3172,13 @@
             <button class="icon-btn" id="toggle-toc" title="Table of Contents">
               <i class="fas fa-list-ul"></i>
             </button>
+            <button
+              class="icon-btn"
+              id="live-preview-toggle"
+              title="Live Preview"
+            >
+              <i class="fas fa-pause"></i>
+            </button>
             <div class="divider-v"></div>
             <!-- Export dropdown (consolidated) -->
             <div class="dropdown-wrap">
@@ -3101,6 +3191,9 @@
                 </button>
                 <button class="dropdown-item" id="download-html">
                   <i class="fas fa-file-code"></i>Download .html
+                </button>
+                <button class="dropdown-item" id="download-html-embed">
+                  <i class="fas fa-file-code"></i>Export HTML (embedded)
                 </button>
                 <button class="dropdown-item" id="export-pdf">
                   <i class="fas fa-file-pdf"></i>Export as PDF
@@ -3396,6 +3489,8 @@
       const formatBtn = document.getElementById("format-btn");
       const historyList = document.getElementById("history-list");
       const clearHistoryBtn = document.getElementById("clear-history");
+      const historyRetentionSelect =
+        document.getElementById("history-retention");
       const historyDiffModal = document.getElementById("history-diff-modal");
       const historyDiffTitle = document.getElementById("history-diff-title");
       const historyDiffSubtitle = document.getElementById(
@@ -3419,6 +3514,9 @@
       const downloadMenu = document.getElementById("download-menu");
       const downloadMdBtn = document.getElementById("download-md");
       const downloadHtmlBtn = document.getElementById("download-html");
+      const downloadHtmlEmbedBtn = document.getElementById(
+        "download-html-embed",
+      );
       const findReplacePanel = document.getElementById("find-replace-panel");
       const findInput = document.getElementById("find-input");
       const replaceInput = document.getElementById("replace-input");
@@ -3436,6 +3534,14 @@
       const btnMermaid = document.getElementById("btn-mermaid");
       const attachBtn = document.getElementById("btn-attach");
       const attachInput = document.getElementById("attach-input");
+      const attachmentsBtn = document.getElementById("attachments-btn");
+      const attachmentsPanel = document.getElementById("attachments-panel");
+      const attachmentsList = document.getElementById("attachments-list");
+      const attachmentsMeta = document.getElementById("attachments-meta");
+      const attachmentsRefreshBtn = document.getElementById(
+        "attachments-refresh",
+      );
+      const attachmentsCloseBtn = document.getElementById("attachments-close");
       const metaPanel = document.getElementById("meta-panel");
       const metaTitle = document.getElementById("meta-title");
       const metaTags = document.getElementById("meta-tags");
@@ -3451,6 +3557,9 @@
       const exportImageBtn = document.getElementById("export-image");
       const templatesBtnEl = document.getElementById("templates-btn");
       const customCssBtnEl = document.getElementById("custom-css-btn");
+      const livePreviewToggleBtn = document.getElementById(
+        "live-preview-toggle",
+      );
       const customCssPanel = document.getElementById("custom-css-panel");
       const customCssInput = document.getElementById("custom-css-input");
       const applyCustomCssBtn = document.getElementById("apply-custom-css");
@@ -3503,6 +3612,9 @@
       let tabPersistTimer = null;
       // Writing goal state
       let writingGoal = 0;
+      let historyRetentionDays = 7;
+      let isLivePreview = true;
+      let previewUpdateTimer = null;
       // Custom CSS state
       let isCustomCSSOpen = false;
 
@@ -3814,6 +3926,8 @@
         setupTemplates();
         setupMobile();
         loadPreferences();
+        updateLivePreviewToggle();
+        applyHistoryRetention();
 
         // Try to restore tabs first
         let restored = false;
@@ -3977,7 +4091,7 @@
 
         let historyTimeout;
         editor.addEventListener("input", () => {
-          updatePreview();
+          schedulePreviewUpdate();
           updateWordCount();
           markAsUnsaved(true);
           handleAutosave();
@@ -4033,6 +4147,10 @@
           exportAsImage();
           toggleDropdown("download-menu", false);
         });
+        downloadHtmlEmbedBtn.addEventListener("click", () => {
+          downloadAsSelfContainedHTML();
+          toggleDropdown("download-menu", false);
+        });
         copyHtmlMenuBtn.addEventListener("click", () => {
           copyAsHTML();
           toggleDropdown("download-menu", false);
@@ -4049,9 +4167,17 @@
         });
         attachBtn.addEventListener("click", () => attachInput.click());
         attachInput.addEventListener("change", handleAttachmentSelect);
+        if (attachmentsBtn)
+          attachmentsBtn.addEventListener("click", toggleAttachmentsPanel);
+        if (attachmentsRefreshBtn)
+          attachmentsRefreshBtn.addEventListener("click", loadAttachmentsList);
+        if (attachmentsCloseBtn)
+          attachmentsCloseBtn.addEventListener("click", toggleAttachmentsPanel);
         zenModeBtn.addEventListener("click", toggleZenMode);
         focusModeBtn.addEventListener("click", toggleFocusMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
+        if (livePreviewToggleBtn)
+          livePreviewToggleBtn.addEventListener("click", toggleLivePreview);
         helpBtn.addEventListener("click", toggleHelp);
         formatBtn.addEventListener("click", formatDocument);
         helpModal.addEventListener("click", (e) => {
@@ -4098,6 +4224,13 @@
         globalSearchInput.addEventListener("input", performGlobalSearch);
         clearSearchBtn.addEventListener("click", clearSearch);
         clearHistoryBtn.addEventListener("click", clearLocalHistory);
+        if (historyRetentionSelect)
+          historyRetentionSelect.addEventListener("change", (e) => {
+            historyRetentionDays = parseInt(e.target.value, 10) || 7;
+            if (window.idbKeyval)
+              idbKeyval.set("md-history-retention-days", historyRetentionDays);
+            applyHistoryRetention();
+          });
         historyDiffClose.addEventListener("click", closeHistoryDiff);
         historyDiffRestore.addEventListener("click", () => {
           if (selectedHistoryIndex !== null)
@@ -4347,6 +4480,32 @@
         };
         setupResizer("resizer-1", "explorer", false, 150, 400);
         setupResizer("resizer-2", "viewer", true, 150, 800);
+      }
+
+      function schedulePreviewUpdate() {
+        if (!isLivePreview) return;
+        if (previewUpdateTimer) clearTimeout(previewUpdateTimer);
+        const size = editor.value.length;
+        const delay = size > 20000 ? 350 : size > 8000 ? 200 : 80;
+        previewUpdateTimer = setTimeout(() => {
+          updatePreview();
+        }, delay);
+      }
+      function updateLivePreviewToggle() {
+        if (!livePreviewToggleBtn) return;
+        livePreviewToggleBtn.classList.toggle("active", isLivePreview);
+        livePreviewToggleBtn.innerHTML = isLivePreview
+          ? '<i class="fas fa-pause"></i>'
+          : '<i class="fas fa-play"></i>';
+        livePreviewToggleBtn.title = isLivePreview
+          ? "Pause Live Preview"
+          : "Resume Live Preview";
+      }
+      function toggleLivePreview() {
+        isLivePreview = !isLivePreview;
+        updateLivePreviewToggle();
+        if (isLivePreview) updatePreview();
+        else if (previewUpdateTimer) clearTimeout(previewUpdateTimer);
       }
 
       // ─── Preview ───
@@ -4647,6 +4806,59 @@
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(".md", ".html");
         const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fn}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css"><style>body{max-width:860px;margin:0 auto;padding:40px;}</style></head><body class="markdown-body">${previewContent.innerHTML}</body></html>`;
+        const blob = new Blob([html], { type: "text/html" });
+        const a = Object.assign(document.createElement("a"), {
+          href: URL.createObjectURL(blob),
+          download: fn,
+        });
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++)
+          binary += String.fromCharCode(bytes[i]);
+        return btoa(binary);
+      }
+      async function buildSelfContainedHTML() {
+        const fn = (
+          currentFileHandle ? currentFileHandle.name : "document"
+        ).replace(".md", "");
+        const rawHtml = window.marked
+          ? marked.parse(editor.value)
+          : previewContent.innerHTML;
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = rawHtml;
+        if (window.idbKeyval) {
+          const nodes = wrapper.querySelectorAll(
+            'img[src^="attachment://"], a[href^="attachment://"]',
+          );
+          for (const node of nodes) {
+            const attr = node.tagName.toLowerCase() === "img" ? "src" : "href";
+            const raw = node.getAttribute(attr) || "";
+            const id = raw.replace("attachment://", "");
+            if (!id) continue;
+            const entry = await idbKeyval.get(`attachment:${id}`);
+            if (!entry || !entry.data) continue;
+            const base64 = arrayBufferToBase64(entry.data);
+            const type = entry.type || "image/*";
+            const dataUrl = `data:${type};base64,${base64}`;
+            node.setAttribute(attr, dataUrl);
+          }
+        }
+        const theme =
+          document.documentElement.getAttribute("data-theme") || "light";
+        const styleText = document.querySelector("style")?.textContent || "";
+        const baseStyle =
+          "body.markdown-body{max-width:860px;margin:0 auto;padding:40px;}";
+        return `<!DOCTYPE html><html data-theme="${theme}"><head><meta charset="UTF-8"><title>${fn}</title><style>${styleText}${baseStyle}</style></head><body class="markdown-body" data-theme="${theme}">${wrapper.innerHTML}</body></html>`;
+      }
+      async function downloadAsSelfContainedHTML() {
+        const fn = (
+          currentFileHandle ? currentFileHandle.name : "document"
+        ).replace(".md", ".html");
+        const html = await buildSelfContainedHTML();
         const blob = new Blob([html], { type: "text/html" });
         const a = Object.assign(document.createElement("a"), {
           href: URL.createObjectURL(blob),
@@ -5744,6 +5956,17 @@
           }
         } catch {}
       }
+      async function applyHistoryRetention() {
+        if (!window.idbKeyval) return;
+        const now = Date.now();
+        const maxAge = historyRetentionDays * 86400000;
+        try {
+          const history = (await idbKeyval.get("md-local-history")) || [];
+          const filtered = history.filter((h) => now - h.timestamp < maxAge);
+          await idbKeyval.set("md-local-history", filtered);
+          renderHistory();
+        } catch {}
+      }
 
       async function saveSnapshot() {
         if (!currentFileHandle || !currentFilePath) return;
@@ -5756,7 +5979,7 @@
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
           const filtered = history.filter(
-            (h) => now - h.timestamp < 7 * 86400000,
+            (h) => now - h.timestamp < historyRetentionDays * 86400000,
           );
           const last = filtered.findLast
             ? filtered.findLast((h) => (h.fileId || `db:${h.name}`) === fileId)
@@ -6056,6 +6279,28 @@
         }
       }
 
+      function getLineRange(text, lineNumber) {
+        if (lineNumber < 1) return null;
+        let start = 0;
+        for (let i = 1; i < lineNumber; i++) {
+          const next = text.indexOf("\n", start);
+          if (next === -1) return null;
+          start = next + 1;
+        }
+        let end = text.indexOf("\n", start);
+        if (end === -1) end = text.length;
+        return { start, end };
+      }
+      function jumpToLine(lineNumber) {
+        const range = getLineRange(editor.value, lineNumber);
+        if (!range) return;
+        editor.focus();
+        editor.setSelectionRange(range.start, range.end);
+        const lineHeight =
+          parseFloat(getComputedStyle(editor).lineHeight) || 20;
+        editor.scrollTop = Math.max(0, (lineNumber - 1) * lineHeight - 40);
+      }
+
       // ─── Global Search ───
       async function performGlobalSearch() {
         const query = globalSearchInput.value.trim().toLowerCase();
@@ -6063,10 +6308,7 @@
           clearSearch();
           return;
         }
-        if (!directoryHandle) {
-          notify("Open a directory to search");
-          return;
-        }
+        const searchSource = directoryHandle ? "fs" : "db";
         clearSearchBtn.classList.add("visible");
         fileList.style.display = "none";
         searchResults.classList.add("visible");
@@ -6074,20 +6316,40 @@
           '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text-tertiary);">Searching…</div>';
         const matches = [];
         try {
-          for await (const entry of directoryHandle.values()) {
-            if (entry.kind === "file" && entry.name.endsWith(".md")) {
-              const file = await entry.getFile();
+          if (searchSource === "fs") {
+            const entries = await scanFsRecursive(directoryHandle);
+            for (const entry of entries) {
+              if (entry.type !== "file") continue;
+              if (!entry.path.endsWith(".md")) continue;
+              const file = await entry.handle.getFile();
               const text = await file.text();
               text.split("\n").forEach((line, i) => {
                 if (line.toLowerCase().includes(query))
                   matches.push({
-                    handle: entry,
+                    source: "fs",
+                    handle: entry.handle,
+                    filePath: entry.path,
                     line: i + 1,
                     text: line.trim(),
-                    fileName: entry.name,
                   });
               });
             }
+          } else {
+            const entries = await listDBFiles();
+            entries.forEach((entry) => {
+              if (entry.type !== "file") return;
+              if (!entry.path.endsWith(".md")) return;
+              const text = entry.content || "";
+              text.split("\n").forEach((line, i) => {
+                if (line.toLowerCase().includes(query))
+                  matches.push({
+                    source: "db",
+                    filePath: entry.path,
+                    line: i + 1,
+                    text: line.trim(),
+                  });
+              });
+            });
           }
           displaySearchResults(matches, query);
         } catch {
@@ -6104,16 +6366,24 @@
         searchResults.innerHTML = "";
         const grouped = {};
         matches.forEach((m) => {
-          if (!grouped[m.fileName]) grouped[m.fileName] = [];
-          grouped[m.fileName].push(m);
+          if (!grouped[m.filePath]) grouped[m.filePath] = [];
+          grouped[m.filePath].push(m);
         });
-        for (const [fileName, fileMatches] of Object.entries(grouped)) {
+        for (const [filePath, fileMatches] of Object.entries(grouped)) {
           const g = document.createElement("div");
           g.className = "search-result-group";
           const header = document.createElement("div");
           header.className = "search-result-file";
-          header.innerHTML = `<i class="far fa-file-alt"></i>${fileName}`;
-          header.onclick = () => openFile(fileMatches[0].handle);
+          header.innerHTML = `<i class="far fa-file-alt"></i>${filePath}`;
+          header.onclick = async () => {
+            const first = fileMatches[0];
+            if (first.source === "fs") {
+              await openFile(first.handle, first.filePath);
+            } else {
+              await openFileFromDB(first.filePath, true);
+            }
+            jumpToLine(first.line);
+          };
           g.appendChild(header);
           fileMatches.forEach((m) => {
             const line = document.createElement("div");
@@ -6121,7 +6391,12 @@
             const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             line.innerHTML = `<span style="color:var(--text-tertiary);font-family:var(--font-mono);font-size:9px;">${m.line}:</span> ${m.text.replace(new RegExp(escaped, "gi"), (s) => `<mark style="background:rgba(255,200,0,0.3);color:inherit;">${s}</mark>`)}`;
             line.onclick = async () => {
-              await openFile(m.handle);
+              if (m.source === "fs") {
+                await openFile(m.handle, m.filePath);
+              } else {
+                await openFileFromDB(m.filePath, true);
+              }
+              jumpToLine(m.line);
             };
             g.appendChild(line);
           });
@@ -6529,6 +6804,83 @@
         }
         insertAtCursor(insert);
         notify(`Inserted: ${f.name}`);
+        if (attachmentsPanel && attachmentsPanel.classList.contains("open"))
+          loadAttachmentsList();
+      }
+      function toggleAttachmentsPanel() {
+        if (!attachmentsPanel) return;
+        const open = attachmentsPanel.classList.toggle("open");
+        if (open) loadAttachmentsList();
+      }
+      async function getAttachmentEntries() {
+        if (!window.idbKeyval) return [];
+        if (idbKeyval.entries) {
+          const entries = await idbKeyval.entries();
+          return entries.filter(([key]) => key.startsWith("attachment:"));
+        }
+        if (idbKeyval.keys) {
+          const keys = await idbKeyval.keys();
+          const attachmentKeys = keys.filter((k) =>
+            String(k).startsWith("attachment:"),
+          );
+          const values = await Promise.all(
+            attachmentKeys.map((k) => idbKeyval.get(k)),
+          );
+          return attachmentKeys.map((k, i) => [k, values[i]]);
+        }
+        return [];
+      }
+      function formatAttachmentSize(bytes) {
+        if (!bytes) return "0 KB";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+      }
+      async function loadAttachmentsList() {
+        if (!attachmentsList || !attachmentsMeta) return;
+        attachmentsList.innerHTML = "";
+        if (!window.idbKeyval) {
+          attachmentsMeta.textContent = "Attachments are unavailable.";
+          return;
+        }
+        const entries = await getAttachmentEntries();
+        if (!entries.length) {
+          attachmentsMeta.textContent = "No attachments saved.";
+          return;
+        }
+        let totalBytes = 0;
+        entries.forEach(([, entry]) => {
+          if (entry?.data?.byteLength) totalBytes += entry.data.byteLength;
+        });
+        attachmentsMeta.textContent = `${entries.length} item(s), ${formatAttachmentSize(totalBytes)}`;
+        entries.forEach(([key, entry]) => {
+          const row = document.createElement("div");
+          row.className = "attachment-row";
+          const info = document.createElement("div");
+          info.className = "attachment-info";
+          const name = document.createElement("div");
+          name.className = "attachment-name";
+          name.textContent = entry?.name || key.replace("attachment:", "");
+          const size = document.createElement("div");
+          size.className = "attachment-size";
+          size.textContent = formatAttachmentSize(entry?.data?.byteLength || 0);
+          info.appendChild(name);
+          info.appendChild(size);
+          const actions = document.createElement("div");
+          const delBtn = document.createElement("button");
+          delBtn.className = "icon-btn danger";
+          delBtn.title = "Remove attachment";
+          delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+          delBtn.onclick = async () => {
+            await idbKeyval.del(key);
+            loadAttachmentsList();
+            updatePreview();
+          };
+          actions.appendChild(delBtn);
+          row.appendChild(info);
+          row.appendChild(actions);
+          attachmentsList.appendChild(row);
+        });
       }
       async function resolvePreviewAttachments() {
         if (!window.idbKeyval) return;
@@ -6803,11 +7155,13 @@
           const s = await idbKeyval.get("md-font-size");
           const a = await idbKeyval.get("md-autosave");
           const g = await idbKeyval.get("md-writing-goal");
+          const h = await idbKeyval.get("md-history-retention-days");
           const css = await idbKeyval.get("md-custom-css");
           if (t) theme = t;
           if (s) size = s;
           if (a !== undefined) autosave = a;
           if (g) writingGoal = g;
+          if (h) historyRetentionDays = parseInt(h, 10) || 7;
           if (css) {
             customCssInput.value = css;
             document.getElementById("custom-preview-style").textContent = css;
@@ -6816,6 +7170,8 @@
         themeSelect.value = theme;
         fontSizeInput.value = size;
         autosaveToggle.checked = autosave;
+        if (historyRetentionSelect)
+          historyRetentionSelect.value = historyRetentionDays.toString();
         localStorage.setItem("md-theme", theme);
         // Apply theme by setting attribute (no CSS transition flash on load)
         document.documentElement.setAttribute("data-theme", theme);
