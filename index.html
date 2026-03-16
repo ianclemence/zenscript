@@ -622,7 +622,7 @@
         background: var(--surface-input);
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        padding: 6px 28px;
+        padding: 6px 32px;
         font-family: var(--font-sans);
         font-size: 12px;
         color: var(--text-primary);
@@ -641,20 +641,26 @@
 
       .clear-search-btn {
         position: absolute;
-        right: 8px;
+        right: 9px;
+        top: 50%;
+        transform: translateY(-50%);
         background: none;
         border: none;
         cursor: pointer;
         color: var(--text-tertiary);
         font-size: 10px;
         padding: 0;
+        width: 16px;
+        height: 16px;
         display: none;
+        align-items: center;
+        justify-content: center;
       }
       .clear-search-btn:hover {
         color: var(--text-secondary);
       }
       .clear-search-btn.visible {
-        display: block;
+        display: flex;
       }
 
       /* Tags */
