@@ -5285,42 +5285,117 @@
       }
       async function moveDbEntryToFolder(sourcePath, folderPath) {
         const entry = await loadFromDB(sourcePath);
-        if (!entry || entry.type !== "file") return;
-        const targetPath = joinPath(folderPath, sourcePath.split("/").pop());
+        if (!entry) return;
+        const name = sourcePath.split("/").pop();
+        const targetPath = joinPath(folderPath, name);
+        if (sourcePath === targetPath) return;
+
         const exists = await loadFromDB(targetPath);
         if (exists && !confirm(`Overwrite "${targetPath}"?`)) return;
-        await saveToDB(targetPath, entry.content, "file");
-        await deleteFromDB(sourcePath);
-        if (currentFilePath === sourcePath) {
-          currentFilePath = targetPath;
-          currentFileHandle = { name: targetPath, path: targetPath };
-          currentFilenameDisplay.textContent = targetPath;
+
+        if (entry.type === "folder") {
+          const allEntries = await listDBFiles();
+          const prefix = sourcePath + "/";
+          const descendants = allEntries.filter((item) =>
+            item.path.startsWith(prefix),
+          );
+          for (const item of descendants) {
+            const movedPath = item.path.replace(prefix, targetPath + "/");
+            await saveToDB(movedPath, item.content, item.type);
+            await deleteFromDB(item.path);
+          }
         }
-        notify(`Moved to ${folderPath}`);
+
+        await saveToDB(targetPath, entry.content, entry.type);
+        await deleteFromDB(sourcePath);
+
+        // Update active file and tabs
+        tabs.forEach((tab) => {
+          if (!tab.fileHandle || !tab.fileHandle.path) return;
+          if (
+            tab.fileHandle.path === sourcePath ||
+            tab.fileHandle.path.startsWith(sourcePath + "/")
+          ) {
+            const movedPath = tab.fileHandle.path.replace(sourcePath, targetPath);
+            tab.fileHandle.path = movedPath;
+            tab.fileHandle.name = movedPath.split("/").pop();
+            tab.filePath = movedPath;
+            tab.name = movedPath;
+            if (tab.id === activeTabId) {
+              currentFilenameDisplay.textContent = movedPath;
+              if (window.mobileFilenameDisplay)
+                mobileFilenameDisplay.textContent = movedPath;
+            }
+          }
+        });
+
+        if (
+          currentFileHandle &&
+          currentFileHandle.path &&
+          (currentFileHandle.path === sourcePath ||
+            currentFileHandle.path.startsWith(sourcePath + "/"))
+        ) {
+          const movedPath = currentFileHandle.path.replace(sourcePath, targetPath);
+          currentFileHandle.path = movedPath;
+          currentFileHandle.name = movedPath.split("/").pop();
+          currentFilePath = movedPath;
+          currentFilenameDisplay.textContent = movedPath;
+          if (window.mobileFilenameDisplay)
+            mobileFilenameDisplay.textContent = movedPath;
+        }
+
+        notify(`Moved to ${folderPath || "root"}`);
         refreshExplorer();
+        refreshTabBar();
       }
       async function moveFsEntryToFolder(sourcePath, folderPath) {
         const source = fsEntryMap.get(sourcePath);
         const targetDir = folderPath
           ? fsEntryMap.get(folderPath)
           : directoryHandle;
-        if (
-          !source ||
-          !targetDir ||
-          source.kind !== "file" ||
-          targetDir.kind !== "directory"
-        )
-          return;
-        const file = await source.getFile();
-        const target = await targetDir.getFileHandle(file.name, {
-          create: true,
-        });
-        const writable = await target.createWritable();
-        await writable.write(await file.arrayBuffer());
-        await writable.close();
+
+        if (!source || !targetDir || targetDir.kind !== "directory") return;
+
+        const name = sourcePath.split("/").pop();
+
+        if (source.kind === "file") {
+          const file = await source.getFile();
+          const target = await targetDir.getFileHandle(name, {
+            create: true,
+          });
+          const writable = await target.createWritable();
+          await writable.write(await file.arrayBuffer());
+          await writable.close();
+        } else {
+          // Recursive move for directory
+          const moveRecursive = async (srcHandle, destParentHandle, dirName) => {
+            const newDirHandle = await destParentHandle.getDirectoryHandle(
+              dirName,
+              { create: true },
+            );
+            for await (const entry of srcHandle.values()) {
+              if (entry.kind === "file") {
+                const file = await entry.getFile();
+                const newFileHandle = await newDirHandle.getFileHandle(
+                  entry.name,
+                  { create: true },
+                );
+                const writable = await newFileHandle.createWritable();
+                await writable.write(await file.arrayBuffer());
+                await writable.close();
+              } else {
+                await moveRecursive(entry, newDirHandle, entry.name);
+              }
+            }
+          };
+          await moveRecursive(source, targetDir, name);
+        }
+
+        // Cleanup source
         const sourceDir =
           fsEntryMap.get(getParentPath(sourcePath)) || directoryHandle;
-        if (sourceDir?.removeEntry) await sourceDir.removeEntry(file.name);
+        if (sourceDir?.removeEntry) await sourceDir.removeEntry(name, { recursive: true });
+
         const destination = folderPath || directoryHandle?.name || "root";
         notify(`Moved to ${destination}`);
         await scanDirectory();
@@ -5491,7 +5566,7 @@
           if (!isRenaming) return;
           const newName = input.value.trim();
           if (commit && newName && newName !== oldName) {
-            await performRename(entry.path, newName);
+            await performRename(entry.path, newName, entry.source || "db");
           } else {
             nameSpan.innerHTML = oldName;
           }
@@ -5505,77 +5580,150 @@
         input.addEventListener("blur", () => finishRename(true));
       }
 
-      async function performRename(oldPath, newName) {
-        const entry = await loadFromDB(oldPath);
-        if (!entry) return;
-        const parts = oldPath.split("/");
-        parts.pop();
-        if (entry.type === "file" && !newName.endsWith(".md"))
-          newName = `${newName}.md`;
-        const newPath = parts.length
-          ? `${parts.join("/")}/${newName}`
-          : newName;
+      async function performRename(oldPath, newName, source = "db") {
+        if (source === "db") {
+          const entry = await loadFromDB(oldPath);
+          if (!entry) return;
+          const parts = oldPath.split("/");
+          parts.pop();
+          if (entry.type === "file" && !newName.endsWith(".md"))
+            newName = `${newName}.md`;
+          const newPath = parts.length
+            ? `${parts.join("/")}/${newName}`
+            : newName;
 
-        // Check if exists
-        const exists = await loadFromDB(newPath);
-        if (exists) {
-          alert(`File already exists: "${newPath}"`);
-          refreshExplorer();
-          return;
-        }
-
-        if (entry.type === "folder") {
-          const allEntries = await listDBFiles();
-          const descendants = allEntries.filter((item) =>
-            item.path.startsWith(oldPath + "/"),
-          );
-          for (const item of descendants) {
-            const movedPath = item.path.replace(oldPath + "/", newPath + "/");
-            await saveToDB(movedPath, item.content, item.type);
-            await deleteFromDB(item.path);
+          // Check if exists
+          const exists = await loadFromDB(newPath);
+          if (exists) {
+            alert(`File already exists: "${newPath}"`);
+            refreshExplorer();
+            return;
           }
-        }
-        await saveToDB(newPath, entry.content, entry.type);
-        await deleteFromDB(oldPath);
 
-        tabs.forEach((tab) => {
-          if (!tab.fileHandle || !tab.fileHandle.path) return;
-          if (
-            tab.fileHandle.path === oldPath ||
-            tab.fileHandle.path.startsWith(oldPath + "/")
-          ) {
-            const movedPath = tab.fileHandle.path.replace(oldPath, newPath);
-            tab.fileHandle.path = movedPath;
-            tab.fileHandle.name = movedPath.split("/").pop();
-            tab.filePath = movedPath;
-            tab.name = movedPath;
-            if (tab.id === activeTabId) {
-              currentFilenameDisplay.textContent = movedPath;
-              if (mobileFilenameDisplay)
-                mobileFilenameDisplay.textContent = movedPath;
+          if (entry.type === "folder") {
+            const allEntries = await listDBFiles();
+            const descendants = allEntries.filter((item) =>
+              item.path.startsWith(oldPath + "/"),
+            );
+            for (const item of descendants) {
+              const movedPath = item.path.replace(oldPath + "/", newPath + "/");
+              await saveToDB(movedPath, item.content, item.type);
+              await deleteFromDB(item.path);
             }
           }
-        });
+          await saveToDB(newPath, entry.content, entry.type);
+          await deleteFromDB(oldPath);
 
-        if (
-          currentFileHandle &&
-          currentFileHandle.path &&
-          (currentFileHandle.path === oldPath ||
-            currentFileHandle.path.startsWith(oldPath + "/"))
-        ) {
-          const movedPath = currentFileHandle.path.replace(oldPath, newPath);
-          currentFileHandle.path = movedPath;
-          currentFileHandle.name = movedPath.split("/").pop();
-          currentFilePath = movedPath;
-          currentFilenameDisplay.textContent = movedPath;
-          if (mobileFilenameDisplay)
-            mobileFilenameDisplay.textContent = movedPath;
+          // Update tabs
+          tabs.forEach((tab) => {
+            if (!tab.fileHandle || !tab.fileHandle.path) return;
+            if (
+              tab.fileHandle.path === oldPath ||
+              tab.fileHandle.path.startsWith(oldPath + "/")
+            ) {
+              const movedPath = tab.fileHandle.path.replace(oldPath, newPath);
+              tab.fileHandle.path = movedPath;
+              tab.fileHandle.name = movedPath.split("/").pop();
+              tab.filePath = movedPath;
+              tab.name = movedPath;
+              if (tab.id === activeTabId) {
+                currentFilenameDisplay.textContent = movedPath;
+                if (window.mobileFilenameDisplay)
+                  mobileFilenameDisplay.textContent = movedPath;
+              }
+            }
+          });
+
+          if (
+            currentFileHandle &&
+            currentFileHandle.path &&
+            (currentFileHandle.path === oldPath ||
+              currentFileHandle.path.startsWith(oldPath + "/"))
+          ) {
+            const movedPath = currentFileHandle.path.replace(oldPath, newPath);
+            currentFileHandle.path = movedPath;
+            currentFileHandle.name = movedPath.split("/").pop();
+            currentFilePath = movedPath;
+            currentFilenameDisplay.textContent = movedPath;
+            if (window.mobileFilenameDisplay)
+              mobileFilenameDisplay.textContent = movedPath;
+          }
+
+          await updateHistoryForPathRename(oldPath, newPath, "db");
+          refreshTabBar();
+          refreshExplorer();
+          notify(`Renamed to ${newName}`);
+        } else {
+          // FS Rename
+          const sourceEntry = fsEntryMap.get(oldPath);
+          if (!sourceEntry) return;
+
+          const parentPath = getParentPath(oldPath);
+          const parentDir = parentPath ? fsEntryMap.get(parentPath) : directoryHandle;
+          if (!parentDir || parentDir.kind !== "directory") return;
+
+          if (sourceEntry.kind === "file" && !newName.endsWith(".md")) {
+            newName += ".md";
+          }
+          const newPath = joinPath(parentPath, newName);
+
+          // Verify if it exists
+          try {
+            if (sourceEntry.kind === "file") {
+              await parentDir.getFileHandle(newName, { create: false });
+            } else {
+              await parentDir.getDirectoryHandle(newName, { create: false });
+            }
+            alert(`Name already exists: "${newName}"`);
+            return;
+          } catch (e) {}
+
+          if (sourceEntry.kind === "file") {
+            const file = await sourceEntry.getFile();
+            const target = await parentDir.getFileHandle(newName, { create: true });
+            const writable = await target.createWritable();
+            await writable.write(await file.arrayBuffer());
+            await writable.close();
+          } else {
+            // Recursive copy
+            const copyRecursive = async (src, destParent, name) => {
+              const newDir = await destParent.getDirectoryHandle(name, { create: true });
+              for await (const entry of src.values()) {
+                if (entry.kind === "file") {
+                  const f = await entry.getFile();
+                  const targetF = await newDir.getFileHandle(entry.name, { create: true });
+                  const w = await targetF.createWritable();
+                  await w.write(await f.arrayBuffer());
+                  await w.close();
+                } else {
+                  await copyRecursive(entry, newDir, entry.name);
+                }
+              }
+            };
+            await copyRecursive(sourceEntry, parentDir, newName);
+          }
+
+          // Delete old
+          await parentDir.removeEntry(sourceEntry.name, { recursive: true });
+
+          // Update tabs
+          tabs.forEach((tab) => {
+            if (tab.fileSource !== "fs") return;
+            const tabPath = tab.filePath || tab.name;
+            if (tabPath === oldPath || tabPath.startsWith(oldPath + "/")) {
+              const movedPath = tabPath.replace(oldPath, newPath);
+              tab.filePath = movedPath;
+              tab.name = movedPath.split("/").pop();
+              // Note: fileHandle needs update? For FS, we'll let openFile handle it or just rely on scan
+              if (tab.id === activeTabId) {
+                currentFilenameDisplay.textContent = movedPath;
+              }
+            }
+          });
+
+          notify(`Renamed to ${newName}`);
+          await scanDirectory();
         }
-
-        await updateHistoryForPathRename(oldPath, newPath, "db");
-        refreshTabBar();
-        refreshExplorer();
-        notify(`Renamed to ${newName}`);
       }
 
       async function startInlineCreate(type, parentPath) {
@@ -5997,17 +6145,14 @@
         notify(`Pasted to ${newPath}`);
       }
       async function renameEntry(oldPath) {
-        if (rightClickedEntrySource === "fs") {
-          notify("Rename is available in DB workspace");
-          return;
-        }
-        const entry = await loadFromDB(oldPath);
+        const isFs = rightClickedEntrySource === "fs";
+        const entry = isFs ? { path: oldPath, type: rightClickedEntry.type } : await loadFromDB(oldPath);
         if (!entry) return;
         const li = document.querySelector(`.file-item[data-path="${oldPath}"]`);
         if (!li) return;
         const nameSpan = li.querySelector(".file-name");
         if (!nameSpan) return;
-        startInlineRename(entry, li, nameSpan);
+        startInlineRename({ ...entry, source: rightClickedEntrySource }, li, nameSpan);
       }
       async function deleteEntry(path, source = "db") {
         if (!confirm(`Delete "${path}"?`)) return;
