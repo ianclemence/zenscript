@@ -4171,9 +4171,27 @@
         });
 
         editor.addEventListener("contextmenu", (e) => {
+          if (window.innerWidth <= 768) return; // Allow native menu on mobile
           e.preventDefault();
           openCommandPalette(e.clientX, e.clientY);
         });
+
+        let lastEditorTap = 0;
+        editor.addEventListener(
+          "touchend",
+          (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastEditorTap;
+            if (tapLength < 300 && tapLength > 0) {
+              if (window.innerWidth <= 768) {
+                const touch = e.changedTouches[0];
+                openCommandPalette(touch.clientX, touch.clientY);
+              }
+            }
+            lastEditorTap = currentTime;
+          },
+          { passive: true },
+        );
 
         openDirBtn.addEventListener("click", openDirectory);
         saveFileBtn.addEventListener("click", saveCurrentFile);
