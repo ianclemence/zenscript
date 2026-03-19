@@ -5274,6 +5274,9 @@
 
       async function moveEntryToFolder(sourcePath, folderPath, source) {
         if (source !== draggedEntrySource) return;
+        const targetPath = joinPath(folderPath, sourcePath.split("/").pop());
+        if (sourcePath === targetPath) return;
+
         if (source === "db") {
           await moveDbEntryToFolder(sourcePath, folderPath);
         } else {
