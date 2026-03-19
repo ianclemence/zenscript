@@ -5423,7 +5423,7 @@
         // Check if exists
         const exists = await loadFromDB(newPath);
         if (exists) {
-          notify("File already exists");
+          alert(`File already exists: "${newPath}"`);
           refreshExplorer();
           return;
         }
@@ -5541,7 +5541,7 @@
             const path = parentPath ? `${parentPath}/${name}` : name;
             const existing = await loadFromDB(path);
             if (existing) {
-              notify("Name already exists");
+              alert(`The name "${name}" already exists. Please choose a different name.`);
               li.remove();
             } else {
               await saveToDB(path, "", type);
@@ -5622,13 +5622,29 @@
       async function createNewFolderInExplorer(targetFolderPath) {
         const folder = targetFolderPath || currentFolderPath;
         if (directoryHandle) {
-          const name = prompt("Folder name:", "new-folder");
-          if (!name) return;
+          let name = "";
+          const dir =
+            folder && fsEntryMap.get(folder)
+              ? fsEntryMap.get(folder)
+              : directoryHandle;
+
+          while (true) {
+            const input = prompt("Folder name:", "new-folder");
+            if (!input) return;
+            name = input.trim();
+
+            try {
+              // Check if exists
+              await dir.getDirectoryHandle(name, { create: false });
+              alert(`A folder named "${name}" already exists. Please choose a different name.`);
+              continue;
+            } catch (e) {
+              // Folder doesn't exist, proceed
+              break;
+            }
+          }
+
           try {
-            const dir =
-              folder && fsEntryMap.get(folder)
-                ? fsEntryMap.get(folder)
-                : directoryHandle;
             await dir.getDirectoryHandle(name, { create: true });
             if (folder) collapsedExplorerFolders.delete(folder);
             await scanDirectory();
