@@ -4024,13 +4024,49 @@
               type: fileItem.dataset.type,
             };
             rightClickedEntrySource = fileItem.dataset.source || "db";
-            showCtxMenu(e.clientX, e.clientY, fileItem.dataset.type);
+            showCtxMenu(e.pageX, e.pageY, fileItem.dataset.type);
           } else if (!fileItem) {
             rightClickedEntry = null;
             rightClickedEntrySource = directoryHandle ? "fs" : "db";
-            showCtxMenu(e.clientX, e.clientY, "blank");
+            showCtxMenu(e.pageX, e.pageY, "blank");
           }
         });
+        // Mobile long-press on explorer blank area
+        let explorerTouchTimer = null;
+        explorer.addEventListener(
+          "touchstart",
+          (e) => {
+            if (e.target.closest(".file-item")) return;
+            if (e.touches.length > 1) return;
+            const touch = e.touches[0];
+            const startX = touch.pageX;
+            const startY = touch.pageY;
+
+            explorerTouchTimer = setTimeout(() => {
+              rightClickedEntry = null;
+              rightClickedEntrySource = directoryHandle ? "fs" : "db";
+              showCtxMenu(touch.pageX, touch.pageY, "blank");
+            }, 600);
+
+            const moveHandler = (me) => {
+              const mt = me.touches[0];
+              if (
+                Math.abs(mt.pageX - startX) > 10 ||
+                Math.abs(mt.pageY - startY) > 10
+              ) {
+                clearTimeout(explorerTouchTimer);
+              }
+            };
+            const endHandler = () => {
+              clearTimeout(explorerTouchTimer);
+              explorer.removeEventListener("touchmove", moveHandler);
+              explorer.removeEventListener("touchend", endHandler);
+            };
+            explorer.addEventListener("touchmove", moveHandler);
+            explorer.addEventListener("touchend", endHandler);
+          },
+          { passive: true },
+        );
 
         if (fileList) {
           fileList.addEventListener("dragover", (e) => {
@@ -5153,8 +5189,47 @@
             rightClickedEntrySource = node.source || "db";
             currentFolderPath =
               node.type === "folder" ? node.path : getParentPath(node.path);
-            showCtxMenu(e.clientX, e.clientY, node.type);
+            showCtxMenu(e.pageX, e.pageY, node.type);
           });
+          // Support for mobile long-press
+          let touchTimer = null;
+          row.addEventListener(
+            "touchstart",
+            (e) => {
+              if (e.touches.length > 1) return;
+              const touch = e.touches[0];
+              const startX = touch.pageX;
+              const startY = touch.pageY;
+
+              touchTimer = setTimeout(() => {
+                rightClickedEntry = { path: node.path, type: node.type };
+                rightClickedEntrySource = node.source || "db";
+                currentFolderPath =
+                  node.type === "folder" ? node.path : getParentPath(node.path);
+                showCtxMenu(touch.pageX, touch.pageY, node.type);
+              }, 600);
+
+              const moveHandler = (me) => {
+                const mt = me.touches[0];
+                if (
+                  Math.abs(mt.pageX - startX) > 10 ||
+                  Math.abs(mt.pageY - startY) > 10
+                ) {
+                  clearTimeout(touchTimer);
+                }
+              };
+
+              const endHandler = () => {
+                clearTimeout(touchTimer);
+                row.removeEventListener("touchmove", moveHandler);
+                row.removeEventListener("touchend", endHandler);
+              };
+
+              row.addEventListener("touchmove", moveHandler);
+              row.addEventListener("touchend", endHandler);
+            },
+            { passive: true },
+          );
 
           li.appendChild(row);
 
@@ -6141,12 +6216,48 @@
                 div.className = `history-item ${isCurrent ? "current" : ""}`;
                 div.innerHTML = `<div class="history-item-content"><div class="history-item-name">${dateStr} ${timeStr}</div><div class="history-item-meta"><span>${group.fileSource.toUpperCase()}</span><span>${(item.size / 1024).toFixed(1)}KB</span></div></div>`;
                 div.onclick = () => openHistoryDiff(item.idx);
+
                 div.addEventListener("contextmenu", (e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   rightClickedHistoryIndex = item.idx;
-                  showCtxMenu(e.clientX, e.clientY, "history");
+                  showCtxMenu(e.pageX, e.pageY, "history");
                 });
+
+                // Support for mobile long-press on history items
+                let histTouchTimer = null;
+                div.addEventListener(
+                  "touchstart",
+                  (e) => {
+                    if (e.touches.length > 1) return;
+                    const touch = e.touches[0];
+                    const startX = touch.pageX;
+                    const startY = touch.pageY;
+
+                    histTouchTimer = setTimeout(() => {
+                      rightClickedHistoryIndex = item.idx;
+                      showCtxMenu(touch.pageX, touch.pageY, "history");
+                    }, 600);
+
+                    const moveHandler = (me) => {
+                      const mt = me.touches[0];
+                      if (
+                        Math.abs(mt.pageX - startX) > 10 ||
+                        Math.abs(mt.pageY - startY) > 10
+                      ) {
+                        clearTimeout(histTouchTimer);
+                      }
+                    };
+                    const endHandler = () => {
+                      clearTimeout(histTouchTimer);
+                      div.removeEventListener("touchmove", moveHandler);
+                      div.removeEventListener("touchend", endHandler);
+                    };
+                    div.addEventListener("touchmove", moveHandler);
+                    div.addEventListener("touchend", endHandler);
+                  },
+                  { passive: true },
+                );
                 itemsWrap.appendChild(div);
               });
             groupEl.appendChild(groupHeader);
