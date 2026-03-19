@@ -5267,11 +5267,32 @@
       async function saveCurrentFile() {
         if (currentFileSource === "db") {
           if (!currentFileHandle) {
-            const path = prompt("Save as:", "untitled.md");
-            if (!path) return;
+            let path = "";
+            while (true) {
+              const input = prompt("Save as (will add .md if missing):", "untitled.md");
+              if (!input) return;
+              path = input.trim();
+              if (!path.endsWith(".md")) path += ".md";
+              const exists = await loadFromDB(path);
+              if (exists) {
+                alert(`A file named "${path}" already exists in the database. Please choose a different name.`);
+                continue;
+              }
+              break;
+            }
             currentFileHandle = { name: path, path };
             currentFilePath = path;
-            currentFilenameDisplay.textContent = path;
+            const displayPath = path.split("/").pop();
+            currentFilenameDisplay.textContent = displayPath;
+            if (activeTabId !== null) {
+              const tab = tabs.find((t) => t.id === activeTabId);
+              if (tab) {
+                tab.name = displayPath;
+                tab.filePath = path;
+                tab.fileHandle = currentFileHandle;
+                refreshTabBar();
+              }
+            }
           }
           await saveToDB(currentFileHandle.path, editor.value);
           await saveSnapshot();
@@ -5280,15 +5301,40 @@
           refreshExplorer();
           return;
         }
+
         if (!currentFileHandle) {
           if (!directoryHandle) return notify("Open a directory first");
-          const name = prompt("Filename:", "note.md");
-          if (!name) return;
+          let name = "";
+          while (true) {
+            const input = prompt("Filename (will add .md if missing):", "note.md");
+            if (!input) return;
+            name = input.trim();
+            if (!name.endsWith(".md")) name += ".md";
+
+            try {
+              // Check if exists
+              await directoryHandle.getFileHandle(name, { create: false });
+              alert(`A file named "${name}" already exists in the folder. Please choose a different name.`);
+              continue;
+            } catch (e) {
+              // File doesn't exist, proceed
+              break;
+            }
+          }
           currentFileHandle = await directoryHandle.getFileHandle(name, {
             create: true,
           });
           currentFilePath = name;
           currentFilenameDisplay.textContent = name;
+          if (activeTabId !== null) {
+            const tab = tabs.find((t) => t.id === activeTabId);
+            if (tab) {
+              tab.name = name;
+              tab.filePath = name;
+              tab.fileHandle = currentFileHandle;
+              refreshTabBar();
+            }
+          }
           await scanDirectory();
         }
         try {
@@ -5539,14 +5585,28 @@
       async function createNewFileInExplorer(targetFolderPath) {
         const folder = targetFolderPath || currentFolderPath;
         if (directoryHandle) {
-          let name = prompt("File name:", "note.md");
-          if (!name) return;
-          if (!name.endsWith(".md")) name += ".md";
+          let name = "";
+          const dir =
+            folder && fsEntryMap.get(folder)
+              ? fsEntryMap.get(folder)
+              : directoryHandle;
+
+          while (true) {
+            const input = prompt("File name (will add .md if missing):", "note.md");
+            if (!input) return;
+            name = input.trim();
+            if (!name.endsWith(".md")) name += ".md";
+
+            try {
+              await dir.getFileHandle(name, { create: false });
+              alert(`A file named "${name}" already exists. Please choose a different name.`);
+              continue;
+            } catch (e) {
+              break;
+            }
+          }
+
           try {
-            const dir =
-              folder && fsEntryMap.get(folder)
-                ? fsEntryMap.get(folder)
-                : directoryHandle;
             const handle = await dir.getFileHandle(name, {
               create: true,
             });
