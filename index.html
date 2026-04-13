@@ -1487,6 +1487,26 @@
       .number-control:focus {
         border-color: var(--accent);
       }
+      .font-family-control {
+        background: var(--surface-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 4px 6px;
+        font-family: var(--font-sans);
+        font-size: 11px;
+        color: var(--text-primary);
+        outline: none;
+        cursor: pointer;
+        transition: border-color var(--duration-fast) var(--ease);
+      }
+      .font-family-control:focus {
+        border-color: var(--accent);
+      }
+      .reading-width-slider {
+        width: 64px;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
 
       /* Preview content */
       #preview-content {
@@ -2967,6 +2987,13 @@
             <button class="icon-btn" id="focus-mode" title="Focus Mode (⌘H)">
               <i class="fas fa-bullseye"></i>
             </button>
+            <button
+              class="icon-btn"
+              id="typewriter-mode"
+              title="Typewriter Mode"
+            >
+              <i class="fas fa-ellipsis"></i>
+            </button>
             <button class="icon-btn" id="zen-mode" title="Zen Mode (⌘J)">
               <i class="fas fa-expand"></i>
             </button>
@@ -3174,6 +3201,26 @@
               min="12"
               max="24"
               title="Font size"
+            />
+            <select
+              id="font-family"
+              class="font-family-control"
+              title="Editor Font"
+            >
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Menlo, Monaco, monospace">Menlo</option>
+              <option value="system-ui, sans-serif">System</option>
+              <option value="Roboto Mono, monospace">Roboto Mono</option>
+              <option value="Courier New, monospace">Courier New</option>
+            </select>
+            <input
+              type="range"
+              id="reading-width"
+              class="reading-width-slider"
+              min="500"
+              max="1200"
+              value="900"
+              title="Reading width"
             />
             <div class="divider-v"></div>
             <button
@@ -3469,6 +3516,8 @@
       const unsavedIndicator = document.getElementById("unsaved-indicator");
       const themeSelect = document.getElementById("theme-select");
       const fontSizeInput = document.getElementById("font-size");
+      const fontFamilyInput = document.getElementById("font-family");
+      const readingWidthInput = document.getElementById("reading-width");
       const readingTimeDisplay = document.getElementById("reading-time");
       const charCountDisplay = document.getElementById("char-count");
       const wordCountDisplay = document.getElementById("word-count");
@@ -3476,6 +3525,7 @@
       const autosaveStatus = document.getElementById("autosave-status");
       const zenModeBtn = document.getElementById("zen-mode");
       const focusModeBtn = document.getElementById("focus-mode");
+      const typewriterBtn = document.getElementById("typewriter-mode");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
       const tocPanel = document.getElementById("toc-panel");
@@ -3599,6 +3649,7 @@
       let isUnsaved = false;
       let autosaveTimer = null;
       let isFocusMode = false;
+      let typewriterMode = false;
       let currentFileSource = "db";
       let currentFolderPath = null;
       let clipboard = null;
@@ -3749,6 +3800,7 @@
         updateWordCount();
         markAsUnsaved(true);
         updateHistoryButtons();
+        if (typewriterMode) centerCursorInView();
       }
       function updateHistoryButtons() {
         undoBtn.disabled = historyIndex <= 0;
@@ -4143,6 +4195,7 @@
           handleAutosave();
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
+          if (typewriterMode) centerCursorInView();
           handleEmojiAutocomplete();
           clearTimeout(historyTimeout);
           historyTimeout = setTimeout(pushToHistory, 1000);
@@ -4151,10 +4204,12 @@
         editor.addEventListener("click", () => {
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
+          if (typewriterMode) centerCursorInView();
         });
         editor.addEventListener("keyup", () => {
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
+          if (typewriterMode) centerCursorInView();
         });
         editor.addEventListener("mouseup", () => {
           updateToolbarState();
@@ -4239,6 +4294,7 @@
           attachmentsCloseBtn.addEventListener("click", toggleAttachmentsPanel);
         zenModeBtn.addEventListener("click", toggleZenMode);
         focusModeBtn.addEventListener("click", toggleFocusMode);
+        typewriterBtn.addEventListener("click", toggleTypewriterMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
         if (livePreviewToggleBtn)
           livePreviewToggleBtn.addEventListener("click", toggleLivePreview);
@@ -4326,6 +4382,17 @@
         fontSizeInput.addEventListener("input", (e) =>
           applyFontSize(e.target.value),
         );
+        fontFamilyInput.addEventListener("change", (e) => {
+          const font = e.target.value;
+          editor.style.fontFamily = font;
+          if (window.idbKeyval) idbKeyval.set("md-editor-font", font);
+        });
+        readingWidthInput.addEventListener("input", (e) => {
+          const w = e.target.value + "px";
+          editor.style.maxWidth = w;
+          if (window.idbKeyval)
+            idbKeyval.set("md-reading-width", e.target.value);
+        });
         autosaveToggle.addEventListener("change", (e) => {
           if (window.idbKeyval) idbKeyval.set("md-autosave", e.target.checked);
         });
@@ -4670,6 +4737,23 @@
         editor.classList.toggle("focus-mode", isFocusMode);
         if (isFocusMode) updateFocusSelection();
         statusBar.textContent = isFocusMode ? "Focus Mode" : "Ready";
+      }
+      function centerCursorInView() {
+        const lineHeight = parseInt(getComputedStyle(editor).lineHeight) || 24;
+        const cursorTop = getLineNumberAtCursor() * lineHeight;
+        const editorHeight = editor.clientHeight;
+        const scrollTarget = cursorTop - editorHeight / 2;
+        editor.scrollTop = Math.max(0, scrollTarget);
+      }
+      function getLineNumberAtCursor() {
+        const text = editor.value.substring(0, editor.selectionStart);
+        return (text.match(/\n/g) || []).length;
+      }
+      function toggleTypewriterMode() {
+        typewriterMode = !typewriterMode;
+        typewriterBtn.classList.toggle("active", typewriterMode);
+        if (typewriterMode) centerCursorInView();
+        statusBar.textContent = typewriterMode ? "Typewriter Mode" : "Ready";
       }
       function updateFocusSelection() {
         if (!isFocusMode) return;
@@ -5324,7 +5408,10 @@
             tab.fileHandle.path === sourcePath ||
             tab.fileHandle.path.startsWith(sourcePath + "/")
           ) {
-            const movedPath = tab.fileHandle.path.replace(sourcePath, targetPath);
+            const movedPath = tab.fileHandle.path.replace(
+              sourcePath,
+              targetPath,
+            );
             tab.fileHandle.path = movedPath;
             tab.fileHandle.name = movedPath.split("/").pop();
             tab.filePath = movedPath;
@@ -5343,7 +5430,10 @@
           (currentFileHandle.path === sourcePath ||
             currentFileHandle.path.startsWith(sourcePath + "/"))
         ) {
-          const movedPath = currentFileHandle.path.replace(sourcePath, targetPath);
+          const movedPath = currentFileHandle.path.replace(
+            sourcePath,
+            targetPath,
+          );
           currentFileHandle.path = movedPath;
           currentFileHandle.name = movedPath.split("/").pop();
           currentFilePath = movedPath;
@@ -5376,7 +5466,11 @@
           await writable.close();
         } else {
           // Recursive move for directory
-          const moveRecursive = async (srcHandle, destParentHandle, dirName) => {
+          const moveRecursive = async (
+            srcHandle,
+            destParentHandle,
+            dirName,
+          ) => {
             const newDirHandle = await destParentHandle.getDirectoryHandle(
               dirName,
               { create: true },
@@ -5402,7 +5496,8 @@
         // Cleanup source
         const sourceDir =
           fsEntryMap.get(getParentPath(sourcePath)) || directoryHandle;
-        if (sourceDir?.removeEntry) await sourceDir.removeEntry(name, { recursive: true });
+        if (sourceDir?.removeEntry)
+          await sourceDir.removeEntry(name, { recursive: true });
 
         const destination = folderPath || directoryHandle?.name || "root";
         notify(`Moved to ${destination}`);
@@ -5448,13 +5543,18 @@
           if (!currentFileHandle) {
             let path = "";
             while (true) {
-              const input = prompt("Save as (will add .md if missing):", "untitled.md");
+              const input = prompt(
+                "Save as (will add .md if missing):",
+                "untitled.md",
+              );
               if (!input) return;
               path = input.trim();
               if (!path.endsWith(".md")) path += ".md";
               const exists = await loadFromDB(path);
               if (exists) {
-                alert(`A file named "${path}" already exists in the database. Please choose a different name.`);
+                alert(
+                  `A file named "${path}" already exists in the database. Please choose a different name.`,
+                );
                 continue;
               }
               break;
@@ -5485,7 +5585,10 @@
           if (!directoryHandle) return notify("Open a directory first");
           let name = "";
           while (true) {
-            const input = prompt("Filename (will add .md if missing):", "note.md");
+            const input = prompt(
+              "Filename (will add .md if missing):",
+              "note.md",
+            );
             if (!input) return;
             name = input.trim();
             if (!name.endsWith(".md")) name += ".md";
@@ -5493,7 +5596,9 @@
             try {
               // Check if exists
               await directoryHandle.getFileHandle(name, { create: false });
-              alert(`A file named "${name}" already exists in the folder. Please choose a different name.`);
+              alert(
+                `A file named "${name}" already exists in the folder. Please choose a different name.`,
+              );
               continue;
             } catch (e) {
               // File doesn't exist, proceed
@@ -5667,7 +5772,9 @@
           if (!sourceEntry) return;
 
           const parentPath = getParentPath(oldPath);
-          const parentDir = parentPath ? fsEntryMap.get(parentPath) : directoryHandle;
+          const parentDir = parentPath
+            ? fsEntryMap.get(parentPath)
+            : directoryHandle;
           if (!parentDir || parentDir.kind !== "directory") return;
 
           if (sourceEntry.kind === "file" && !newName.endsWith(".md")) {
@@ -5688,18 +5795,24 @@
 
           if (sourceEntry.kind === "file") {
             const file = await sourceEntry.getFile();
-            const target = await parentDir.getFileHandle(newName, { create: true });
+            const target = await parentDir.getFileHandle(newName, {
+              create: true,
+            });
             const writable = await target.createWritable();
             await writable.write(await file.arrayBuffer());
             await writable.close();
           } else {
             // Recursive copy
             const copyRecursive = async (src, destParent, name) => {
-              const newDir = await destParent.getDirectoryHandle(name, { create: true });
+              const newDir = await destParent.getDirectoryHandle(name, {
+                create: true,
+              });
               for await (const entry of src.values()) {
                 if (entry.kind === "file") {
                   const f = await entry.getFile();
-                  const targetF = await newDir.getFileHandle(entry.name, { create: true });
+                  const targetF = await newDir.getFileHandle(entry.name, {
+                    create: true,
+                  });
                   const w = await targetF.createWritable();
                   await w.write(await f.arrayBuffer());
                   await w.close();
@@ -5793,7 +5906,9 @@
             const path = parentPath ? `${parentPath}/${name}` : name;
             const existing = await loadFromDB(path);
             if (existing) {
-              alert(`The name "${name}" already exists. Please choose a different name.`);
+              alert(
+                `The name "${name}" already exists. Please choose a different name.`,
+              );
               li.remove();
             } else {
               await saveToDB(path, "", type);
@@ -5844,14 +5959,19 @@
               : directoryHandle;
 
           while (true) {
-            const input = prompt("File name (will add .md if missing):", "note.md");
+            const input = prompt(
+              "File name (will add .md if missing):",
+              "note.md",
+            );
             if (!input) return;
             name = input.trim();
             if (!name.endsWith(".md")) name += ".md";
 
             try {
               await dir.getFileHandle(name, { create: false });
-              alert(`A file named "${name}" already exists. Please choose a different name.`);
+              alert(
+                `A file named "${name}" already exists. Please choose a different name.`,
+              );
               continue;
             } catch (e) {
               break;
@@ -5888,7 +6008,9 @@
             try {
               // Check if exists
               await dir.getDirectoryHandle(name, { create: false });
-              alert(`A folder named "${name}" already exists. Please choose a different name.`);
+              alert(
+                `A folder named "${name}" already exists. Please choose a different name.`,
+              );
               continue;
             } catch (e) {
               // Folder doesn't exist, proceed
@@ -6154,13 +6276,19 @@
       }
       async function renameEntry(oldPath) {
         const isFs = rightClickedEntrySource === "fs";
-        const entry = isFs ? { path: oldPath, type: rightClickedEntry.type } : await loadFromDB(oldPath);
+        const entry = isFs
+          ? { path: oldPath, type: rightClickedEntry.type }
+          : await loadFromDB(oldPath);
         if (!entry) return;
         const li = document.querySelector(`.file-item[data-path="${oldPath}"]`);
         if (!li) return;
         const nameSpan = li.querySelector(".file-name");
         if (!nameSpan) return;
-        startInlineRename({ ...entry, source: rightClickedEntrySource }, li, nameSpan);
+        startInlineRename(
+          { ...entry, source: rightClickedEntrySource },
+          li,
+          nameSpan,
+        );
       }
       async function deleteEntry(path, source = "db") {
         if (!confirm(`Delete "${path}"?`)) return;
@@ -7515,6 +7643,8 @@
           const a = await idbKeyval.get("md-autosave");
           const g = await idbKeyval.get("md-writing-goal");
           const h = await idbKeyval.get("md-history-retention-days");
+          const f = await idbKeyval.get("md-editor-font");
+          const rw = await idbKeyval.get("md-reading-width");
           const css = await idbKeyval.get("md-custom-css");
           if (t) theme = t;
           if (s) size = s;
@@ -7543,6 +7673,14 @@
             : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css";
         configureMermaid();
         applyFontSize(size);
+        if (f) {
+          editor.style.fontFamily = f;
+          fontFamilyInput.value = f;
+        }
+        if (rw) {
+          editor.style.maxWidth = rw + "px";
+          readingWidthInput.value = rw;
+        }
       }
 
       // ─── Notifications ───
