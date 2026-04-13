@@ -4907,12 +4907,13 @@
       }
 
       async function openWikiLink(name) {
-        const key = name.trim().toLowerCase();
-        const path = wikiLinkMap[key];
-        if (!path) {
-          await createNoteFromLink(name);
-          return;
-        }
+        const raw = name.trim();
+        const key = raw.toLowerCase();
+        const path = wikiLinkMap[key]
+          ? wikiLinkMap[key]
+          : raw.endsWith(".md")
+            ? raw
+            : raw + ".md";
         const existing = tabs.find(
           (t) => t.filePath && t.filePath.toLowerCase() === key,
         );
@@ -4923,6 +4924,8 @@
         const entry = await loadFromDB(path);
         if (entry) {
           newTab(path, entry.content, { name: path, path }, "db");
+          refreshExplorer();
+          refreshTabBar();
         } else {
           await createNoteFromLink(name);
         }
@@ -4930,11 +4933,15 @@
 
       async function createNoteFromLink(name) {
         if (!window.idbKeyval) return;
-        const path = name.trim();
-        const content = `# ${path}\n\n`;
+        const raw = name.trim();
+        const path = raw.endsWith(".md") ? raw : raw + ".md";
+        const heading = raw;
+        const content = `# ${heading}\n\n`;
         await saveToDB(path, content);
         wikiLinkMap[path.toLowerCase()] = path;
         newTab(path, content, { name: path, path }, "db");
+        refreshExplorer();
+        refreshTabBar();
         notify(`Created: ${path}`);
       }
 
@@ -5065,6 +5072,8 @@
                 { name: r.path, path: r.path },
                 "db",
               );
+              refreshExplorer();
+              refreshTabBar();
             }
           };
           backlinksList.appendChild(div);
@@ -5262,6 +5271,8 @@
                 const entry = await loadFromDB(p.id);
                 if (entry) {
                   newTab(p.id, entry.content, { name: p.id, path: p.id }, "db");
+                  refreshExplorer();
+                  refreshTabBar();
                 }
               };
               circle.onmouseover = (e) => {
