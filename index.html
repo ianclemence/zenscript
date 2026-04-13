@@ -5928,7 +5928,9 @@
               if (isRenaming || isCreating) return;
               if (node.source !== "fs") {
                 const existingTab = tabs.find(
-                  (t) => t.fileHandle && t.fileHandle.path === node.path,
+                  (t) =>
+                    (t.fileHandle && t.fileHandle.path === node.path) ||
+                    t.filePath === node.path,
                 );
                 if (existingTab) activateTab(existingTab.id);
                 else await openFileFromDB(node.path);
@@ -8647,7 +8649,9 @@
         ) {
           // Check if already open in a tab
           const existing = tabs.find(
-            (t) => t.fileHandle && t.fileHandle.path === path,
+            (t) =>
+              (t.fileHandle && t.fileHandle.path === path) ||
+              t.filePath === path,
           );
           if (existing) {
             activateTab(existing.id);
