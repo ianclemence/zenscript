@@ -1502,12 +1502,6 @@
       .font-family-control:focus {
         border-color: var(--accent);
       }
-      .reading-width-slider {
-        width: 64px;
-        accent-color: var(--accent);
-        cursor: pointer;
-      }
-
       /* Preview content */
       #preview-content {
         flex: 1;
@@ -3213,15 +3207,6 @@
               <option value="Roboto Mono, monospace">Roboto Mono</option>
               <option value="Courier New, monospace">Courier New</option>
             </select>
-            <input
-              type="range"
-              id="reading-width"
-              class="reading-width-slider"
-              min="500"
-              max="1200"
-              value="900"
-              title="Reading width"
-            />
             <div class="divider-v"></div>
             <button
               class="icon-btn"
@@ -3517,7 +3502,7 @@
       const themeSelect = document.getElementById("theme-select");
       const fontSizeInput = document.getElementById("font-size");
       const fontFamilyInput = document.getElementById("font-family");
-      const readingWidthInput = document.getElementById("reading-width");
+
       const readingTimeDisplay = document.getElementById("reading-time");
       const charCountDisplay = document.getElementById("char-count");
       const wordCountDisplay = document.getElementById("word-count");
@@ -4386,12 +4371,6 @@
           const font = e.target.value;
           editor.style.fontFamily = font;
           if (window.idbKeyval) idbKeyval.set("md-editor-font", font);
-        });
-        readingWidthInput.addEventListener("input", (e) => {
-          const w = e.target.value + "px";
-          editor.style.maxWidth = w;
-          if (window.idbKeyval)
-            idbKeyval.set("md-reading-width", e.target.value);
         });
         autosaveToggle.addEventListener("change", (e) => {
           if (window.idbKeyval) idbKeyval.set("md-autosave", e.target.checked);
@@ -7644,7 +7623,6 @@
           const g = await idbKeyval.get("md-writing-goal");
           const h = await idbKeyval.get("md-history-retention-days");
           const f = await idbKeyval.get("md-editor-font");
-          const rw = await idbKeyval.get("md-reading-width");
           const css = await idbKeyval.get("md-custom-css");
           if (t) theme = t;
           if (s) size = s;
@@ -7676,10 +7654,6 @@
         if (f) {
           editor.style.fontFamily = f;
           fontFamilyInput.value = f;
-        }
-        if (rw) {
-          editor.style.maxWidth = rw + "px";
-          readingWidthInput.value = rw;
         }
       }
 
