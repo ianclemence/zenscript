@@ -4934,15 +4934,31 @@
       async function createNoteFromLink(name) {
         if (!window.idbKeyval) return;
         const raw = name.trim();
+        const slug = raw.replace(/\s+/g, "-");
         const path = raw.endsWith(".md") ? raw : raw + ".md";
         const heading = raw;
         const content = `# ${heading}\n\n`;
+        const existing = await loadFromDB(path);
+        if (existing) {
+          const key = path.toLowerCase();
+          const alreadyOpen = tabs.find(
+            (t) => t.filePath && t.filePath.toLowerCase() === key,
+          );
+          if (alreadyOpen) {
+            activateTab(alreadyOpen.id);
+          } else {
+            newTab(path, existing.content, { name: path, path }, "db");
+            refreshExplorer();
+            refreshTabBar();
+          }
+          return;
+        }
         await saveToDB(path, content);
         wikiLinkMap[path.toLowerCase()] = path;
         newTab(path, content, { name: path, path }, "db");
         refreshExplorer();
         refreshTabBar();
-        notify(`Created: ${path}`);
+        notify(`Created: ${slug}.md`);
       }
 
       async function buildWikiLinkIndex() {
@@ -6268,7 +6284,7 @@
               "note.md",
             );
             if (!input) return;
-            name = input.trim();
+            name = input.trim().replace(/\s+/g, "-");
             if (!name.endsWith(".md")) name += ".md";
 
             try {
@@ -6578,7 +6594,7 @@
 
         const finishCreate = async (commit) => {
           if (!isCreating) return;
-          let name = input.value.trim();
+          let name = input.value.trim().replace(/\s+/g, "-");
           if (commit && name) {
             if (type === "file" && !name.endsWith(".md")) name += ".md";
             const path = parentPath ? `${parentPath}/${name}` : name;
