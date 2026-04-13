@@ -4964,6 +4964,13 @@
             }
           }
         } catch {}
+        try {
+          const dbFiles = await listDBFiles();
+          for (const f of dbFiles) {
+            if (!f.path) continue;
+            wikiLinkMap[f.path.toLowerCase()] = f.path;
+          }
+        } catch {}
       }
 
       async function getBacklinksFor(filePath) {
@@ -4983,6 +4990,23 @@
                   .substring(0, 120)
                   .replace(/[#*`]/g, "");
                 results.push({ path: fp, context: ctx });
+                break;
+              }
+            }
+          }
+        } catch {}
+        try {
+          const dbFiles = await listDBFiles();
+          for (const f of dbFiles) {
+            if (!f.path || f.path.toLowerCase() === target) continue;
+            const wikiRefs = (f.content || "").match(/\[\[([^\]]+)\]\]/g) || [];
+            for (const ref of wikiRefs) {
+              const linked = ref.slice(2, -2).trim().toLowerCase();
+              if (linked === target || linked + ".md" === target) {
+                const ctx = (f.content || "")
+                  .substring(0, 120)
+                  .replace(/[#*`]/g, "");
+                results.push({ path: f.path, context: ctx });
                 break;
               }
             }
@@ -5094,8 +5118,8 @@
         for (const [key, path] of Object.entries(wikiLinkMap)) {
           try {
             let content = "";
-            const fromDb = await idbKeyval.get("file:" + path);
-            if (fromDb) content = fromDb;
+            const fromDb = await loadFromDB(path);
+            if (fromDb) content = fromDb.content || "";
             else {
               const direct = await idbKeyval.get(path);
               if (direct) content = direct;
