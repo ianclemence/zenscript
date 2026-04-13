@@ -1918,6 +1918,36 @@
       #toc-panel.open {
         display: block;
       }
+      .links-dropdown-panel {
+        position: absolute;
+        top: 58px;
+        right: 14px;
+        background: var(--surface-overlay);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        padding: 12px;
+        z-index: 50;
+        width: 240px;
+        max-height: 65%;
+        overflow-y: auto;
+        display: none;
+      }
+      .links-dropdown-panel.open {
+        display: block;
+      }
+      #links-dropdown-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 4px;
+      }
+      #links-dropdown-list .dropdown-item {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
       #toc-list {
         display: flex;
         flex-direction: column;
@@ -3359,7 +3389,7 @@
             >
               <i class="fas fa-link"></i>
             </button>
-            <div class="dropdown-menu" id="links-dropdown">
+            <div id="links-dropdown" class="links-dropdown-panel">
               <div id="links-dropdown-list"></div>
             </div>
             <button class="icon-btn" id="toggle-graph" title="Knowledge Graph">
@@ -4478,9 +4508,10 @@
         toggleTocBtn.addEventListener("click", toggleTOC);
         toggleBacklinksBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          const dropdown = document.getElementById("links-dropdown");
-          const isOpen = dropdown.classList.contains("open");
-          toggleDropdown("links-dropdown", !isOpen);
+          const panel = document.getElementById("links-dropdown");
+          const isOpen = panel.classList.contains("open");
+          panel.classList.toggle("open", !isOpen);
+          toggleBacklinksBtn.classList.toggle("active", !isOpen);
           if (!isOpen) populateLinksDropdown();
         });
         toggleGraphBtn.addEventListener("click", toggleGraphPanel);
@@ -4597,6 +4628,14 @@
           ) {
             tocPanel.classList.remove("open");
             toggleTocBtn.classList.remove("active");
+          }
+          if (
+            !e.target.closest("#toggle-backlinks") &&
+            !e.target.closest("#links-dropdown")
+          ) {
+            const panel = document.getElementById("links-dropdown");
+            panel.classList.remove("open");
+            toggleBacklinksBtn.classList.remove("active");
           }
           if (
             !e.target.closest("#download-toggle") &&
