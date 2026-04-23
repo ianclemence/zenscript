@@ -1474,37 +1474,6 @@
         border-color: var(--accent);
       }
 
-      .number-control {
-        background: var(--surface-input);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 4px 8px;
-        font-family: var(--font-mono);
-        font-size: 11px;
-        color: var(--text-primary);
-        outline: none;
-        width: 52px;
-        text-align: center;
-        transition: border-color var(--duration-fast) var(--ease);
-      }
-      .number-control:focus {
-        border-color: var(--accent);
-      }
-      .font-family-control {
-        background: var(--surface-input);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 4px 6px;
-        font-family: var(--font-sans);
-        font-size: 11px;
-        color: var(--text-primary);
-        outline: none;
-        cursor: pointer;
-        transition: border-color var(--duration-fast) var(--ease);
-      }
-      .font-family-control:focus {
-        border-color: var(--accent);
-      }
       .wiki-link {
         color: var(--accent);
         cursor: pointer;
@@ -3344,26 +3313,6 @@
               <option value="forest">◉ Forest</option>
               <option value="matrix">⬡ Matrix</option>
             </select>
-            <input
-              type="number"
-              class="number-control"
-              id="font-size"
-              value="15"
-              min="12"
-              max="24"
-              title="Font size"
-            />
-            <select
-              id="font-family"
-              class="font-family-control"
-              title="Editor Font"
-            >
-              <option value="Georgia, serif">Georgia</option>
-              <option value="Menlo, Monaco, monospace">Menlo</option>
-              <option value="system-ui, sans-serif">System</option>
-              <option value="Roboto Mono, monospace">Roboto Mono</option>
-              <option value="Courier New, monospace">Courier New</option>
-            </select>
             <div class="divider-v"></div>
             <button
               class="icon-btn"
@@ -3708,9 +3657,6 @@
       const mobileFilenameDisplay = document.getElementById("mobile-filename");
       const unsavedIndicator = document.getElementById("unsaved-indicator");
       const themeSelect = document.getElementById("theme-select");
-      const fontSizeInput = document.getElementById("font-size");
-      const fontFamilyInput = document.getElementById("font-family");
-
       const readingTimeDisplay = document.getElementById("reading-time");
       const charCountDisplay = document.getElementById("char-count");
       const wordCountDisplay = document.getElementById("word-count");
@@ -4585,14 +4531,6 @@
         themeSelect.addEventListener("change", (e) =>
           applyTheme(e.target.value),
         );
-        fontSizeInput.addEventListener("input", (e) =>
-          applyFontSize(e.target.value),
-        );
-        fontFamilyInput.addEventListener("change", (e) => {
-          const font = e.target.value;
-          editor.style.fontFamily = font;
-          if (window.idbKeyval) idbKeyval.set("md-editor-font", font);
-        });
         autosaveToggle.addEventListener("change", (e) => {
           if (window.idbKeyval) idbKeyval.set("md-autosave", e.target.checked);
         });
@@ -8303,25 +8241,16 @@
         localStorage.setItem("md-theme", theme);
       }
 
-      function applyFontSize(size) {
-        document.getElementById("preview-content").style.fontSize = `${size}px`;
-        if (window.idbKeyval) idbKeyval.set("md-font-size", size);
-      }
-
       async function loadPreferences() {
         let theme = "light",
-          size = "15",
           autosave = true;
         if (window.idbKeyval) {
           const t = await idbKeyval.get("md-theme");
-          const s = await idbKeyval.get("md-font-size");
           const a = await idbKeyval.get("md-autosave");
           const g = await idbKeyval.get("md-writing-goal");
           const h = await idbKeyval.get("md-history-retention-days");
-          const f = await idbKeyval.get("md-editor-font");
           const css = await idbKeyval.get("md-custom-css");
           if (t) theme = t;
-          if (s) size = s;
           if (a !== undefined) autosave = a;
           if (g) writingGoal = g;
           if (h) historyRetentionDays = parseInt(h, 10) || 7;
@@ -8331,7 +8260,6 @@
           }
         }
         themeSelect.value = theme;
-        fontSizeInput.value = size;
         autosaveToggle.checked = autosave;
         if (historyRetentionSelect)
           historyRetentionSelect.value = historyRetentionDays.toString();
@@ -8346,11 +8274,6 @@
             ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css"
             : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css";
         configureMermaid();
-        applyFontSize(size);
-        if (f) {
-          editor.style.fontFamily = f;
-          fontFamilyInput.value = f;
-        }
       }
 
       // ─── Notifications ───
