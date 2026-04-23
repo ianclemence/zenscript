@@ -3145,13 +3145,6 @@
             <button class="icon-btn" id="focus-mode" title="Focus Mode (⌘H)">
               <i class="fas fa-bullseye"></i>
             </button>
-            <button
-              class="icon-btn"
-              id="typewriter-mode"
-              title="Typewriter Mode"
-            >
-              <i class="fas fa-ellipsis"></i>
-            </button>
             <button class="icon-btn" id="zen-mode" title="Zen Mode (⌘J)">
               <i class="fas fa-expand"></i>
             </button>
@@ -3725,7 +3718,6 @@
       const autosaveStatus = document.getElementById("autosave-status");
       const zenModeBtn = document.getElementById("zen-mode");
       const focusModeBtn = document.getElementById("focus-mode");
-      const typewriterBtn = document.getElementById("typewriter-mode");
       const autosaveToggle = document.getElementById("autosave-toggle");
       const toggleTocBtn = document.getElementById("toggle-toc");
       const tocPanel = document.getElementById("toc-panel");
@@ -3854,7 +3846,6 @@
       let isUnsaved = false;
       let autosaveTimer = null;
       let isFocusMode = false;
-      let typewriterMode = false;
       let wikiLinkMap = {};
       let currentFileSource = "db";
       let currentFolderPath = null;
@@ -4405,7 +4396,6 @@
           handleAutosave();
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
-          if (typewriterMode) centerCursorInView();
           handleEmojiAutocomplete();
           clearTimeout(historyTimeout);
           historyTimeout = setTimeout(pushToHistory, 1000);
@@ -4414,12 +4404,10 @@
         editor.addEventListener("click", () => {
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
-          if (typewriterMode) centerCursorInView();
         });
         editor.addEventListener("keyup", () => {
           updateToolbarState();
           if (isFocusMode) updateFocusSelection();
-          if (typewriterMode) centerCursorInView();
         });
         editor.addEventListener("mouseup", () => {
           updateToolbarState();
@@ -4504,7 +4492,6 @@
           attachmentsCloseBtn.addEventListener("click", toggleAttachmentsPanel);
         zenModeBtn.addEventListener("click", toggleZenMode);
         focusModeBtn.addEventListener("click", toggleFocusMode);
-        typewriterBtn.addEventListener("click", toggleTypewriterMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
         toggleBacklinksBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -5440,12 +5427,6 @@
       function getLineNumberAtCursor() {
         const text = editor.value.substring(0, editor.selectionStart);
         return (text.match(/\n/g) || []).length;
-      }
-      function toggleTypewriterMode() {
-        typewriterMode = !typewriterMode;
-        typewriterBtn.classList.toggle("active", typewriterMode);
-        if (typewriterMode) centerCursorInView();
-        statusBar.textContent = typewriterMode ? "Typewriter Mode" : "Ready";
       }
       function updateFocusSelection() {
         if (!isFocusMode) return;
