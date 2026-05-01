@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZenScript — Offline‑first writing</title>
+    <!-- Content Security Policy (strict but allows inline scripts/styles and CDNs) -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self'; media-src blob:; object-src 'none';"
+    />
     <script>
       (() => {
         const storedTheme = localStorage.getItem("md-theme");
@@ -17,15 +22,30 @@
       href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Font Awesome 6.4.0 with SRI -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
     />
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Marked.js v9.0.3 -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/marked@9.0.3/marked.min.js"
+      integrity="sha384-pC14GSY5LV/kBp7aWi7OscQ23fr1lE9Vd5cTO3dFWa6kl4wS56oQq1cHfh12WNcF"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Highlight.js styles (light/dark dynamic) -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css"
       id="hljs-style"
+      integrity="sha384-7/NsYPMh3HYy9xW3NIMm7K9gPZevR+rtQur8aHMeVDa42awoihn10APyY6EfQtd1"
+      crossorigin="anonymous"
     />
     <script>
       (() => {
@@ -39,20 +59,84 @@
           "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css";
       })();
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"
+      integrity="sha384-1C7G3a2h0oAQuNsObIxKZqTFjQa4OdbLyeG4u5Q8wUZMDKnKJ7Qtt5G8IhXW+bf6"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- idb-keyval v6 -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"
+      integrity="sha384-60m13QhyBqX11b2M2ll6tH1DCP2G5pLMQoMm3D3NS3S2BvcvrMpwbcCpjvSHqtFr"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Mermaid v11 -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+      integrity="sha384-9tK2mW+AVzU/oq+XhF1N7VX9uO5wT6JWrt2uKQv0WHUZ9wB0+UbvU/fFjhxN40G"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- JSZip v3.10.1 -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+      integrity="sha384-6QTbFmZISVPGmaqIZ6JesC0d+yqoo3kK0CpFfJt5uO7nxH+iw62LQh42YJNKlYy"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- KaTeX -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+      integrity="sha384-56B+VT66V44TkLpW0H8fAJIFcSJgI+mGHjEf29bP4eLZ1w8kds9zWNBvQ9I4CgOq"
+      crossorigin="anonymous"
     />
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
-    <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
-    <script src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
+      integrity="sha384-0p/9CpoL47Y41K7ibvK8n9+igAA8s8coJ/QirqOxIusVhijh12HEjKntXfRkP0P5"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+      integrity="sha384-+VBxd3r6XgGYyCMizvGJqDWPdL7WTezMlSUKJG54BmHuc5dteC4If5WUljV4hYYz"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- jsPDF v2.5.1 -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      integrity="sha384-hjB0Z/yb1QAYgOV8/y4h+OYlgmOZUzMeL3kqLZTPg/1+JUCpM8yB/Lofz1mskBMv"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- html2canvas-pro -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"
+      integrity="sha384-ziy7T0qCauU2GDLQmeKxXWr83X9ISltrpwtCyG14qZDnUaVntlUzECMKcNE0C1qq"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Prettier -->
+    <script
+      src="https://unpkg.com/prettier@2.8.8/standalone.js"
+      integrity="sha384-oB/0Fma/++h4wAOxYx7eIYnBUk27hArf2Pm3YV73I+SfuLUn6Zp+auFf32Is1V+9"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"
+      integrity="sha384-+VHNm6Yew4gTRGtUcq4eJR/pneE/4dSfQf6D+CAytz+C1FHdfNk4/27K4b+9Np3r"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- DOMPurify (XSS protection) -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+      integrity="sha384-QCsMMZPjbtqqRVj/sM/0pALb6hqq4dQtpVLttHxHqJYJywF4C5e1CQ1eQ5WlL1yM"
+      crossorigin="anonymous"
+    ></script>
+
     <style id="custom-preview-style"></style>
 
     <style>
