@@ -76,11 +76,22 @@
 
 ---
 
-## 📦 Getting Started
+## 🚀 Getting Started
 
-1. **Clone the repository** to your local machine.
-2. **Open `index.html`** in any modern web browser (Chrome, Edge, or Firefox recommended).
-3. **Select a workspace** by clicking the folder icon in the Explorer to start writing!
+1. **Clone the repository**
+
+    ```bash
+    git clone https://github.com/ianclemence/zenscript.git
+    cd zenscript
+    ```
+
+2. **Run**
+
+    ```bash
+    python -m http.server
+    ```
+
+    Open [http://localhost:8000](http://localhost:8000) and start building your world.
 
 ---
 
