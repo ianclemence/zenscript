@@ -419,7 +419,8 @@
       }
 
       body {
-        height: 100vh;
+        height: 100dvh;
+        min-height: 100dvh;
         overflow: hidden;
         font-family: var(--font-sans);
         background: var(--surface-app);
@@ -455,7 +456,8 @@
     ============================================================ */
       .app {
         display: flex;
-        height: 100vh;
+        height: 100dvh;
+        min-height: 100dvh;
         gap: 6px;
         padding: 6px;
         overflow: hidden;
@@ -2851,6 +2853,14 @@
        MOBILE
     ============================================================ */
       @media (max-width: 768px) {
+        body {
+          height: 100dvh;
+          min-height: 100dvh;
+        }
+        .app {
+          height: 100dvh;
+          min-height: 100dvh;
+        }
         .app {
           padding: 0;
           gap: 0;
@@ -2919,6 +2929,20 @@
         }
         .toolbar {
           padding: 0 4px;
+        }
+        #editor {
+          padding-bottom: calc(28px + env(safe-area-inset-bottom));
+        }
+        #preview-content {
+          padding-bottom: calc(40px + env(safe-area-inset-bottom));
+        }
+        .status-bar {
+          position: sticky;
+          bottom: 0;
+          background: var(--surface-panel);
+          padding-bottom: env(safe-area-inset-bottom);
+          height: auto;
+          min-height: 28px;
         }
         .mobile-bar {
           display: flex;
