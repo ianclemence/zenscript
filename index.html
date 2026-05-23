@@ -2977,8 +2977,8 @@
               <i class="fas fa-folder-plus"></i>
             </button>
             <div class="divider-v"></div>
-            <button class="icon-btn" id="open-directory" title="Open Folder">
-              <i class="fas fa-folder-open"></i>
+            <button class="icon-btn" id="open-directory" title="Open File">
+              <i class="fas fa-file-arrow-up"></i>
             </button>
           </div>
         </header>
@@ -4435,15 +4435,68 @@
 
         if (workspace) {
           workspace.addEventListener("dragover", (e) => {
-            if (
-              e.dataTransfer &&
-              e.dataTransfer.types.includes("application/x-zenscript-path")
-            ) {
+            if (!e.dataTransfer) return;
+            if (e.dataTransfer.types.includes("application/x-zenscript-path")) {
+              e.preventDefault();
+              return;
+            }
+            if (e.dataTransfer.types.includes("Files")) {
               e.preventDefault();
             }
           });
           workspace.addEventListener("drop", async (e) => {
             if (!e.dataTransfer) return;
+            if (e.dataTransfer.files && e.dataTransfer.files.length) {
+              e.preventDefault();
+              const file = e.dataTransfer.files[0];
+              if (!file) return;
+              if (!isMarkdownFileName(file.name)) {
+                notify("Only .md files are allowed");
+                return;
+              }
+              const item = e.dataTransfer.items?.[0];
+              if (item && item.kind === "file" && item.getAsFileSystemHandle) {
+                try {
+                  const handle = await item.getAsFileSystemHandle();
+                  if (handle && handle.kind === "file") {
+                    const existing = tabs.find(
+                      (t) =>
+                        t.fileHandle &&
+                        (t.fileHandle.path || t.fileHandle.name) ===
+                          file.name &&
+                        t.fileSource === "fs",
+                    );
+                    if (existing) {
+                      activateTab(existing.id);
+                      return;
+                    }
+                    const f = await handle.getFile();
+                    const content = await f.text();
+                    handle.path = file.name;
+                    newTab(file.name, content, handle, "fs");
+                    statusBar.textContent = `Opened ${file.name}`;
+                    syncExplorerActiveState();
+                    renderHistory();
+                    return;
+                  }
+                } catch {}
+              }
+              try {
+                const content = await file.text();
+                newTab(
+                  file.name,
+                  content,
+                  { name: file.name, path: file.name },
+                  "db",
+                );
+                statusBar.textContent = `Opened ${file.name}`;
+                syncExplorerActiveState();
+                renderHistory();
+              } catch {
+                notify("Error reading file");
+              }
+              return;
+            }
             const path = e.dataTransfer.getData("application/x-zenscript-path");
             if (!path) return;
             e.preventDefault();
@@ -4537,7 +4590,7 @@
           { passive: true },
         );
 
-        openDirBtn.addEventListener("click", openDirectory);
+        openDirBtn.addEventListener("click", openMarkdownFile);
         saveFileBtn.addEventListener("click", saveCurrentFile);
         exportPdfBtn.addEventListener("click", () => {
           exportToPDF();
@@ -6082,7 +6135,7 @@
       }
       async function copyAsHTML() {
         try {
-          await navigator.clipboard.writeText(previewContent.innerHTML);
+          await navigator.clipboard.writeText(getExportHtml());
           notify("HTML copied");
         } catch {
           notify("Copy failed");
@@ -6250,7 +6303,7 @@
         const fn = (
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(".md", ".html");
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fn}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css"><style>body{max-width:860px;margin:0 auto;padding:40px;}</style></head><body class="markdown-body">${previewContent.innerHTML}</body></html>`;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fn}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css"><style>body{max-width:860px;margin:0 auto;padding:40px;}</style></head><body class="markdown-body">${getExportHtml()}</body></html>`;
         const blob = new Blob([html], { type: "text/html" });
         const a = Object.assign(document.createElement("a"), {
           href: URL.createObjectURL(blob),
@@ -6270,7 +6323,7 @@
         const fn = (
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(".md", "");
-        const rawHtml = previewContent.innerHTML;
+        const rawHtml = getExportHtml();
         const wrapper = document.createElement("div");
         wrapper.innerHTML = rawHtml;
         if (window.idbKeyval) {
@@ -6816,6 +6869,56 @@
           startDeletionWatcher();
           statusBar.textContent = `Opened: ${directoryHandle.name}`;
           notify("Folder opened");
+        } catch {}
+      }
+      function isMarkdownFileName(name) {
+        const n = (name || "").toLowerCase().trim();
+        return n.endsWith(".md") || n.endsWith(".markdown");
+      }
+
+      async function openMarkdownFile() {
+        if (!window.showOpenFilePicker) {
+          notify("File picker not supported");
+          return;
+        }
+        if (isUnsaved && !confirm("Discard unsaved changes?")) return;
+        if (isUnsaved) await saveSnapshot();
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [
+              {
+                description: "Markdown",
+                accept: {
+                  "text/markdown": [".md", ".markdown"],
+                  "text/plain": [".md", ".markdown"],
+                },
+              },
+            ],
+          });
+          if (!handle) return;
+          const path = handle.name || "document.md";
+          if (!isMarkdownFileName(path)) {
+            notify("Only .md files are allowed");
+            return;
+          }
+          const existing = tabs.find(
+            (t) =>
+              t.fileHandle &&
+              (t.fileHandle.path || t.fileHandle.name) === path &&
+              t.fileSource === "fs",
+          );
+          if (existing) {
+            activateTab(existing.id);
+            return;
+          }
+          const file = await handle.getFile();
+          const content = await file.text();
+          handle.path = path;
+          newTab(path, content, handle, "fs");
+          statusBar.textContent = `Opened ${path}`;
+          syncExplorerActiveState();
+          renderHistory();
         } catch {}
       }
       async function openFile(handle, filePath = handle.name) {
@@ -8933,11 +9036,27 @@ self.onmessage = (e) => {
 
       // ─── PDF Export ───
       // ─── Export helpers ───
+      function stripExportUI(root) {
+        root
+          .querySelectorAll(".codeblock-toolbar")
+          .forEach((el) => el.remove());
+        root
+          .querySelectorAll("button.codeblock-btn")
+          .forEach((el) => el.remove());
+      }
+
+      function getExportHtml() {
+        const clone = previewContent.cloneNode(true);
+        stripExportUI(clone);
+        return clone.innerHTML;
+      }
+
       async function captureFullPreview() {
         // Clone the preview content into an off-screen container with no scroll
         // constraints so html2canvas captures the full content, not just the viewport.
         const source = document.getElementById("preview-content");
         const clone = source.cloneNode(true);
+        stripExportUI(clone);
         const wrapper = document.createElement("div");
         wrapper.style.cssText = [
           "position:fixed",
