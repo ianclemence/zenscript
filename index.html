@@ -53,6 +53,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <style id="custom-preview-style"></style>
 
     <style>
@@ -2941,78 +2942,37 @@
               <i class="fas fa-redo"></i>
             </button>
             <div class="divider-v"></div>
-            <button
-              class="toolbar-btn"
-              onclick="format('bold')"
-              id="btn-bold"
-              title="Bold (⌘B)"
-            >
+            <button class="toolbar-btn" id="btn-bold" title="Bold (⌘B)">
               <i class="fas fa-bold"></i>
             </button>
-            <button
-              class="toolbar-btn"
-              onclick="format('italic')"
-              id="btn-italic"
-              title="Italic (⌘I)"
-            >
+            <button class="toolbar-btn" id="btn-italic" title="Italic (⌘I)">
               <i class="fas fa-italic"></i>
             </button>
             <button
               class="toolbar-btn"
-              onclick="format('strikethrough')"
               id="btn-strikethrough"
               title="Strikethrough"
             >
               <i class="fas fa-strikethrough"></i>
             </button>
             <div class="divider-v"></div>
-            <button
-              class="toolbar-btn"
-              onclick="format('h1')"
-              id="btn-h1"
-              title="Heading"
-            >
+            <button class="toolbar-btn" id="btn-h1" title="Heading">
               <i class="fas fa-heading"></i>
             </button>
-            <button
-              class="toolbar-btn"
-              onclick="format('link')"
-              id="btn-link"
-              title="Link (⌘K)"
-            >
+            <button class="toolbar-btn" id="btn-link" title="Link (⌘K)">
               <i class="fas fa-link"></i>
             </button>
-            <button
-              class="toolbar-btn"
-              onclick="format('code')"
-              id="btn-code"
-              title="Code"
-            >
+            <button class="toolbar-btn" id="btn-code" title="Code">
               <i class="fas fa-code"></i>
             </button>
             <div class="divider-v"></div>
-            <button
-              class="toolbar-btn"
-              onclick="format('quote')"
-              id="btn-quote"
-              title="Quote"
-            >
+            <button class="toolbar-btn" id="btn-quote" title="Quote">
               <i class="fas fa-quote-right"></i>
             </button>
-            <button
-              class="toolbar-btn"
-              onclick="format('list')"
-              id="btn-list"
-              title="List"
-            >
+            <button class="toolbar-btn" id="btn-list" title="List">
               <i class="fas fa-list-ul"></i>
             </button>
-            <button
-              class="toolbar-btn"
-              onclick="format('task')"
-              id="btn-task"
-              title="Task List"
-            >
+            <button class="toolbar-btn" id="btn-task" title="Task List">
               <i class="fas fa-check-square"></i>
             </button>
             <div class="divider-v"></div>
@@ -3026,55 +2986,43 @@
                 <i class="fas fa-project-diagram"></i>
               </button>
               <div class="dropdown-menu left" id="mermaid-dropdown">
-                <button class="dropdown-item" onclick="format('mermaid-flow')">
+                <button class="dropdown-item" data-format="mermaid-flow">
                   <i class="fas fa-project-diagram"></i>Flowchart
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-seq')">
+                <button class="dropdown-item" data-format="mermaid-seq">
                   <i class="fas fa-exchange-alt"></i>Sequence
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-gantt')">
+                <button class="dropdown-item" data-format="mermaid-gantt">
                   <i class="fas fa-tasks"></i>Gantt Chart
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-class')">
+                <button class="dropdown-item" data-format="mermaid-class">
                   <i class="fas fa-layer-group"></i>Class Diagram
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-er')">
+                <button class="dropdown-item" data-format="mermaid-er">
                   <i class="fas fa-database"></i>ER Diagram
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-state')">
+                <button class="dropdown-item" data-format="mermaid-state">
                   <i class="fas fa-circle-dot"></i>State Diagram
                 </button>
-                <button
-                  class="dropdown-item"
-                  onclick="format('mermaid-mindmap')"
-                >
+                <button class="dropdown-item" data-format="mermaid-mindmap">
                   <i class="fas fa-brain"></i>Mindmap
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-pie')">
+                <button class="dropdown-item" data-format="mermaid-pie">
                   <i class="fas fa-chart-pie"></i>Pie Chart
                 </button>
-                <button
-                  class="dropdown-item"
-                  onclick="format('mermaid-timeline')"
-                >
+                <button class="dropdown-item" data-format="mermaid-timeline">
                   <i class="fas fa-timeline"></i>Timeline
                 </button>
-                <button
-                  class="dropdown-item"
-                  onclick="format('mermaid-journey')"
-                >
+                <button class="dropdown-item" data-format="mermaid-journey">
                   <i class="fas fa-route"></i>User Journey
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-git')">
+                <button class="dropdown-item" data-format="mermaid-git">
                   <i class="fas fa-code-branch"></i>Git Graph
                 </button>
-                <button
-                  class="dropdown-item"
-                  onclick="format('mermaid-sankey')"
-                >
+                <button class="dropdown-item" data-format="mermaid-sankey">
                   <i class="fas fa-water"></i>Sankey Diagram
                 </button>
-                <button class="dropdown-item" onclick="format('mermaid-xy')">
+                <button class="dropdown-item" data-format="mermaid-xy">
                   <i class="fas fa-chart-line"></i>XY Chart
                 </button>
               </div>
@@ -3147,7 +3095,7 @@
         <div class="overlay-panel" id="meta-panel">
           <div class="overlay-title">
             Metadata
-            <button class="icon-btn" onclick="toggleMeta()">
+            <button class="icon-btn" id="meta-close-btn">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -3193,7 +3141,7 @@
         <div class="overlay-panel" id="attachments-panel">
           <div class="overlay-title">
             Attachments
-            <button class="icon-btn" onclick="toggleAttachmentsPanel()">
+            <button class="icon-btn" id="attachments-close-btn">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -3211,7 +3159,7 @@
         <div class="overlay-panel" id="find-replace-panel">
           <div class="overlay-title">
             Find & Replace
-            <button class="icon-btn" onclick="toggleFind()">
+            <button class="icon-btn" id="find-close-btn">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -3386,7 +3334,7 @@
         <div id="toc-panel">
           <div class="overlay-title">
             Outline
-            <button class="icon-btn" onclick="toggleTOC()">
+            <button class="icon-btn" id="toc-close-btn">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -3400,16 +3348,12 @@
             <div class="backlinks-header-actions">
               <button
                 class="icon-btn"
-                onclick="refreshBacklinks()"
+                id="backlinks-refresh-btn"
                 title="Refresh"
               >
                 <i class="fas fa-rotate-right"></i>
               </button>
-              <button
-                class="icon-btn"
-                onclick="toggleBacklinksPanel()"
-                title="Close"
-              >
+              <button class="icon-btn" id="backlinks-close-btn" title="Close">
                 <i class="fas fa-times"></i>
               </button>
             </div>
@@ -3421,7 +3365,7 @@
         <div id="custom-css-panel">
           <div class="overlay-title">
             Custom Preview CSS
-            <button class="icon-btn" onclick="toggleCustomCSS()">
+            <button class="icon-btn" id="custom-css-close-btn">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -3445,7 +3389,7 @@
       <div class="graph-modal-box">
         <div class="modal-header">
           <span class="modal-title">Knowledge Graph</span>
-          <button class="icon-btn" onclick="toggleGraphPanel()">
+          <button class="icon-btn" id="graph-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3497,7 +3441,7 @@
       <div class="modal-box">
         <div class="modal-header">
           <span class="modal-title">Markdown Syntax Guide</span>
-          <button class="icon-btn" onclick="toggleHelp()">
+          <button class="icon-btn" id="help-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3576,12 +3520,7 @@
       <div class="modal-box" style="max-width: 320px">
         <div class="modal-header">
           <span class="modal-title">Writing Goal</span>
-          <button
-            class="icon-btn"
-            onclick="
-              document.getElementById('goal-modal').style.display = 'none'
-            "
-          >
+          <button class="icon-btn" id="goal-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3623,12 +3562,7 @@
       <div class="modal-box" style="max-width: 640px">
         <div class="modal-header">
           <span class="modal-title">Template Gallery</span>
-          <button
-            class="icon-btn"
-            onclick="
-              document.getElementById('templates-modal').style.display = 'none'
-            "
-          >
+          <button class="icon-btn" id="templates-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -4120,7 +4054,23 @@
       clearMetaBtn.addEventListener("click", clearMetadata);
 
       // ─── Init ───
+      function debounce(fn, delay) {
+        let timer = null;
+        return (...args) => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => fn(...args), delay);
+        };
+      }
+
+      async function registerServiceWorker() {
+        if (!("serviceWorker" in navigator)) return;
+        try {
+          await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+        } catch {}
+      }
+
       async function init() {
+        registerServiceWorker();
         await initDB();
         if (window.marked)
           marked.setOptions({
@@ -4420,6 +4370,20 @@
         });
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
+        const bindFormat = (id, type) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener("click", () => format(type));
+        };
+        bindFormat("btn-bold", "bold");
+        bindFormat("btn-italic", "italic");
+        bindFormat("btn-strikethrough", "strikethrough");
+        bindFormat("btn-h1", "h1");
+        bindFormat("btn-link", "link");
+        bindFormat("btn-code", "code");
+        bindFormat("btn-quote", "quote");
+        bindFormat("btn-list", "list");
+        bindFormat("btn-task", "task");
         tableBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           toggleDropdown("table-dropdown");
@@ -4428,6 +4392,15 @@
           e.stopPropagation();
           toggleDropdown("mermaid-dropdown");
         });
+        const mermaidDropdown = document.getElementById("mermaid-dropdown");
+        if (mermaidDropdown)
+          mermaidDropdown.addEventListener("click", (e) => {
+            const item = e.target.closest(".dropdown-item[data-format]");
+            if (!item) return;
+            e.stopPropagation();
+            format(item.dataset.format);
+            toggleDropdown("mermaid-dropdown", false);
+          });
         attachBtn.addEventListener("click", () => attachInput.click());
         attachInput.addEventListener("change", handleAttachmentSelect);
         if (attachmentsBtn)
@@ -4452,6 +4425,9 @@
           livePreviewToggleBtn.addEventListener("click", toggleLivePreview);
         helpBtn.addEventListener("click", toggleHelp);
         formatBtn.addEventListener("click", formatDocument);
+        document
+          .getElementById("help-close-btn")
+          ?.addEventListener("click", toggleHelp);
         helpModal.addEventListener("click", (e) => {
           if (e.target === helpModal) toggleHelp();
         });
@@ -4466,6 +4442,11 @@
         templatesBtnEl.addEventListener("click", () => {
           templatesModal.style.display = "flex";
         });
+        document
+          .getElementById("templates-close-btn")
+          ?.addEventListener("click", () => {
+            templatesModal.style.display = "none";
+          });
         templatesModal.addEventListener("click", (e) => {
           if (e.target === templatesModal)
             templatesModal.style.display = "none";
@@ -4478,6 +4459,11 @@
           goalInput.value = writingGoal || "";
           goalInput.focus();
         });
+        document
+          .getElementById("goal-close-btn")
+          ?.addEventListener("click", () => {
+            goalModal.style.display = "none";
+          });
         goalModal.addEventListener("click", (e) => {
           if (e.target === goalModal) goalModal.style.display = "none";
         });
@@ -4489,9 +4475,36 @@
         });
         tabNewBtn.addEventListener("click", () => newTab());
 
-        globalSearchInput.addEventListener("input", performGlobalSearch);
+        globalSearchInput.addEventListener(
+          "input",
+          debounce(performGlobalSearch, 300),
+        );
         clearSearchBtn.addEventListener("click", clearSearch);
         clearHistoryBtn.addEventListener("click", clearLocalHistory);
+        document
+          .getElementById("meta-close-btn")
+          ?.addEventListener("click", toggleMeta);
+        document
+          .getElementById("attachments-close-btn")
+          ?.addEventListener("click", toggleAttachmentsPanel);
+        document
+          .getElementById("find-close-btn")
+          ?.addEventListener("click", toggleFind);
+        document
+          .getElementById("toc-close-btn")
+          ?.addEventListener("click", toggleTOC);
+        document
+          .getElementById("backlinks-refresh-btn")
+          ?.addEventListener("click", refreshBacklinks);
+        document
+          .getElementById("backlinks-close-btn")
+          ?.addEventListener("click", toggleBacklinksPanel);
+        document
+          .getElementById("custom-css-close-btn")
+          ?.addEventListener("click", toggleCustomCSS);
+        document
+          .getElementById("graph-close-btn")
+          ?.addEventListener("click", toggleGraphPanel);
         if (historyRetentionSelect)
           historyRetentionSelect.addEventListener("change", (e) => {
             historyRetentionDays = parseInt(e.target.value, 10) || 7;
@@ -5249,9 +5262,17 @@
       }
 
       // ─── Preview ───
+      const DOMPURIFY_CONFIG = {
+        ALLOWED_URI_REGEXP:
+          /^(?:(?:https?|mailto|blob|data|attachment):|[^a-z]|[a-z+.-]+(?:[^a-z+.-]|$))/i,
+      };
       function updatePreview() {
         if (!window.marked) return;
-        previewContent.innerHTML = marked.parse(editor.value);
+        const rawHtml = marked.parse(editor.value);
+        const safeHtml = window.DOMPurify
+          ? DOMPurify.sanitize(rawHtml, DOMPURIFY_CONFIG)
+          : rawHtml;
+        previewContent.innerHTML = safeHtml;
         processWikiLinks(previewContent);
         resolvePreviewAttachments();
         stylePreviewAttachments();
@@ -7185,6 +7206,149 @@
         historyDiffModal.classList.remove("open");
         selectedHistoryIndex = null;
       }
+
+      let diffWorker = null;
+      const diffWorkerCallbacks = new Map();
+      let diffWorkerSeq = 0;
+      let latestDiffRequest = 0;
+
+      function getDiffWorker() {
+        if (diffWorker) return diffWorker;
+        if (!window.Worker) return null;
+        const workerCode = `
+self.onmessage = (e) => {
+  const data = e.data || {};
+  const id = data.id;
+  const leftText = data.leftText || "";
+  const rightText = data.rightText || "";
+  const buildDiffRows = (leftText, rightText) => {
+    const a = leftText.split("\\n");
+    const b = rightText.split("\\n");
+    if (a.length > 500 || b.length > 500) {
+      const rows = [];
+      const max = Math.max(a.length, b.length);
+      for (let i = 0; i < max; i++) {
+        const l = a[i] ?? "";
+        const r = b[i] ?? "";
+        rows.push({
+          leftNum: a[i] !== undefined ? i + 1 : "",
+          rightNum: b[i] !== undefined ? i + 1 : "",
+          leftText: l,
+          rightText: r,
+          leftType: l === r ? "context" : "remove",
+          rightType: l === r ? "context" : "add",
+        });
+      }
+      return rows;
+    }
+    const dp = Array.from({ length: a.length + 1 }, () =>
+      Array(b.length + 1).fill(0),
+    );
+    for (let i = a.length - 1; i >= 0; i--) {
+      for (let j = b.length - 1; j >= 0; j--) {
+        dp[i][j] =
+          a[i] === b[j]
+            ? dp[i + 1][j + 1] + 1
+            : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    const rows = [];
+    let i = 0;
+    let j = 0;
+    let leftLine = 1;
+    let rightLine = 1;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) {
+        rows.push({
+          leftNum: leftLine++,
+          rightNum: rightLine++,
+          leftText: a[i],
+          rightText: b[j],
+          leftType: "context",
+          rightType: "context",
+        });
+        i++;
+        j++;
+      } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+        rows.push({
+          leftNum: leftLine++,
+          rightNum: "",
+          leftText: a[i],
+          rightText: "",
+          leftType: "remove",
+          rightType: "empty",
+        });
+        i++;
+      } else {
+        rows.push({
+          leftNum: "",
+          rightNum: rightLine++,
+          leftText: "",
+          rightText: b[j],
+          leftType: "empty",
+          rightType: "add",
+        });
+        j++;
+      }
+    }
+    while (i < a.length) {
+      rows.push({
+        leftNum: leftLine++,
+        rightNum: "",
+        leftText: a[i++],
+        rightText: "",
+        leftType: "remove",
+        rightType: "empty",
+      });
+    }
+    while (j < b.length) {
+      rows.push({
+        leftNum: "",
+        rightNum: rightLine++,
+        leftText: "",
+        rightText: b[j++],
+        leftType: "empty",
+        rightType: "add",
+      });
+    }
+    return rows;
+  };
+  const rows = buildDiffRows(leftText, rightText);
+  self.postMessage({ id, rows });
+};
+`;
+        const url = URL.createObjectURL(
+          new Blob([workerCode], { type: "text/javascript" }),
+        );
+        diffWorker = new Worker(url);
+        URL.revokeObjectURL(url);
+        diffWorker.addEventListener("message", (e) => {
+          const data = e.data || {};
+          const cb = diffWorkerCallbacks.get(data.id);
+          if (!cb) return;
+          diffWorkerCallbacks.delete(data.id);
+          cb.resolve(data.rows || []);
+        });
+        diffWorker.addEventListener("error", () => {
+          diffWorkerCallbacks.forEach((cb) =>
+            cb.reject(new Error("Diff worker error")),
+          );
+          diffWorkerCallbacks.clear();
+        });
+        return diffWorker;
+      }
+
+      async function buildDiffRowsAsync(leftText, rightText) {
+        const worker = getDiffWorker();
+        if (!worker) return buildDiffRows(leftText, rightText);
+        const id = ++diffWorkerSeq;
+        const p = new Promise((resolve, reject) => {
+          diffWorkerCallbacks.set(id, { resolve, reject });
+        });
+        worker.postMessage({ id, leftText, rightText });
+        return p;
+      }
+
       async function openHistoryDiff(index) {
         if (!window.idbKeyval) return;
         const history = (await idbKeyval.get("md-local-history")) || [];
@@ -7220,21 +7384,39 @@
         ).toLocaleString();
         historyDiffLeftTitle.textContent = "Snapshot";
         historyDiffRightTitle.textContent = rightTitle;
-        const rows = buildDiffRows(snap.content || "", compareContent || "");
-        historyDiffLeft.innerHTML = "";
-        historyDiffRight.innerHTML = "";
-        rows.forEach((row) => {
-          const left = document.createElement("div");
-          left.className = `diff-line ${row.leftType}`;
-          left.innerHTML = `<span class="diff-line-num">${row.leftNum || ""}</span><pre class="diff-line-text">${escapeHtml(row.leftText)}</pre>`;
-          historyDiffLeft.appendChild(left);
-          const right = document.createElement("div");
-          right.className = `diff-line ${row.rightType}`;
-          right.innerHTML = `<span class="diff-line-num">${row.rightNum || ""}</span><pre class="diff-line-text">${escapeHtml(row.rightText)}</pre>`;
-          historyDiffRight.appendChild(right);
-        });
         selectedHistoryIndex = index;
         historyDiffModal.classList.add("open");
+
+        const requestId = ++latestDiffRequest;
+        const loadingHtml =
+          '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text-tertiary);">Computing diff…</div>';
+        historyDiffLeft.innerHTML = loadingHtml;
+        historyDiffRight.innerHTML = loadingHtml;
+        try {
+          const rows = await buildDiffRowsAsync(
+            snap.content || "",
+            compareContent || "",
+          );
+          if (requestId !== latestDiffRequest) return;
+          historyDiffLeft.innerHTML = "";
+          historyDiffRight.innerHTML = "";
+          rows.forEach((row) => {
+            const left = document.createElement("div");
+            left.className = `diff-line ${row.leftType}`;
+            left.innerHTML = `<span class="diff-line-num">${row.leftNum || ""}</span><pre class="diff-line-text">${escapeHtml(row.leftText)}</pre>`;
+            historyDiffLeft.appendChild(left);
+            const right = document.createElement("div");
+            right.className = `diff-line ${row.rightType}`;
+            right.innerHTML = `<span class="diff-line-num">${row.rightNum || ""}</span><pre class="diff-line-text">${escapeHtml(row.rightText)}</pre>`;
+            historyDiffRight.appendChild(right);
+          });
+        } catch {
+          if (requestId !== latestDiffRequest) return;
+          historyDiffLeft.innerHTML =
+            '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text-tertiary);">Diff failed</div>';
+          historyDiffRight.innerHTML =
+            '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text-tertiary);">Diff failed</div>';
+        }
       }
       function escapeHtml(text) {
         return (text || "")
