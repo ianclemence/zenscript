@@ -2096,6 +2096,33 @@
         margin-top: 12px;
       }
 
+      .toc-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toc-copy-btn {
+        appearance: none;
+        border: 1px solid var(--border-faint);
+        background: transparent;
+        color: var(--text-tertiary);
+        border-radius: var(--radius-sm);
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+        flex-shrink: 0;
+      }
+      .toc-copy-btn:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+
       .toc-link {
         display: inline-block;
         padding: 4px 8px;
@@ -2106,6 +2133,7 @@
         transition:
           background var(--duration-fast) var(--ease),
           color var(--duration-fast) var(--ease);
+        flex: 1;
       }
       .toc-link:hover {
         background: var(--surface-hover);
@@ -3486,6 +3514,12 @@
                 <button class="dropdown-item" id="copy-html-menu">
                   <i class="far fa-copy"></i>Copy HTML
                 </button>
+                <button class="dropdown-item" id="copy-link-menu">
+                  <i class="fas fa-link"></i>Copy Link
+                </button>
+                <button class="dropdown-item" id="copy-share-link-menu">
+                  <i class="fas fa-lock"></i>Copy Share Link
+                </button>
               </div>
             </div>
             <button
@@ -3862,6 +3896,10 @@
       const tabBar = document.getElementById("tab-bar");
       const tabNewBtn = document.getElementById("tab-new");
       const copyHtmlMenuBtn = document.getElementById("copy-html-menu");
+      const copyLinkMenuBtn = document.getElementById("copy-link-menu");
+      const copyShareLinkMenuBtn = document.getElementById(
+        "copy-share-link-menu",
+      );
       const exportImageBtn = document.getElementById("export-image");
       const templatesBtnEl = document.getElementById("templates-btn");
       const customCssBtnEl = document.getElementById("custom-css-btn");
@@ -4240,7 +4278,384 @@
         } catch {}
       }
 
+      function persistAppBasePath() {
+        try {
+          const p = location.pathname;
+          if (!p) return;
+          if (p.endsWith("/")) {
+            localStorage.setItem("md-app-base-path", p);
+            return;
+          }
+          if (p.toLowerCase().endsWith(".html")) {
+            const i = p.lastIndexOf("/");
+            const base = i >= 0 ? p.slice(0, i + 1) : "/";
+            localStorage.setItem("md-app-base-path", base);
+          }
+        } catch {}
+      }
+
+      function getAppBasePath() {
+        try {
+          const saved = localStorage.getItem("md-app-base-path");
+          if (saved && location.pathname.startsWith(saved)) return saved;
+        } catch {}
+        const p = location.pathname || "/";
+        if (p.endsWith("/")) return p;
+        const lower = p.toLowerCase();
+        if (lower.endsWith(".html")) {
+          const i = p.lastIndexOf("/");
+          return i >= 0 ? p.slice(0, i + 1) : "/";
+        }
+        const parts = p.split("/").filter(Boolean);
+        if (!parts.length) return "/";
+        if (parts[0].includes(".")) return "/";
+        return `/${parts[0]}/`;
+      }
+
+      function encodePathForUrl(path) {
+        return (path || "")
+          .split("/")
+          .filter((s) => s.length > 0)
+          .map((s) => encodeURIComponent(s))
+          .join("/");
+      }
+
+      function decodePathFromUrl(path) {
+        return (path || "")
+          .split("/")
+          .filter((s) => s.length > 0)
+          .map((s) => decodeURIComponent(s))
+          .join("/");
+      }
+
+      function getCurrentDocPath() {
+        const path = currentFilePath || "";
+        if (!path) return "";
+        return path.replace(/^[\\/]+/, "");
+      }
+
+      function isMarkdownDocPath(path) {
+        return isMarkdownFileName(path);
+      }
+
+      function setCanonicalUrl({ docPath, sectionId, replace = false } = {}) {
+        const base = getAppBasePath();
+        const encodedDoc = docPath ? encodePathForUrl(docPath) : "";
+        const pathname = encodedDoc ? `${base}${encodedDoc}` : base;
+        const hash = sectionId ? `#${encodeURIComponent(sectionId)}` : "";
+        const url = `${pathname}${hash}`;
+        try {
+          const state = { docPath: docPath || "", sectionId: sectionId || "" };
+          if (replace) history.replaceState(state, "", url);
+          else history.pushState(state, "", url);
+        } catch {}
+      }
+
+      function parseDocPathFromLocation() {
+        const base = getAppBasePath();
+        const full = location.pathname || "/";
+        if (!full.startsWith(base)) return "";
+        const rest = full.slice(base.length);
+        const decoded = decodePathFromUrl(rest);
+        if (!decoded) return "";
+        if (!isMarkdownDocPath(decoded)) return "";
+        return decoded;
+      }
+
+      function parseSectionIdFromLocation() {
+        const raw = (location.hash || "").slice(1);
+        if (!raw) return "";
+        if (raw.startsWith("share=")) return "";
+        return decodeURIComponent(raw);
+      }
+
+      function scrollToSectionInPreview(sectionId, behavior = "smooth") {
+        if (!sectionId) return false;
+        const target = previewContent.querySelector(
+          `#${CSS.escape(sectionId)}`,
+        );
+        if (!target) return false;
+        target.scrollIntoView({ behavior, block: "start" });
+        return true;
+      }
+
+      function base64UrlEncodeBytes(bytes) {
+        let bin = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        return btoa(bin)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/g, "");
+      }
+
+      function base64UrlDecodeToBytes(str) {
+        const s = (str || "").replace(/-/g, "+").replace(/_/g, "/");
+        const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
+        const bin = atob(s + pad);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+      }
+
+      async function gzipCompressBytes(bytes) {
+        if (!("CompressionStream" in window))
+          return { bytes, encoding: "none" };
+        try {
+          const cs = new CompressionStream("gzip");
+          const stream = new Blob([bytes]).stream().pipeThrough(cs);
+          const ab = await new Response(stream).arrayBuffer();
+          return { bytes: new Uint8Array(ab), encoding: "gzip" };
+        } catch {
+          return { bytes, encoding: "none" };
+        }
+      }
+
+      async function gzipDecompressBytes(bytes) {
+        if (!("DecompressionStream" in window))
+          return { bytes, encoding: "none" };
+        try {
+          const ds = new DecompressionStream("gzip");
+          const stream = new Blob([bytes]).stream().pipeThrough(ds);
+          const ab = await new Response(stream).arrayBuffer();
+          return { bytes: new Uint8Array(ab), encoding: "gzip" };
+        } catch {
+          return { bytes, encoding: "none" };
+        }
+      }
+
+      async function deriveKeyFromPassphrase(passphrase, salt, iterations) {
+        const enc = new TextEncoder();
+        const baseKey = await crypto.subtle.importKey(
+          "raw",
+          enc.encode(passphrase),
+          "PBKDF2",
+          false,
+          ["deriveKey"],
+        );
+        return crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt,
+            iterations,
+            hash: "SHA-256",
+          },
+          baseKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"],
+        );
+      }
+
+      async function copyCanonicalLink(sectionId) {
+        const docPath = getCurrentDocPath();
+        if (!docPath) {
+          notify("No file to link");
+          return;
+        }
+        const base = getAppBasePath();
+        const url =
+          `${location.origin}${base}${encodePathForUrl(docPath)}` +
+          (sectionId ? `#${encodeURIComponent(sectionId)}` : "");
+        try {
+          await navigator.clipboard.writeText(url);
+          notify("Link copied");
+        } catch {
+          notify("Copy failed");
+        }
+      }
+
+      async function copyEncryptedShareLink() {
+        const docPath = getCurrentDocPath();
+        const name =
+          (docPath && docPath.split("/").pop()) ||
+          currentFilenameDisplay.textContent ||
+          "document.md";
+        const sectionId = parseSectionIdFromLocation();
+        const passphrase = prompt(
+          "Passphrase (leave blank to generate an encrypted link key inside the URL):",
+          "",
+        );
+        const payload = {
+          v: 1,
+          docPath: docPath || name,
+          name,
+          sectionId: sectionId || "",
+          markdown: editor.value || "",
+          ts: Date.now(),
+        };
+        const enc = new TextEncoder();
+        const jsonBytes = enc.encode(JSON.stringify(payload));
+        const { bytes: plainBytes, encoding } =
+          await gzipCompressBytes(jsonBytes);
+
+        let key = null;
+        let keyBytes = null;
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const iterations = 150000;
+        let salt = null;
+
+        if (passphrase && passphrase.trim()) {
+          salt = crypto.getRandomValues(new Uint8Array(16));
+          key = await deriveKeyFromPassphrase(
+            passphrase.trim(),
+            salt,
+            iterations,
+          );
+        } else {
+          keyBytes = crypto.getRandomValues(new Uint8Array(32));
+          key = await crypto.subtle.importKey(
+            "raw",
+            keyBytes,
+            { name: "AES-GCM" },
+            false,
+            ["encrypt", "decrypt"],
+          );
+        }
+
+        let ctAb;
+        try {
+          ctAb = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv },
+            key,
+            plainBytes,
+          );
+        } catch {
+          notify("Share link encryption failed");
+          return;
+        }
+        const shareObj = {
+          v: 1,
+          enc: "A256GCM",
+          kdf: passphrase && passphrase.trim() ? "PBKDF2" : "RAW",
+          iter: passphrase && passphrase.trim() ? iterations : 0,
+          salt: salt ? base64UrlEncodeBytes(salt) : "",
+          iv: base64UrlEncodeBytes(iv),
+          key: keyBytes ? base64UrlEncodeBytes(keyBytes) : "",
+          c: encoding,
+          ct: base64UrlEncodeBytes(new Uint8Array(ctAb)),
+        };
+        const shareStr = base64UrlEncodeBytes(
+          enc.encode(JSON.stringify(shareObj)),
+        );
+        const base = getAppBasePath();
+        const url = `${location.origin}${base}#share=${shareStr}`;
+        if (url.length > 12000) {
+          notify("Share link is too large");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          notify("Share link copied");
+        } catch {
+          notify("Copy failed");
+        }
+      }
+
+      async function handleShareLinkFromLocation() {
+        const raw = (location.hash || "").slice(1);
+        if (!raw.startsWith("share=")) return false;
+        const encoded = raw.slice("share=".length);
+        try {
+          const bytes = base64UrlDecodeToBytes(encoded);
+          const dec = new TextDecoder();
+          const shareObj = JSON.parse(dec.decode(bytes));
+          if (!shareObj || shareObj.v !== 1) return false;
+          const iv = base64UrlDecodeToBytes(shareObj.iv || "");
+          const ct = base64UrlDecodeToBytes(shareObj.ct || "");
+          let key;
+          if (shareObj.kdf === "PBKDF2") {
+            const passphrase = prompt(
+              "Enter passphrase to open this link:",
+              "",
+            );
+            if (!passphrase || !passphrase.trim()) return true;
+            const salt = base64UrlDecodeToBytes(shareObj.salt || "");
+            key = await deriveKeyFromPassphrase(
+              passphrase.trim(),
+              salt,
+              parseInt(shareObj.iter, 10) || 150000,
+            );
+          } else {
+            const keyBytes = base64UrlDecodeToBytes(shareObj.key || "");
+            if (!keyBytes.length) return false;
+            key = await crypto.subtle.importKey(
+              "raw",
+              keyBytes,
+              { name: "AES-GCM" },
+              false,
+              ["decrypt"],
+            );
+          }
+          const ptAb = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv },
+            key,
+            ct,
+          );
+          let ptBytes = new Uint8Array(ptAb);
+          if (shareObj.c === "gzip") {
+            const res = await gzipDecompressBytes(ptBytes);
+            ptBytes = res.bytes;
+          }
+          const payload = JSON.parse(new TextDecoder().decode(ptBytes));
+          const filePath = payload.docPath || payload.name || "shared.md";
+          newTab(
+            filePath,
+            payload.markdown || "",
+            { name: filePath, path: filePath },
+            "db",
+          );
+          setCanonicalUrl({
+            docPath: filePath,
+            sectionId: payload.sectionId || "",
+            replace: true,
+          });
+          if (payload.sectionId) {
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() =>
+                scrollToSectionInPreview(payload.sectionId, "auto"),
+              ),
+            );
+          }
+          notify("Shared doc opened");
+          return true;
+        } catch {
+          notify("Invalid share link");
+          return true;
+        }
+      }
+
+      let pendingInitialSectionId = "";
+
+      async function handleRouteFromLocation({ initial = false } = {}) {
+        const handledShare = await handleShareLinkFromLocation();
+        if (handledShare) return;
+        const docPath = parseDocPathFromLocation();
+        const sectionId = parseSectionIdFromLocation();
+        if (docPath && window.idbKeyval) {
+          const entry = await loadFromDB(docPath);
+          if (entry) {
+            if (docPath !== getCurrentDocPath())
+              await openFileFromDB(docPath, true);
+            if (initial) setCanonicalUrl({ docPath, sectionId, replace: true });
+            if (sectionId) {
+              const ok = scrollToSectionInPreview(sectionId, "auto");
+              if (!ok) pendingInitialSectionId = sectionId;
+            }
+          }
+        } else if (initial && getCurrentDocPath()) {
+          setCanonicalUrl({
+            docPath: getCurrentDocPath(),
+            sectionId: "",
+            replace: true,
+          });
+        }
+      }
+
       async function init() {
+        persistAppBasePath();
         registerServiceWorker();
         await initDB();
         if (window.marked)
@@ -4302,6 +4717,8 @@
           // Boot with one default tab if nothing restored
           newTab("Untitled.md", "");
         }
+
+        await handleRouteFromLocation({ initial: true });
 
         updateWordCount();
         updateToolbarState();
@@ -4608,6 +5025,14 @@
           copyAsHTML();
           toggleDropdown("download-menu", false);
         });
+        copyLinkMenuBtn?.addEventListener("click", async () => {
+          await copyCanonicalLink(parseSectionIdFromLocation());
+          toggleDropdown("download-menu", false);
+        });
+        copyShareLinkMenuBtn?.addEventListener("click", async () => {
+          await copyEncryptedShareLink();
+          toggleDropdown("download-menu", false);
+        });
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
         const bindFormat = (id, type) => {
@@ -4891,6 +5316,10 @@
             e.preventDefault();
             formatDocument();
           }
+        });
+
+        window.addEventListener("popstate", () => {
+          handleRouteFromLocation();
         });
 
         editor.addEventListener("scroll", () => {
@@ -5957,7 +6386,9 @@
             if (target) {
               e.preventDefault();
               target.scrollIntoView({ behavior: "smooth", block: "start" });
-              location.hash = href;
+              const docPath = getCurrentDocPath();
+              if (docPath)
+                setCanonicalUrl({ docPath, sectionId: id, replace: false });
               return;
             }
           }
@@ -6038,6 +6469,11 @@
         applyFootnotes(previewContent, defs);
         applyCodeLineHash(previewContent);
         generateTOC();
+        if (pendingInitialSectionId) {
+          const id = pendingInitialSectionId;
+          pendingInitialSectionId = "";
+          requestAnimationFrame(() => scrollToSectionInPreview(id, "auto"));
+        }
         if (backlinksPanel.classList.contains("open")) refreshBacklinks();
         if (document.getElementById("graph-modal").classList.contains("open"))
           renderGraph();
@@ -6080,15 +6516,32 @@
         headers.forEach((h) => {
           if (!h.id) h.id = ensureUniqueId(slugify(h.textContent));
           const level = parseInt(h.tagName[1]);
+          const row = document.createElement("div");
+          row.className = "toc-item";
           const link = document.createElement("a");
           link.href = `#${h.id}`;
           link.textContent = h.textContent;
           link.className = `toc-link level-${level}`;
           link.onclick = (e) => {
             e.preventDefault();
-            h.scrollIntoView({ behavior: "smooth" });
+            scrollToSectionInPreview(h.id, "smooth");
+            const docPath = getCurrentDocPath();
+            if (docPath)
+              setCanonicalUrl({ docPath, sectionId: h.id, replace: false });
           };
-          tocList.appendChild(link);
+          const copyBtn = document.createElement("button");
+          copyBtn.type = "button";
+          copyBtn.className = "toc-copy-btn";
+          copyBtn.title = "Copy link";
+          copyBtn.innerHTML = '<i class="fas fa-link"></i>';
+          copyBtn.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await copyCanonicalLink(h.id);
+          };
+          row.appendChild(link);
+          row.appendChild(copyBtn);
+          tocList.appendChild(row);
         });
       }
 
@@ -9450,6 +9903,10 @@ self.onmessage = (e) => {
             name: tab.name,
             source: tab.fileSource,
           });
+        }
+        const docPath = getCurrentDocPath();
+        if (docPath && isMarkdownDocPath(docPath)) {
+          setCanonicalUrl({ docPath, sectionId: "", replace: true });
         }
       }
 

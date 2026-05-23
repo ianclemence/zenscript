@@ -53,8 +53,16 @@ self.addEventListener("fetch", (event) => {
         const cache = await caches.open(CACHE_NAME);
         try {
           const res = await fetch(req);
-          if (res && res.ok) cache.put("./index.html", res.clone());
-          return res;
+          if (res && res.ok) {
+            cache.put("./index.html", res.clone());
+            return res;
+          }
+          return (
+            (await cache.match("./index.html")) ||
+            (await cache.match("./")) ||
+            res ||
+            Response.error()
+          );
         } catch {
           return (
             (await cache.match("./index.html")) ||
