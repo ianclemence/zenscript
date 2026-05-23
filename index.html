@@ -1662,6 +1662,93 @@
         padding: 0;
         font-size: 0.85em;
       }
+      .markdown-body .codeblock {
+        background: var(--surface-code);
+        border: 1px solid var(--border-faint);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin: 1em 0;
+      }
+      .markdown-body .codeblock-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border-faint);
+        background: var(--surface-input);
+      }
+      .markdown-body .codeblock-lang {
+        margin-right: auto;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
+        text-transform: lowercase;
+        user-select: none;
+      }
+      .markdown-body .codeblock-btn {
+        appearance: none;
+        border: 1px solid var(--border-faint);
+        background: var(--surface-panel);
+        color: var(--text-secondary);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease);
+      }
+      .markdown-body .codeblock-btn:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+      .markdown-body .codeblock-btn.active {
+        border-color: rgba(0, 122, 255, 0.35);
+        background: rgba(0, 122, 255, 0.08);
+        color: var(--accent);
+      }
+      .markdown-body .codeblock pre {
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        padding: 12px 0;
+      }
+      .markdown-body .codeblock pre code {
+        display: block;
+        padding: 0;
+      }
+      .markdown-body .codeblock .code-line {
+        display: block;
+        position: relative;
+        padding: 0 18px 0 56px;
+      }
+      .markdown-body .codeblock .code-line::before {
+        content: attr(data-line);
+        position: absolute;
+        left: 0;
+        width: 44px;
+        text-align: right;
+        color: var(--text-tertiary);
+        font-size: 11px;
+        user-select: none;
+        cursor: pointer;
+      }
+      .markdown-body .codeblock .code-line.hl {
+        background: rgba(0, 122, 255, 0.09);
+      }
+      .markdown-body .codeblock.wrap pre code {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .markdown-body .codeblock .ws-space,
+      .markdown-body .codeblock .ws-tab {
+        color: rgba(0, 122, 255, 0.85);
+        user-select: none;
+      }
       [data-theme="dark"] .markdown-body pre code.hljs,
       [data-theme="dusk"] .markdown-body pre code.hljs,
       [data-theme="forest"] .markdown-body pre code.hljs,
@@ -1745,6 +1832,90 @@
       }
       .markdown-body tbody tr:hover {
         background: var(--surface-hover);
+      }
+      .markdown-body .table-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      .markdown-body .table-wrap table {
+        margin: 0;
+      }
+
+      .markdown-body li.task-list-item::before {
+        display: none;
+      }
+      .markdown-body li.task-list-item {
+        padding-left: 0;
+      }
+      .markdown-body li.task-list-item input[type="checkbox"] {
+        margin: 0 8px 0 0;
+        transform: translateY(1px);
+      }
+      .markdown-body .task-progress {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        margin: 10px 0 -2px;
+        border: 1px solid var(--border-faint);
+        border-radius: var(--radius-md);
+        background: var(--surface-input);
+      }
+      .markdown-body .task-progress-text {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+      .markdown-body .task-progress-track {
+        flex: 1;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+      }
+      [data-theme="dark"] .markdown-body .task-progress-track,
+      [data-theme="dusk"] .markdown-body .task-progress-track,
+      [data-theme="forest"] .markdown-body .task-progress-track,
+      [data-theme="matrix"] .markdown-body .task-progress-track {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .markdown-body .task-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+      }
+
+      .markdown-body details {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface-panel);
+        padding: 10px 12px;
+        margin: 1em 0;
+      }
+      .markdown-body details > summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text-heading);
+        user-select: none;
+      }
+      .markdown-body details[open] > summary {
+        margin-bottom: 10px;
+      }
+
+      .markdown-body .footnotes {
+        margin-top: 2em;
+        padding-top: 1em;
+        border-top: 1px solid var(--preview-hr);
+        color: var(--text-secondary);
+        font-size: 0.95em;
+      }
+      .markdown-body .footnotes ol {
+        padding-left: 1.4em;
+      }
+      .markdown-body .footnote-backref {
+        margin-left: 8px;
+        font-size: 0.95em;
       }
 
       .markdown-body img {
@@ -4158,6 +4329,21 @@
           });
         }
 
+        if (tabBar) {
+          tabBar.addEventListener(
+            "wheel",
+            (e) => {
+              if (tabBar.scrollWidth <= tabBar.clientWidth) return;
+              const dx = e.deltaX || 0;
+              const dy = e.deltaY || 0;
+              if (dx === 0 && dy === 0) return;
+              e.preventDefault();
+              tabBar.scrollLeft += Math.abs(dy) >= Math.abs(dx) ? dy : dx;
+            },
+            { passive: false },
+          );
+        }
+
         previewContent.addEventListener("scroll", () => {
           const headers = previewContent.querySelectorAll("h1, h2, h3");
           let currentId = "";
@@ -4171,6 +4357,7 @@
             );
           });
         });
+        previewContent.addEventListener("click", handlePreviewClick);
 
         explorer.addEventListener("contextmenu", (e) => {
           e.preventDefault();
@@ -5266,9 +5453,485 @@
         ALLOWED_URI_REGEXP:
           /^(?:(?:https?|mailto|blob|data|attachment):|[^a-z]|[a-z+.-]+(?:[^a-z+.-]|$))/i,
       };
+
+      function preprocessFootnoteDefinitions(markdown) {
+        const lines = (markdown || "").split("\n");
+        const defs = new Map();
+        const out = [];
+        let inFence = false;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.startsWith("```")) inFence = !inFence;
+          if (!inFence) {
+            const m = line.match(/^\[\^([^\]]+)\]:\s*(.*)$/);
+            if (m) {
+              const id = m[1].trim();
+              let content = m[2] || "";
+              let j = i + 1;
+              while (
+                j < lines.length &&
+                (lines[j].startsWith("    ") || lines[j].startsWith("\t"))
+              ) {
+                content += "\n" + lines[j].replace(/^(?:    |\t)/, "");
+                j++;
+              }
+              defs.set(id, content.trimEnd());
+              i = j - 1;
+              continue;
+            }
+          }
+          out.push(line);
+        }
+        return { markdown: out.join("\n"), defs };
+      }
+
+      function applyFootnotes(root, defs) {
+        if (!defs || defs.size === 0) return;
+        const idToNum = new Map();
+        const orderedIds = [];
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode(node) {
+            const p = node.parentElement;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            if (p.closest("pre, code, a, button"))
+              return NodeFilter.FILTER_REJECT;
+            if (!node.nodeValue || !node.nodeValue.includes("[^"))
+              return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        });
+        const textNodes = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        for (const node of textNodes) {
+          const text = node.nodeValue || "";
+          const re = /\[\^([^\]]+)\]/g;
+          let m;
+          let last = 0;
+          const frag = document.createDocumentFragment();
+          let changed = false;
+          while ((m = re.exec(text))) {
+            const id = (m[1] || "").trim();
+            if (!defs.has(id)) continue;
+            changed = true;
+            frag.appendChild(
+              document.createTextNode(text.slice(last, m.index)),
+            );
+            last = m.index + m[0].length;
+            if (!idToNum.has(id)) {
+              idToNum.set(id, idToNum.size + 1);
+              orderedIds.push(id);
+            }
+            const num = idToNum.get(id);
+            const sup = document.createElement("sup");
+            sup.className = "footnote-ref";
+            const a = document.createElement("a");
+            a.href = `#fn-${num}`;
+            a.id = `fnref-${num}`;
+            a.textContent = `${num}`;
+            sup.appendChild(a);
+            frag.appendChild(sup);
+          }
+          if (!changed) continue;
+          frag.appendChild(document.createTextNode(text.slice(last)));
+          node.parentNode.replaceChild(frag, node);
+        }
+        if (!orderedIds.length) return;
+        const section = document.createElement("section");
+        section.className = "footnotes";
+        const ol = document.createElement("ol");
+        orderedIds.forEach((id) => {
+          const num = idToNum.get(id);
+          const li = document.createElement("li");
+          li.id = `fn-${num}`;
+          const raw = defs.get(id) || "";
+          const html = window.marked ? marked.parse(raw) : raw;
+          const safeHtml = window.DOMPurify
+            ? DOMPurify.sanitize(html, DOMPURIFY_CONFIG)
+            : html;
+          const wrap = document.createElement("div");
+          wrap.innerHTML = safeHtml;
+          li.appendChild(wrap);
+          const back = document.createElement("a");
+          back.className = "footnote-backref";
+          back.href = `#fnref-${num}`;
+          back.textContent = "↩";
+          li.appendChild(back);
+          ol.appendChild(li);
+        });
+        section.appendChild(ol);
+        root.appendChild(section);
+      }
+
+      function wrapTables(root) {
+        root.querySelectorAll("table").forEach((table) => {
+          if (table.parentElement?.classList.contains("table-wrap")) return;
+          const wrap = document.createElement("div");
+          wrap.className = "table-wrap";
+          table.parentNode.insertBefore(wrap, table);
+          wrap.appendChild(table);
+        });
+      }
+
+      let codeblockCounter = 0;
+      let lastActiveCodeblockId = null;
+      let lastCodeLineClick = null;
+
+      function enhanceCodeBlocks(root) {
+        const blocks = Array.from(root.querySelectorAll("pre > code"));
+        blocks.forEach((code) => {
+          const pre = code.parentElement;
+          if (!pre) return;
+          if (pre.closest(".codeblock")) return;
+          const raw = code.textContent || "";
+          const wrapper = document.createElement("div");
+          wrapper.className = "codeblock";
+          wrapper.dataset.raw = raw;
+          codeblockCounter++;
+          wrapper.id = `codeblock-${codeblockCounter}`;
+          const toolbar = document.createElement("div");
+          toolbar.className = "codeblock-toolbar";
+          const lang = (() => {
+            const cls = Array.from(code.classList).find((c) =>
+              c.startsWith("language-"),
+            );
+            if (!cls) return "";
+            return cls.replace("language-", "").trim();
+          })();
+          const langEl = document.createElement("span");
+          langEl.className = "codeblock-lang";
+          langEl.textContent = lang || "code";
+          toolbar.appendChild(langEl);
+          const mkBtn = (label, action) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "codeblock-btn";
+            b.dataset.action = action;
+            b.textContent = label;
+            return b;
+          };
+          toolbar.appendChild(mkBtn("Copy", "copy"));
+          toolbar.appendChild(mkBtn("Wrap", "wrap"));
+          toolbar.appendChild(mkBtn("Whitespace", "ws"));
+          wrapper.appendChild(toolbar);
+          pre.parentNode.insertBefore(wrapper, pre);
+          wrapper.appendChild(pre);
+
+          if (!code.querySelector(".code-line")) {
+            const html = code.innerHTML;
+            const lines = html.split("\n");
+            code.innerHTML = lines
+              .map((line, i) => {
+                const content = line === "" ? "&nbsp;" : line;
+                return `<span class="code-line" data-line="${i + 1}">${content}</span>`;
+              })
+              .join("\n");
+          }
+        });
+      }
+
+      function applyCodeLineHash(root) {
+        const hash = decodeURIComponent((location.hash || "").slice(1));
+        if (!hash) return;
+        const m = hash.match(/^(?:(codeblock-\d+)-)?L(\d+)(?:-L?(\d+))?$/i);
+        if (!m) return;
+        const blockId = m[1] || lastActiveCodeblockId;
+        const start = parseInt(m[2], 10);
+        const end = parseInt(m[3] || m[2], 10);
+        if (!start || !end) return;
+        const wrapper = blockId
+          ? root.querySelector(`#${CSS.escape(blockId)}`)
+          : root.querySelector(".codeblock");
+        if (!wrapper) return;
+        wrapper
+          .querySelectorAll(".code-line.hl")
+          .forEach((el) => el.classList.remove("hl"));
+        const s = Math.min(start, end);
+        const e = Math.max(start, end);
+        wrapper.querySelectorAll(".code-line").forEach((el) => {
+          const n = parseInt(el.dataset.line || "", 10);
+          if (n >= s && n <= e) el.classList.add("hl");
+        });
+      }
+
+      function extractTaskLines(markdown) {
+        const lines = (markdown || "").split("\n");
+        const out = [];
+        let inFence = false;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.startsWith("```")) inFence = !inFence;
+          if (inFence) continue;
+          const m = line.match(/^(\s*(?:[-*+]|\d+[.)])\s+)\[([ xX])\]\s+/);
+          if (!m) continue;
+          out.push({ lineNumber: i + 1, checked: m[2].toLowerCase() === "x" });
+        }
+        return out;
+      }
+
+      function enhanceTaskLists(root, markdown) {
+        root.querySelectorAll(".task-progress").forEach((n) => n.remove());
+        const taskLines = extractTaskLines(markdown);
+        let items = Array.from(root.querySelectorAll("li.task-list-item"));
+        if (!items.length)
+          items = Array.from(root.querySelectorAll("li")).filter((li) =>
+            li.querySelector('input[type="checkbox"]'),
+          );
+        items.forEach((li, idx) => {
+          const meta = taskLines[idx];
+          if (!meta) return;
+          li.dataset.taskLine = String(meta.lineNumber);
+          const cb = li.querySelector('input[type="checkbox"]');
+          if (cb) cb.disabled = true;
+        });
+        const lists = new Set();
+        items.forEach((li) => {
+          const list = li.closest("ul, ol");
+          if (list) lists.add(list);
+        });
+        lists.forEach((list) => {
+          let taskItems = Array.from(
+            list.querySelectorAll("li.task-list-item"),
+          );
+          if (!taskItems.length)
+            taskItems = Array.from(list.querySelectorAll("li")).filter((li) =>
+              li.querySelector('input[type="checkbox"]'),
+            );
+          if (!taskItems.length) return;
+          const total = taskItems.length;
+          const done = taskItems.filter((li) => {
+            const cb = li.querySelector('input[type="checkbox"]');
+            return cb && cb.checked;
+          }).length;
+          const prog = document.createElement("div");
+          prog.className = "task-progress";
+          const text = document.createElement("div");
+          text.className = "task-progress-text";
+          text.textContent = `${done}/${total} completed`;
+          const track = document.createElement("div");
+          track.className = "task-progress-track";
+          const fill = document.createElement("div");
+          fill.className = "task-progress-fill";
+          fill.style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
+          track.appendChild(fill);
+          prog.appendChild(text);
+          prog.appendChild(track);
+          list.parentNode.insertBefore(prog, list);
+        });
+      }
+
+      function toggleTaskAtLine(lineNumber) {
+        const lines = editor.value.split("\n");
+        const idx = lineNumber - 1;
+        if (idx < 0 || idx >= lines.length) return;
+        const line = lines[idx];
+        const re = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s+)/;
+        const m = line.match(re);
+        if (!m) return;
+        const next = m[2].toLowerCase() === "x" ? " " : "x";
+        lines[idx] = line.replace(re, `$1${next}$3`);
+        const selStart = editor.selectionStart;
+        const selEnd = editor.selectionEnd;
+        editor.value = lines.join("\n");
+        editor.setSelectionRange(selStart, selEnd);
+        updatePreview();
+        updateWordCount();
+        markAsUnsaved(true);
+        pushToHistory();
+      }
+
+      function applyAutolinks(root) {
+        const baseRaw = (localStorage.getItem("md-repo-base-url") || "").trim();
+        const base = baseRaw ? baseRaw.replace(/\/+$/, "") : "";
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode(node) {
+            const p = node.parentElement;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            if (p.closest("pre, code, a, button"))
+              return NodeFilter.FILTER_REJECT;
+            if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+            if (
+              !/[#@]/.test(node.nodeValue) &&
+              !/[0-9a-f]{7,}/i.test(node.nodeValue)
+            )
+              return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        });
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+
+        const buildFrag = (text) => {
+          const frag = document.createDocumentFragment();
+          const re =
+            /\b([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)#(\d+)\b|\B@([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)\b|\B#(\d+)\b|\b([0-9a-f]{7,40})\b/gi;
+          let m;
+          let last = 0;
+          while ((m = re.exec(text))) {
+            frag.appendChild(
+              document.createTextNode(text.slice(last, m.index)),
+            );
+            last = m.index + m[0].length;
+            if (m[1] && m[2] && m[3]) {
+              const a = document.createElement("a");
+              a.href = `https://github.com/${m[1]}/${m[2]}/issues/${m[3]}`;
+              a.textContent = `${m[1]}/${m[2]}#${m[3]}`;
+              frag.appendChild(a);
+              continue;
+            }
+            if (m[4]) {
+              const a = document.createElement("a");
+              a.href = `https://github.com/${m[4]}`;
+              a.textContent = `@${m[4]}`;
+              frag.appendChild(a);
+              continue;
+            }
+            if (m[5] && base) {
+              const a = document.createElement("a");
+              a.href = `${base}/issues/${m[5]}`;
+              a.textContent = `#${m[5]}`;
+              frag.appendChild(a);
+              continue;
+            }
+            if (m[6] && base) {
+              const a = document.createElement("a");
+              a.href = `${base}/commit/${m[6]}`;
+              a.textContent = m[6];
+              frag.appendChild(a);
+              continue;
+            }
+            frag.appendChild(document.createTextNode(m[0]));
+          }
+          frag.appendChild(document.createTextNode(text.slice(last)));
+          return frag;
+        };
+
+        for (const node of nodes) {
+          const text = node.nodeValue || "";
+          const frag = buildFrag(text);
+          node.parentNode.replaceChild(frag, node);
+        }
+      }
+
+      async function handlePreviewClick(e) {
+        const btn = e.target.closest("button.codeblock-btn");
+        if (btn) {
+          const wrap = btn.closest(".codeblock");
+          if (!wrap) return;
+          e.preventDefault();
+          const action = btn.dataset.action;
+          if (action === "copy") {
+            const text = wrap.dataset.raw || "";
+            try {
+              await navigator.clipboard.writeText(text);
+              notify("Copied");
+            } catch {
+              try {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.left = "-9999px";
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                ta.remove();
+                notify("Copied");
+              } catch {
+                notify("Copy failed");
+              }
+            }
+          } else if (action === "wrap") {
+            const on = wrap.classList.toggle("wrap");
+            btn.classList.toggle("active", on);
+          } else if (action === "ws") {
+            const code = wrap.querySelector("pre > code");
+            if (!code) return;
+            const on = !code.dataset.wsOn;
+            if (on) {
+              code.dataset.wsOn = "1";
+              code.dataset.wsBaseHtml = code.innerHTML;
+              const walker = document.createTreeWalker(
+                code,
+                NodeFilter.SHOW_TEXT,
+                {
+                  acceptNode(node) {
+                    const p = node.parentElement;
+                    if (!p) return NodeFilter.FILTER_REJECT;
+                    if (p.closest(".ws-space,.ws-tab"))
+                      return NodeFilter.FILTER_REJECT;
+                    if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+                    if (!/[ \t]/.test(node.nodeValue))
+                      return NodeFilter.FILTER_REJECT;
+                    return NodeFilter.FILTER_ACCEPT;
+                  },
+                },
+              );
+              const nodes = [];
+              while (walker.nextNode()) nodes.push(walker.currentNode);
+              nodes.forEach((node) => {
+                const txt = node.nodeValue || "";
+                const frag = document.createDocumentFragment();
+                for (const ch of txt) {
+                  if (ch === " ") {
+                    const s = document.createElement("span");
+                    s.className = "ws-space";
+                    s.textContent = "·";
+                    frag.appendChild(s);
+                  } else if (ch === "\t") {
+                    const s = document.createElement("span");
+                    s.className = "ws-tab";
+                    s.textContent = "→";
+                    frag.appendChild(s);
+                  } else frag.appendChild(document.createTextNode(ch));
+                }
+                node.parentNode.replaceChild(frag, node);
+              });
+              btn.classList.add("active");
+            } else {
+              code.dataset.wsOn = "";
+              code.innerHTML = code.dataset.wsBaseHtml || code.innerHTML;
+              btn.classList.remove("active");
+            }
+          }
+          return;
+        }
+
+        const line = e.target.closest(".code-line");
+        if (line) {
+          const wrap = line.closest(".codeblock");
+          if (!wrap) return;
+          lastActiveCodeblockId = wrap.id;
+          const n = parseInt(line.dataset.line || "", 10);
+          if (!n) return;
+          const isShift = e.shiftKey && lastCodeLineClick;
+          const start = isShift ? lastCodeLineClick : n;
+          const end = n;
+          wrap
+            .querySelectorAll(".code-line.hl")
+            .forEach((el) => el.classList.remove("hl"));
+          const s = Math.min(start, end);
+          const ee = Math.max(start, end);
+          wrap.querySelectorAll(".code-line").forEach((el) => {
+            const ln = parseInt(el.dataset.line || "", 10);
+            if (ln >= s && ln <= ee) el.classList.add("hl");
+          });
+          lastCodeLineClick = n;
+          location.hash = `${wrap.id}-L${s}-L${ee}`;
+          return;
+        }
+
+        const taskItem = e.target.closest("li.task-list-item");
+        if (taskItem) {
+          if (e.target.closest("a, button, pre, code")) return;
+          const ln = parseInt(taskItem.dataset.taskLine || "", 10);
+          if (!ln) return;
+          e.preventDefault();
+          toggleTaskAtLine(ln);
+        }
+      }
       function updatePreview() {
         if (!window.marked) return;
-        const rawHtml = marked.parse(editor.value);
+        const { markdown, defs } = preprocessFootnoteDefinitions(editor.value);
+        const rawHtml = marked.parse(markdown);
         const safeHtml = window.DOMPurify
           ? DOMPurify.sanitize(rawHtml, DOMPURIFY_CONFIG)
           : rawHtml;
@@ -5300,6 +5963,12 @@
             throwOnError: false,
           });
         }
+        wrapTables(previewContent);
+        enhanceCodeBlocks(previewContent);
+        enhanceTaskLists(previewContent, editor.value);
+        applyAutolinks(previewContent);
+        applyFootnotes(previewContent, defs);
+        applyCodeLineHash(previewContent);
         generateTOC();
         if (backlinksPanel.classList.contains("open")) refreshBacklinks();
         if (document.getElementById("graph-modal").classList.contains("open"))
@@ -5601,9 +6270,7 @@
         const fn = (
           currentFileHandle ? currentFileHandle.name : "document"
         ).replace(".md", "");
-        const rawHtml = window.marked
-          ? marked.parse(editor.value)
-          : previewContent.innerHTML;
+        const rawHtml = previewContent.innerHTML;
         const wrapper = document.createElement("div");
         wrapper.innerHTML = rawHtml;
         if (window.idbKeyval) {
