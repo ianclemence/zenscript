@@ -2487,7 +2487,46 @@
       #graph-canvas {
         flex: 1;
         width: 100%;
-        background: var(--surface-paper);
+        background: var(--surface-app);
+        display: block;
+        cursor: grab;
+      }
+      #graph-canvas.panning {
+        cursor: grabbing;
+      }
+
+      .graph-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 8px 0 0;
+        flex-shrink: 0;
+      }
+      .graph-toolbar select {
+        height: 26px;
+        font-size: 11px;
+        font-family: var(--font-sans);
+        background: var(--surface-input);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0 6px;
+        cursor: pointer;
+        outline: none;
+      }
+      .graph-toolbar select:focus {
+        border-color: var(--accent);
+      }
+      .graph-label {
+        font-family: var(--font-sans);
+        font-size: 10px;
+        fill: var(--text-secondary);
+        pointer-events: none;
+        user-select: none;
+      }
+      .graph-label.active-label {
+        fill: var(--accent);
+        font-weight: 500;
       }
 
       .modal-box {
@@ -3618,11 +3657,33 @@
       <div class="graph-modal-box">
         <div class="modal-header">
           <span class="modal-title">Knowledge Graph</span>
+          <div class="graph-toolbar">
+            <label
+              for="graph-depth-select"
+              style="font-size: 11px; color: var(--text-secondary)"
+              >Depth</label
+            >
+            <select id="graph-depth-select">
+              <option value="0">All notes</option>
+              <option value="1">1 hop</option>
+              <option value="2" selected>2 hops</option>
+              <option value="3">3 hops</option>
+            </select>
+            <button
+              class="icon-btn"
+              id="graph-reset-view-btn"
+              title="Reset view"
+            >
+              <i class="fas fa-compress-arrows-alt"></i>
+            </button>
+          </div>
           <button class="icon-btn" id="graph-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <svg id="graph-canvas"></svg>
+        <svg id="graph-canvas">
+          <g id="graph-pan-layer"></g>
+        </svg>
         <div id="graph-tooltip" class="graph-tooltip"></div>
       </div>
     </div>
@@ -3988,6 +4049,13 @@
       let previewUpdateTimer = null;
       // Custom CSS state
       let isCustomCSSOpen = false;
+      // ─── Graph state ───
+      let graphPositionCache = {}; // keyed by node id → {x, y}; survives modal close/reopen
+      let graphTransform = { x: 0, y: 0, scale: 1 }; // current pan+zoom
+      let graphAnimFrameId = null; // requestAnimationFrame handle; cancelled on re-render
+      let graphDepthFilter = 2; // mirrors the <select> value; 0 = show all
+      let graphIsDraggingNode = false; // true while a node is being dragged
+      let graphDragTarget = null; // the simulation particle being dragged
 
       function themeToken(name, fallback = "") {
         const v = getComputedStyle(document.documentElement)
@@ -5763,15 +5831,17 @@
         }
       }
 
-      async function getAllNodesAndLinks() {
-        const nodes = [];
-        const links = [];
+      async function getAllNodesAndLinks(depthFilter) {
         const nameToNode = {};
         for (const [key, path] of Object.entries(wikiLinkMap)) {
-          nodes.push({ id: path, name: path });
           nameToNode[key] = path;
         }
-        for (const [key, path] of Object.entries(wikiLinkMap)) {
+        const allPaths = Object.values(wikiLinkMap);
+        const adjMap = {};
+        for (const path of allPaths) adjMap[path] = new Set();
+
+        const linkSet = new Set();
+        for (const path of allPaths) {
           try {
             let content = "";
             const fromDb = await loadFromDB(path);
@@ -5785,134 +5855,277 @@
               const target = ref.slice(2, -2).trim().toLowerCase();
               const targetPath = nameToNode[target] || wikiLinkMap[target];
               if (targetPath && targetPath !== path) {
-                links.push({ source: path, target: targetPath });
+                adjMap[path].add(targetPath);
+                adjMap[targetPath].add(path);
+                const key = [path, targetPath].sort().join("|||");
+                linkSet.add(key);
               }
             }
           } catch {}
         }
+
+        let includedPaths;
+        if (!depthFilter || depthFilter === 0 || !currentFilePath) {
+          includedPaths = new Set(allPaths);
+        } else {
+          includedPaths = new Set();
+          const queue = [[currentFilePath, 0]];
+          while (queue.length) {
+            const [p, d] = queue.shift();
+            if (includedPaths.has(p)) continue;
+            includedPaths.add(p);
+            if (d < depthFilter && adjMap[p]) {
+              for (const neighbour of adjMap[p]) {
+                if (!includedPaths.has(neighbour))
+                  queue.push([neighbour, d + 1]);
+              }
+            }
+          }
+        }
+
+        const nodes = [];
+        const degreeMap = {};
+        for (const path of includedPaths) {
+          let deg = 0;
+          if (adjMap[path]) {
+            for (const nb of adjMap[path]) {
+              if (includedPaths.has(nb)) deg++;
+            }
+          }
+          degreeMap[path] = deg;
+          const label = path.split("/").pop().replace(/\.md$/i, "");
+          nodes.push({ id: path, name: label, degree: deg });
+        }
+
+        const links = [];
+        for (const key of linkSet) {
+          const [a, b] = key.split("|||");
+          if (includedPaths.has(a) && includedPaths.has(b)) {
+            links.push({ source: a, target: b });
+          }
+        }
+
         return { nodes, links };
       }
 
       function renderGraph() {
-        if (!graphCanvas || !currentFilePath) return;
-        graphCanvas.innerHTML = "";
+        if (!graphCanvas) return;
+        const svgNS = "http://www.w3.org/2000/svg";
+        const tooltip = document.getElementById("graph-tooltip");
+        const panLayer = document.getElementById("graph-pan-layer");
+        if (!panLayer) return;
+
+        if (graphAnimFrameId) {
+          cancelAnimationFrame(graphAnimFrameId);
+          graphAnimFrameId = null;
+        }
+
+        panLayer.innerHTML = "";
         const w = graphCanvas.clientWidth || 360;
         const h = graphCanvas.clientHeight || 400;
-        getAllNodesAndLinks().then(({ nodes, links }) => {
-          if (!nodes.length) return;
-          const svgNS = "http://www.w3.org/2000/svg";
-          const tooltip = document.getElementById("graph-tooltip");
 
-          const simulation = nodes.map((n) => ({
-            ...n,
-            x: w / 2 + (Math.random() - 0.5) * 100,
-            y: h / 2 + (Math.random() - 0.5) * 100,
-            vx: 0,
-            vy: 0,
-          }));
-          const simLinks = links.map((l) => ({
-            ...l,
-            source: simulation.find((n) => n.id === l.source) || l.source,
-            target: simulation.find((n) => n.id === l.target) || l.target,
-          }));
+        getAllNodesAndLinks(graphDepthFilter).then(({ nodes, links }) => {
+          if (!nodes.length) {
+            const txt = document.createElementNS(svgNS, "text");
+            txt.setAttribute("x", w / 2);
+            txt.setAttribute("y", h / 2);
+            txt.setAttribute("text-anchor", "middle");
+            txt.setAttribute("fill", "var(--text-tertiary)");
+            txt.setAttribute("font-size", "13");
+            txt.setAttribute("font-family", "var(--font-sans)");
+            txt.textContent =
+              "No notes found. Create notes with [[WikiLinks]] to see the graph.";
+            panLayer.appendChild(txt);
+            return;
+          }
 
-          function step() {
-            for (const p of simulation) {
-              p.x += p.vx * 0.1;
-              p.y += p.vy * 0.1;
-              p.vx *= 0.85;
-              p.vy *= 0.85;
-              if (p.x < 20) {
-                p.vx += 0.5;
-                p.x = 20;
-              }
-              if (p.x > w - 20) {
-                p.vx -= 0.5;
-                p.x = w - 20;
-              }
-              if (p.y < 20) {
-                p.vy += 0.5;
-                p.y = 20;
-              }
-              if (p.y > h - 20) {
-                p.vy -= 0.5;
-                p.y = h - 20;
-              }
+          const cx = w / 2;
+          const cy = h / 2;
+          const angleStep = (2 * Math.PI) / Math.max(nodes.length, 1);
+          const spreadR = Math.min(w, h) * 0.3;
+
+          const particles = nodes.map((n, i) => {
+            const cached = graphPositionCache[n.id];
+            return {
+              ...n,
+              x: cached ? cached.x : cx + Math.cos(i * angleStep) * spreadR,
+              y: cached ? cached.y : cy + Math.sin(i * angleStep) * spreadR,
+              vx: 0,
+              vy: 0,
+              pinned: false,
+            };
+          });
+
+          const simLinks = links
+            .map((l) => ({
+              source: particles.find((p) => p.id === l.source),
+              target: particles.find((p) => p.id === l.target),
+            }))
+            .filter((l) => l.source && l.target);
+
+          const LINK_DIST = Math.max(
+            80,
+            Math.min(160, 400 / Math.sqrt(nodes.length)),
+          );
+          const REPEL_K = Math.min(6000, 800 * Math.max(1, nodes.length / 10));
+          const CENTER_K = 0.008;
+          const ALPHA_MIN = 0.004;
+          const ALPHA_DECAY = 0.022;
+          let alpha = 1.0;
+
+          function physicsStep() {
+            for (const p of particles) {
+              if (p.pinned) continue;
+              p.x += p.vx * alpha;
+              p.y += p.vy * alpha;
+              p.vx *= 0.7;
+              p.vy *= 0.7;
             }
+
+            for (const p of particles) {
+              if (p.pinned) continue;
+              p.vx += (cx - p.x) * CENTER_K;
+              p.vy += (cy - p.y) * CENTER_K;
+            }
+
             for (const l of simLinks) {
-              const s =
-                typeof l.source === "object"
-                  ? l.source
-                  : simulation.find((n) => n.id === l.source);
-              const t =
-                typeof l.target === "object"
-                  ? l.target
-                  : simulation.find((n) => n.id === l.target);
-              if (!s || !t) continue;
+              const s = l.source;
+              const t = l.target;
               const dx = t.x - s.x;
               const dy = t.y - s.y;
               const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-              const force = (dist - 100) * 0.01;
-              s.vx += (dx / dist) * force;
-              s.vy += (dy / dist) * force;
-              t.vx -= (dx / dist) * force;
-              t.vy -= (dy / dist) * force;
-            }
-            for (let i = 0; i < simulation.length; i++) {
-              for (let j = i + 1; j < simulation.length; j++) {
-                const dx = simulation[j].x - simulation[i].x;
-                const dy = simulation[j].y - simulation[i].y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                const repel = 800 / (dist * dist);
-                simulation[i].vx -= (dx / dist) * repel;
-                simulation[i].vy -= (dy / dist) * repel;
-                simulation[j].vx += (dx / dist) * repel;
-                simulation[j].vy += (dy / dist) * repel;
+              const force = (dist - LINK_DIST) * 0.06;
+              const fx = (dx / dist) * force;
+              const fy = (dy / dist) * force;
+              if (!s.pinned) {
+                s.vx += fx;
+                s.vy += fy;
               }
+              if (!t.pinned) {
+                t.vx -= fx;
+                t.vy -= fy;
+              }
+            }
+
+            for (let i = 0; i < particles.length; i++) {
+              for (let j = i + 1; j < particles.length; j++) {
+                const a = particles[i];
+                const b = particles[j];
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const dist2 = dx * dx + dy * dy || 1;
+                const dist = Math.sqrt(dist2);
+                const repel = REPEL_K / dist2;
+                const fx = (dx / dist) * repel;
+                const fy = (dy / dist) * repel;
+                if (!a.pinned) {
+                  a.vx -= fx;
+                  a.vy -= fy;
+                }
+                if (!b.pinned) {
+                  b.vx += fx;
+                  b.vy += fy;
+                }
+              }
+            }
+
+            const margin = 30;
+            for (const p of particles) {
+              if (p.pinned) continue;
+              if (p.x < margin) p.vx += (margin - p.x) * 0.12 * alpha;
+              if (p.x > w - margin) p.vx -= (p.x - (w - margin)) * 0.12 * alpha;
+              if (p.y < margin) p.vy += (margin - p.y) * 0.12 * alpha;
+              if (p.y > h - margin) p.vy -= (p.y - (h - margin)) * 0.12 * alpha;
             }
           }
 
+          function applyTransform() {
+            panLayer.setAttribute(
+              "transform",
+              `translate(${graphTransform.x},${graphTransform.y}) scale(${graphTransform.scale})`,
+            );
+          }
+
           function draw() {
-            graphCanvas.innerHTML = "";
+            panLayer.innerHTML = "";
+
             for (const l of simLinks) {
-              const s =
-                typeof l.source === "object"
-                  ? l.source
-                  : simulation.find((n) => n.id === l.source);
-              const t =
-                typeof l.target === "object"
-                  ? l.target
-                  : simulation.find((n) => n.id === l.target);
-              if (!s || !t) continue;
               const line = document.createElementNS(svgNS, "line");
-              line.setAttribute("x1", s.x);
-              line.setAttribute("y1", s.y);
-              line.setAttribute("x2", t.x);
-              line.setAttribute("y2", t.y);
-              line.setAttribute("stroke", "var(--border)");
-              line.setAttribute("stroke-width", "1");
-              graphCanvas.appendChild(line);
+              line.setAttribute("x1", l.source.x);
+              line.setAttribute("y1", l.source.y);
+              line.setAttribute("x2", l.target.x);
+              line.setAttribute("y2", l.target.y);
+              line.setAttribute("stroke", "var(--text-tertiary)");
+              line.setAttribute("stroke-width", "1.5");
+              line.setAttribute("stroke-opacity", "0.55");
+              line.setAttribute("stroke-linecap", "round");
+              panLayer.appendChild(line);
             }
-            for (const p of simulation) {
+
+            const maxDeg = Math.max(1, ...particles.map((p) => p.degree));
+            for (const p of particles) {
               const isActive = p.id === currentFilePath;
+              const r = isActive ? 10 : 5 + Math.round((p.degree / maxDeg) * 7);
+
               const g = document.createElementNS(svgNS, "g");
+              g.setAttribute("style", "cursor:pointer");
+
               const circle = document.createElementNS(svgNS, "circle");
               circle.setAttribute("cx", p.x);
               circle.setAttribute("cy", p.y);
-              circle.setAttribute("r", isActive ? 8 : 5);
+              circle.setAttribute("r", r);
               circle.setAttribute(
                 "fill",
-                isActive ? "var(--accent)" : "var(--text-tertiary)",
+                isActive ? "var(--accent)" : "var(--text-secondary)",
               );
-              circle.setAttribute("cursor", "pointer");
-              circle.onclick = async () => {
+              circle.setAttribute(
+                "stroke",
+                isActive ? "var(--accent-hover)" : "var(--surface-app)",
+              );
+              circle.setAttribute("stroke-width", isActive ? "2" : "1.5");
+
+              const labelText =
+                p.name.length > 20 ? p.name.slice(0, 18) + "…" : p.name;
+              const label = document.createElementNS(svgNS, "text");
+              label.setAttribute("x", p.x);
+              label.setAttribute("y", p.y + r + 13);
+              label.setAttribute("text-anchor", "middle");
+              label.setAttribute(
+                "class",
+                isActive ? "graph-label active-label" : "graph-label",
+              );
+              label.textContent = labelText;
+
+              g.addEventListener("pointerover", (e) => {
+                e.stopPropagation();
+                if (tooltip) {
+                  tooltip.textContent = p.id;
+                  tooltip.style.display = "block";
+                  tooltip.style.left = e.clientX + 12 + "px";
+                  tooltip.style.top = e.clientY - 24 + "px";
+                }
+                circle.setAttribute(
+                  "fill",
+                  isActive ? "var(--accent-hover)" : "var(--accent)",
+                );
+              });
+              g.addEventListener("pointerout", () => {
+                if (tooltip) tooltip.style.display = "none";
+                circle.setAttribute(
+                  "fill",
+                  isActive ? "var(--accent)" : "var(--text-secondary)",
+                );
+              });
+
+              g.addEventListener("click", async (e) => {
+                if (graphIsDraggingNode) return;
                 if (p.id === currentFilePath) return;
                 const key = p.id.toLowerCase();
-                const existing = tabs.find(
+                const existingTab = tabs.find(
                   (t) => t.filePath && t.filePath.toLowerCase() === key,
                 );
-                if (existing) {
-                  activateTab(existing.id);
+                if (existingTab) {
+                  activateTab(existingTab.id);
                   return;
                 }
                 const entry = await loadFromDB(p.id);
@@ -5921,29 +6134,128 @@
                   refreshExplorer();
                   refreshTabBar();
                 }
-              };
-              circle.onmouseover = (e) => {
-                tooltip.textContent = p.name;
-                tooltip.style.display = "block";
-                tooltip.style.left = e.pageX + 10 + "px";
-                tooltip.style.top = e.pageY - 20 + "px";
-              };
-              circle.onmouseout = () => {
-                tooltip.style.display = "none";
-              };
+              });
+
+              g.addEventListener("pointerdown", (e) => {
+                e.stopPropagation();
+                graphIsDraggingNode = true;
+                graphDragTarget = p;
+                p.pinned = true;
+                p.vx = 0;
+                p.vy = 0;
+                if (alpha < 0.3) alpha = 0.3;
+              });
+
               g.appendChild(circle);
-              graphCanvas.appendChild(g);
+              g.appendChild(label);
+              panLayer.appendChild(g);
             }
+
+            applyTransform();
           }
 
-          let iterations = 0;
           function animate() {
-            step();
+            alpha *= 1 - ALPHA_DECAY;
+            physicsStep();
             draw();
-            iterations++;
-            if (iterations < 150) requestAnimationFrame(animate);
+            if (alpha > ALPHA_MIN) {
+              graphAnimFrameId = requestAnimationFrame(animate);
+            } else {
+              for (const p of particles) {
+                graphPositionCache[p.id] = { x: p.x, y: p.y };
+              }
+              graphAnimFrameId = null;
+            }
           }
-          animate();
+          graphAnimFrameId = requestAnimationFrame(animate);
+
+          let panStart = null;
+          let panOrigin = { x: 0, y: 0 };
+
+          if (graphCanvas._graphHandlers) {
+            const h = graphCanvas._graphHandlers;
+            graphCanvas.removeEventListener("pointerdown", h.pointerdown);
+            graphCanvas.removeEventListener("pointermove", h.pointermove);
+            graphCanvas.removeEventListener("pointerup", h.pointerup);
+            graphCanvas.removeEventListener("wheel", h.wheel);
+          }
+
+          const onPointerDown = (e) => {
+            if (graphIsDraggingNode) return;
+            panStart = { x: e.clientX, y: e.clientY };
+            panOrigin = { x: graphTransform.x, y: graphTransform.y };
+            graphCanvas.classList.add("panning");
+            graphCanvas.setPointerCapture(e.pointerId);
+          };
+
+          const onPointerMove = (e) => {
+            if (graphIsDraggingNode && graphDragTarget) {
+              const svgRect = graphCanvas.getBoundingClientRect();
+              const svgX =
+                (e.clientX - svgRect.left - graphTransform.x) /
+                graphTransform.scale;
+              const svgY =
+                (e.clientY - svgRect.top - graphTransform.y) /
+                graphTransform.scale;
+              graphDragTarget.x = svgX;
+              graphDragTarget.y = svgY;
+              if (alpha < 0.3) alpha = 0.3;
+              if (!graphAnimFrameId)
+                graphAnimFrameId = requestAnimationFrame(animate);
+              return;
+            }
+            if (!panStart) return;
+            graphTransform.x = panOrigin.x + (e.clientX - panStart.x);
+            graphTransform.y = panOrigin.y + (e.clientY - panStart.y);
+            applyTransform();
+          };
+
+          const onPointerUp = () => {
+            panStart = null;
+            graphCanvas.classList.remove("panning");
+            if (graphIsDraggingNode && graphDragTarget) {
+              graphDragTarget.pinned = false;
+              graphPositionCache[graphDragTarget.id] = {
+                x: graphDragTarget.x,
+                y: graphDragTarget.y,
+              };
+              graphDragTarget = null;
+            }
+            graphIsDraggingNode = false;
+            if (tooltip) tooltip.style.display = "none";
+          };
+
+          const onWheel = (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+            const svgRect = graphCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - svgRect.left;
+            const mouseY = e.clientY - svgRect.top;
+            const newScale = Math.max(
+              0.15,
+              Math.min(4, graphTransform.scale * zoomFactor),
+            );
+            graphTransform.x =
+              mouseX -
+              (mouseX - graphTransform.x) * (newScale / graphTransform.scale);
+            graphTransform.y =
+              mouseY -
+              (mouseY - graphTransform.y) * (newScale / graphTransform.scale);
+            graphTransform.scale = newScale;
+            applyTransform();
+          };
+
+          graphCanvas._graphHandlers = {
+            pointerdown: onPointerDown,
+            pointermove: onPointerMove,
+            pointerup: onPointerUp,
+            wheel: onWheel,
+          };
+
+          graphCanvas.addEventListener("pointerdown", onPointerDown);
+          graphCanvas.addEventListener("pointermove", onPointerMove);
+          graphCanvas.addEventListener("pointerup", onPointerUp);
+          graphCanvas.addEventListener("wheel", onWheel, { passive: false });
         });
       }
 
@@ -5951,7 +6263,45 @@
         const modal = document.getElementById("graph-modal");
         const open = modal.classList.toggle("open");
         toggleGraphBtn.classList.toggle("active", open);
-        if (open) renderGraph();
+        if (open) {
+          const sel = document.getElementById("graph-depth-select");
+          graphDepthFilter = sel ? parseInt(sel.value, 10) : 2;
+          graphTransform = { x: 0, y: 0, scale: 1 };
+          renderGraph();
+
+          if (sel && !sel._graphWired) {
+            sel._graphWired = true;
+            sel.addEventListener("change", () => {
+              graphDepthFilter = parseInt(sel.value, 10);
+              graphTransform = { x: 0, y: 0, scale: 1 };
+              renderGraph();
+            });
+          }
+
+          const resetBtn = document.getElementById("graph-reset-view-btn");
+          if (resetBtn && !resetBtn._graphWired) {
+            resetBtn._graphWired = true;
+            resetBtn.addEventListener("click", () => {
+              graphTransform = { x: 0, y: 0, scale: 1 };
+              const panLayer = document.getElementById("graph-pan-layer");
+              if (panLayer)
+                panLayer.setAttribute("transform", "translate(0,0) scale(1)");
+            });
+          }
+        } else {
+          if (graphAnimFrameId) {
+            cancelAnimationFrame(graphAnimFrameId);
+            graphAnimFrameId = null;
+          }
+          if (graphCanvas && graphCanvas._graphHandlers) {
+            const h = graphCanvas._graphHandlers;
+            graphCanvas.removeEventListener("pointerdown", h.pointerdown);
+            graphCanvas.removeEventListener("pointermove", h.pointermove);
+            graphCanvas.removeEventListener("pointerup", h.pointerup);
+            graphCanvas.removeEventListener("wheel", h.wheel);
+            graphCanvas._graphHandlers = null;
+          }
+        }
       }
 
       // ─── Preview ───
