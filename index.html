@@ -5948,6 +5948,21 @@
           return;
         }
 
+        const anchor = e.target.closest('a[href^="#"]');
+        if (anchor) {
+          const href = anchor.getAttribute("href") || "";
+          const id = decodeURIComponent(href.slice(1));
+          if (id) {
+            const target = previewContent.querySelector(`#${CSS.escape(id)}`);
+            if (target) {
+              e.preventDefault();
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+              location.hash = href;
+              return;
+            }
+          }
+        }
+
         const line = e.target.closest(".code-line");
         if (line) {
           const wrap = line.closest(".codeblock");
@@ -6036,11 +6051,37 @@
             '<span style="font-size:11px;color:var(--text-tertiary);font-style:italic;">No headings found</span>';
           return;
         }
-        headers.forEach((h, i) => {
-          h.id = `heading-${i}`;
+        const usedIds = new Set(
+          Array.from(previewContent.querySelectorAll("[id]"))
+            .map((el) => el.id)
+            .filter(Boolean),
+        );
+        const slugify = (text) => {
+          const base = (text || "")
+            .toLowerCase()
+            .trim()
+            .replace(/[\u200B-\u200D\uFEFF]/g, "")
+            .replace(/[^\p{L}\p{N}\s-]/gu, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "");
+          if (!base) return "section";
+          return base;
+        };
+        const ensureUniqueId = (base) => {
+          let id = base;
+          let n = 1;
+          while (usedIds.has(id)) {
+            id = `${base}-${n++}`;
+          }
+          usedIds.add(id);
+          return id;
+        };
+        headers.forEach((h) => {
+          if (!h.id) h.id = ensureUniqueId(slugify(h.textContent));
           const level = parseInt(h.tagName[1]);
           const link = document.createElement("a");
-          link.href = `#heading-${i}`;
+          link.href = `#${h.id}`;
           link.textContent = h.textContent;
           link.className = `toc-link level-${level}`;
           link.onclick = (e) => {
