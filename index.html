@@ -3068,7 +3068,10 @@
               <i class="fas fa-folder-plus"></i>
             </button>
             <div class="divider-v"></div>
-            <button class="icon-btn" id="open-directory" title="Open File">
+            <button class="icon-btn" id="open-directory" title="Open Folder">
+              <i class="fas fa-folder-open"></i>
+            </button>
+            <button class="icon-btn" id="open-markdown-file" title="Open File">
               <i class="fas fa-file-arrow-up"></i>
             </button>
           </div>
@@ -3951,6 +3954,7 @@
       const replaceBtn = document.getElementById("replace-btn");
       const replaceAllBtn = document.getElementById("replace-all-btn");
       const openDirBtn = document.getElementById("open-directory");
+      const openMarkdownFileBtn = document.getElementById("open-markdown-file");
       const newFileBtn = document.getElementById("new-file");
       const newFolderBtn = document.getElementById("new-folder");
       const saveFileBtn = document.getElementById("save-file");
@@ -4112,7 +4116,7 @@
             .objectStore("files")
             .put({ path, content, type, updatedAt: Date.now() }).onsuccess =
             async () => {
-              wikiLinkMap[path.toLowerCase()] = path;
+              registerWikiPath(path);
               resolve();
             };
         });
@@ -4366,7 +4370,17 @@
       async function registerServiceWorker() {
         if (!("serviceWorker" in navigator)) return;
         try {
-          await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            refreshing = true;
+            location.reload();
+          });
+          const reg = await navigator.serviceWorker.register("./sw.js", {
+            scope: "./",
+            updateViaCache: "none",
+          });
+          await reg.update();
         } catch {}
       }
 
@@ -5099,7 +5113,8 @@
           { passive: true },
         );
 
-        openDirBtn.addEventListener("click", openMarkdownFile);
+        openDirBtn.addEventListener("click", openDirectory);
+        openMarkdownFileBtn.addEventListener("click", openMarkdownFile);
         saveFileBtn.addEventListener("click", saveCurrentFile);
         exportPdfBtn.addEventListener("click", () => {
           exportToPDF();
@@ -5556,6 +5571,65 @@
       }
 
       // ─── Wiki Links ───
+      function cleanWikiTarget(raw) {
+        return (raw || "")
+          .split("|")[0]
+          .split("#")[0]
+          .trim()
+          .replace(/\\/g, "/");
+      }
+
+      function wikiDisplayText(raw) {
+        const parts = (raw || "").split("|");
+        return (parts[1] || parts[0] || "").trim();
+      }
+
+      function wikiAliasesForPath(path) {
+        const clean = (path || "").replace(/\\/g, "/").trim();
+        if (!clean) return [];
+        const noExt = clean.replace(/\.(md|markdown)$/i, "");
+        const base = clean.split("/").pop() || clean;
+        const baseNoExt = base.replace(/\.(md|markdown)$/i, "");
+        return Array.from(
+          new Set([clean, noExt, base, baseNoExt].map((v) => v.toLowerCase())),
+        );
+      }
+
+      function registerWikiPath(path) {
+        if (!path || !isMarkdownDocPath(path)) return;
+        for (const alias of wikiAliasesForPath(path)) wikiLinkMap[alias] = path;
+      }
+
+      function resolveWikiPath(raw) {
+        const target = cleanWikiTarget(raw);
+        if (!target) return "";
+        const candidates = [
+          target,
+          target.endsWith(".md") || target.endsWith(".markdown")
+            ? target
+            : target + ".md",
+        ];
+        for (const candidate of candidates) {
+          const found = wikiLinkMap[candidate.toLowerCase()];
+          if (found) return found;
+        }
+        return "";
+      }
+
+      function getWikiRefs(markdown) {
+        const refs = [];
+        const re = /!?\[\[([^\]]+)\]\]/g;
+        let m;
+        while ((m = re.exec(markdown || ""))) {
+          refs.push({
+            raw: m[1],
+            target: cleanWikiTarget(m[1]),
+            display: wikiDisplayText(m[1]),
+          });
+        }
+        return refs;
+      }
+
       function processWikiLinks(container) {
         const walker = document.createTreeWalker(
           container,
@@ -5580,9 +5654,9 @@
             );
             const link = document.createElement("a");
             link.className = "wiki-link";
-            link.textContent = match[1];
-            const target = match[1].trim();
-            const existing = wikiLinkMap[target.toLowerCase()];
+            const target = cleanWikiTarget(match[1]);
+            link.textContent = wikiDisplayText(match[1]) || target;
+            const existing = resolveWikiPath(target);
             if (existing) {
               link.classList.remove("missing");
               link.onclick = (e) => {
@@ -5607,14 +5681,10 @@
 
       async function openWikiLink(name) {
         const raw = name.trim();
-        const key = raw.toLowerCase();
-        const path = wikiLinkMap[key]
-          ? wikiLinkMap[key]
-          : raw.endsWith(".md")
-            ? raw
-            : raw + ".md";
+        const path =
+          resolveWikiPath(raw) || (raw.endsWith(".md") ? raw : raw + ".md");
         const existing = tabs.find(
-          (t) => t.filePath && t.filePath.toLowerCase() === key,
+          (t) => t.filePath && t.filePath.toLowerCase() === path.toLowerCase(),
         );
         if (existing) {
           activateTab(existing.id);
@@ -5625,6 +5695,8 @@
           newTab(path, entry.content, { name: path, path }, "db");
           refreshExplorer();
           refreshTabBar();
+        } else if (fsEntryMap.has(path)) {
+          await openFileFromFsInTab(path);
         } else {
           await createNoteFromLink(name);
         }
@@ -5653,7 +5725,7 @@
           return;
         }
         await saveToDB(path, content);
-        wikiLinkMap[path.toLowerCase()] = path;
+        registerWikiPath(path);
         newTab(path, content, { name: path, path }, "db");
         refreshExplorer();
         refreshTabBar();
@@ -5663,6 +5735,16 @@
       async function buildWikiLinkIndex() {
         if (!window.idbKeyval) return;
         wikiLinkMap = {};
+        const addPath = (path) => registerWikiPath(path);
+        if (directoryHandle) {
+          try {
+            const entries = await scanFsRecursive(directoryHandle);
+            for (const entry of entries) {
+              if (entry.type === "file" && isMarkdownDocPath(entry.path))
+                addPath(entry.path);
+            }
+          } catch {}
+        }
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
           const seen = new Set();
@@ -5670,7 +5752,7 @@
             const p = h.filePath || h.name;
             if (!p || seen.has(p)) continue;
             seen.add(p);
-            wikiLinkMap[p.toLowerCase()] = p;
+            addPath(p);
           }
         } catch {}
         try {
@@ -5682,7 +5764,7 @@
               (!k.includes(":") && k.endsWith(".md"))
             ) {
               const p = k.startsWith("file:") ? k.slice(5) : k;
-              wikiLinkMap[p.toLowerCase()] = p;
+              addPath(p);
             }
           }
         } catch {}
@@ -5690,48 +5772,54 @@
           const dbFiles = await listDBFiles();
           for (const f of dbFiles) {
             if (!f.path) continue;
-            wikiLinkMap[f.path.toLowerCase()] = f.path;
+            addPath(f.path);
           }
         } catch {}
       }
 
       async function getBacklinksFor(filePath) {
         if (!window.idbKeyval) return [];
+        await buildWikiLinkIndex();
         const target = filePath.toLowerCase();
+        const targetAliases = new Set(wikiAliasesForPath(filePath));
         const results = [];
+        const scan = (fp, content) => {
+          if (!fp || fp.toLowerCase() === target) return;
+          for (const ref of getWikiRefs(content)) {
+            const resolved = resolveWikiPath(ref.target);
+            const direct = ref.target.toLowerCase();
+            if (
+              resolved.toLowerCase() === target ||
+              targetAliases.has(direct)
+            ) {
+              const ctx = (content || "").substring(0, 120).replace(/[#*`]/g, "");
+              results.push({ path: fp, context: ctx });
+              break;
+            }
+          }
+        };
+        if (directoryHandle) {
+          try {
+            const entries = await scanFsRecursive(directoryHandle);
+            for (const entry of entries) {
+              if (entry.type !== "file" || !isMarkdownDocPath(entry.path))
+                continue;
+              const file = await entry.handle.getFile();
+              scan(entry.path, await file.text());
+            }
+          } catch {}
+        }
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
           for (const h of history) {
             const fp = h.filePath || h.name;
-            if (!fp || fp.toLowerCase() === target) continue;
-            const wikiRefs = (h.content || "").match(/\[\[([^\]]+)\]\]/g) || [];
-            for (const ref of wikiRefs) {
-              const linked = ref.slice(2, -2).trim().toLowerCase();
-              if (linked === target || linked + ".md" === target) {
-                const ctx = (h.content || "")
-                  .substring(0, 120)
-                  .replace(/[#*`]/g, "");
-                results.push({ path: fp, context: ctx });
-                break;
-              }
-            }
+            scan(fp, h.content || "");
           }
         } catch {}
         try {
           const dbFiles = await listDBFiles();
           for (const f of dbFiles) {
-            if (!f.path || f.path.toLowerCase() === target) continue;
-            const wikiRefs = (f.content || "").match(/\[\[([^\]]+)\]\]/g) || [];
-            for (const ref of wikiRefs) {
-              const linked = ref.slice(2, -2).trim().toLowerCase();
-              if (linked === target || linked + ".md" === target) {
-                const ctx = (f.content || "")
-                  .substring(0, 120)
-                  .replace(/[#*`]/g, "");
-                results.push({ path: f.path, context: ctx });
-                break;
-              }
-            }
+            scan(f.path, f.content || "");
           }
         } catch {}
         try {
@@ -5742,19 +5830,17 @@
             if (!fp || fp.toLowerCase() === target) continue;
             if (fp.endsWith(".md")) {
               const content = (await idbKeyval.get(k)) || "";
-              const wikiRefs = content.match(/\[\[([^\]]+)\]\]/g) || [];
-              for (const ref of wikiRefs) {
-                const linked = ref.slice(2, -2).trim().toLowerCase();
-                if (linked === target || linked + ".md" === target) {
-                  const ctx = content.substring(0, 120).replace(/[#*`]/g, "");
-                  results.push({ path: fp, context: ctx });
-                  break;
-                }
-              }
+              scan(fp, content);
             }
           }
         } catch {}
-        return results;
+        const seen = new Set();
+        return results.filter((r) => {
+          const key = r.path.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       }
 
       async function refreshBacklinks() {
@@ -5819,7 +5905,7 @@
         for (const ref of refs) {
           const name = ref.slice(2, -2).trim();
           const key = name.toLowerCase();
-          const exists = !!wikiLinkMap[key];
+          const exists = !!resolveWikiPath(name);
           const div = document.createElement("div");
           div.className = "dropdown-item" + (exists ? "" : " missing-link");
           div.innerHTML = `<i class="fas fa-link" style="width:14px;text-align:center;"></i>${name}${exists ? "" : " <span style='font-size:10px;color:var(--text-tertiary);'>(create)</span>"}`;
@@ -5832,36 +5918,70 @@
       }
 
       async function getAllNodesAndLinks(depthFilter) {
-        const nameToNode = {};
-        for (const [key, path] of Object.entries(wikiLinkMap)) {
-          nameToNode[key] = path;
+        await buildWikiLinkIndex();
+        const fileEntries = new Map();
+
+        if (directoryHandle) {
+          try {
+            const entries = await scanFsRecursive(directoryHandle);
+            for (const entry of entries) {
+              if (entry.type !== "file" || !isMarkdownDocPath(entry.path))
+                continue;
+              const file = await entry.handle.getFile();
+              fileEntries.set(entry.path, await file.text());
+              registerWikiPath(entry.path);
+            }
+          } catch {}
         }
-        const allPaths = Object.values(wikiLinkMap);
+
+        try {
+          const dbFiles = await listDBFiles();
+          for (const f of dbFiles) {
+            if (!f.path || !isMarkdownDocPath(f.path)) continue;
+            fileEntries.set(f.path, f.content || "");
+            registerWikiPath(f.path);
+          }
+        } catch {}
+
+        try {
+          const keys = await idbKeyval.keys();
+          for (const k of keys) {
+            if (typeof k !== "string") continue;
+            const path = k.startsWith("file:") ? k.slice(5) : k;
+            if (!isMarkdownDocPath(path) || fileEntries.has(path)) continue;
+            const content = await idbKeyval.get(k);
+            if (typeof content === "string") {
+              fileEntries.set(path, content);
+              registerWikiPath(path);
+            }
+          }
+        } catch {}
+
+        const allPaths = Array.from(fileEntries.keys()).sort((a, b) =>
+          a.localeCompare(b),
+        );
         const adjMap = {};
         for (const path of allPaths) adjMap[path] = new Set();
 
-        const linkSet = new Set();
-        for (const path of allPaths) {
-          try {
-            let content = "";
-            const fromDb = await loadFromDB(path);
-            if (fromDb) content = fromDb.content || "";
-            else {
-              const direct = await idbKeyval.get(path);
-              if (direct) content = direct;
-            }
-            const refs = (content || "").match(/\[\[([^\]]+)\]\]/g) || [];
-            for (const ref of refs) {
-              const target = ref.slice(2, -2).trim().toLowerCase();
-              const targetPath = nameToNode[target] || wikiLinkMap[target];
-              if (targetPath && targetPath !== path) {
-                adjMap[path].add(targetPath);
-                adjMap[targetPath].add(path);
-                const key = [path, targetPath].sort().join("|||");
-                linkSet.add(key);
-              }
-            }
-          } catch {}
+        const linkMap = new Map();
+        for (const [path, content] of fileEntries.entries()) {
+          for (const ref of getWikiRefs(content)) {
+            const targetPath = resolveWikiPath(ref.target);
+            if (!targetPath || targetPath === path || !fileEntries.has(targetPath))
+              continue;
+            adjMap[path].add(targetPath);
+            adjMap[targetPath].add(path);
+            const key = [path, targetPath].sort().join("|||");
+            const existing = linkMap.get(key) || {
+              source: path,
+              target: targetPath,
+              weight: 0,
+              directed: new Set(),
+            };
+            existing.weight += 1;
+            existing.directed.add(`${path}|||${targetPath}`);
+            linkMap.set(key, existing);
+          }
         }
 
         let includedPaths;
@@ -5898,10 +6018,14 @@
         }
 
         const links = [];
-        for (const key of linkSet) {
-          const [a, b] = key.split("|||");
-          if (includedPaths.has(a) && includedPaths.has(b)) {
-            links.push({ source: a, target: b });
+        for (const link of linkMap.values()) {
+          if (includedPaths.has(link.source) && includedPaths.has(link.target)) {
+            links.push({
+              source: link.source,
+              target: link.target,
+              weight: link.weight,
+              mutual: link.directed.size > 1,
+            });
           }
         }
 
@@ -5960,8 +6084,15 @@
             .map((l) => ({
               source: particles.find((p) => p.id === l.source),
               target: particles.find((p) => p.id === l.target),
+              weight: l.weight || 1,
+              mutual: !!l.mutual,
             }))
             .filter((l) => l.source && l.target);
+          const linkedById = new Set();
+          for (const l of simLinks) {
+            linkedById.add(`${l.source.id}|||${l.target.id}`);
+            linkedById.add(`${l.target.id}|||${l.source.id}`);
+          }
 
           const LINK_DIST = Math.max(
             80,
@@ -5994,7 +6125,8 @@
               const dx = t.x - s.x;
               const dy = t.y - s.y;
               const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-              const force = (dist - LINK_DIST) * 0.06;
+              const ideal = LINK_DIST / Math.min(1.8, 1 + l.weight * 0.12);
+              const force = (dist - ideal) * (l.mutual ? 0.085 : 0.06);
               const fx = (dx / dist) * force;
               const fy = (dy / dist) * force;
               if (!s.pinned) {
@@ -6055,9 +6187,16 @@
               line.setAttribute("y1", l.source.y);
               line.setAttribute("x2", l.target.x);
               line.setAttribute("y2", l.target.y);
-              line.setAttribute("stroke", "var(--text-tertiary)");
-              line.setAttribute("stroke-width", "1.5");
-              line.setAttribute("stroke-opacity", "0.55");
+              const active =
+                l.source.id === currentFilePath || l.target.id === currentFilePath;
+              line.dataset.source = l.source.id;
+              line.dataset.target = l.target.id;
+              line.setAttribute("stroke", active ? "var(--accent)" : "var(--text-tertiary)");
+              line.setAttribute(
+                "stroke-width",
+                String(Math.min(4, 1.1 + Math.log2(l.weight + 1))),
+              );
+              line.setAttribute("stroke-opacity", active ? "0.82" : "0.38");
               line.setAttribute("stroke-linecap", "round");
               panLayer.appendChild(line);
             }
@@ -6074,6 +6213,7 @@
               circle.setAttribute("cx", p.x);
               circle.setAttribute("cy", p.y);
               circle.setAttribute("r", r);
+              circle.dataset.id = p.id;
               circle.setAttribute(
                 "fill",
                 isActive ? "var(--accent)" : "var(--text-secondary)",
@@ -6108,6 +6248,21 @@
                   "fill",
                   isActive ? "var(--accent-hover)" : "var(--accent)",
                 );
+                panLayer.querySelectorAll("line").forEach((line) => {
+                  const touches =
+                    line.dataset.source === p.id || line.dataset.target === p.id;
+                  line.setAttribute("stroke-opacity", touches ? "0.9" : "0.12");
+                  line.setAttribute(
+                    "stroke",
+                    touches ? "var(--accent)" : "var(--text-tertiary)",
+                  );
+                });
+                panLayer.querySelectorAll("circle").forEach((node) => {
+                  const nodeId = node.dataset.id;
+                  const connected =
+                    nodeId === p.id || linkedById.has(`${p.id}|||${nodeId}`);
+                  node.setAttribute("opacity", connected ? "1" : "0.28");
+                });
               });
               g.addEventListener("pointerout", () => {
                 if (tooltip) tooltip.style.display = "none";
@@ -6115,6 +6270,19 @@
                   "fill",
                   isActive ? "var(--accent)" : "var(--text-secondary)",
                 );
+                panLayer.querySelectorAll("line").forEach((line) => {
+                  const activeLine =
+                    line.dataset.source === currentFilePath ||
+                    line.dataset.target === currentFilePath;
+                  line.setAttribute("stroke-opacity", activeLine ? "0.82" : "0.38");
+                  line.setAttribute(
+                    "stroke",
+                    activeLine ? "var(--accent)" : "var(--text-tertiary)",
+                  );
+                });
+                panLayer
+                  .querySelectorAll("circle")
+                  .forEach((node) => node.setAttribute("opacity", "1"));
               });
 
               g.addEventListener("click", async (e) => {
@@ -6133,6 +6301,8 @@
                   newTab(p.id, entry.content, { name: p.id, path: p.id }, "db");
                   refreshExplorer();
                   refreshTabBar();
+                } else if (fsEntryMap.has(p.id)) {
+                  await openFileFromFsInTab(p.id);
                 }
               });
 
@@ -7812,6 +7982,12 @@
       }
       async function saveCurrentFile() {
         if (currentFileSource === "db") {
+          if (!currentFileHandle && currentFilePath) {
+            currentFileHandle = {
+              name: currentFilePath.split("/").pop(),
+              path: currentFilePath,
+            };
+          }
           if (!currentFileHandle) {
             let path = "";
             while (true) {

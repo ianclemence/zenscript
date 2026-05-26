@@ -1,4 +1,4 @@
-const CACHE_NAME = "zenscript-cache-v1";
+const CACHE_NAME = "zenscript-cache-v3";
 
 const CORE_ASSETS = ["./", "./index.html"];
 
@@ -39,6 +39,17 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.filter((k) => k !== CACHE_NAME).map(caches.delete));
       await self.clients.claim();
+      const clients = await self.clients.matchAll({
+        includeUncontrolled: true,
+        type: "window",
+      });
+      await Promise.all(
+        clients.map((client) => {
+          if (!client.url || !client.url.startsWith(self.registration.scope))
+            return Promise.resolve();
+          return client.navigate(client.url).catch(() => {});
+        }),
+      );
     })(),
   );
 });
@@ -52,7 +63,7 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         const cache = await caches.open(CACHE_NAME);
         try {
-          const res = await fetch(req);
+          const res = await fetch(new Request(req, { cache: "no-store" }));
           if (res && res.ok) {
             cache.put("./index.html", res.clone());
             return res;
