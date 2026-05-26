@@ -2490,6 +2490,7 @@
         background: var(--surface-app);
         display: block;
         cursor: grab;
+        touch-action: none;
       }
       #graph-canvas.panning {
         cursor: grabbing;
@@ -6321,6 +6322,7 @@
                 p.vx = 0;
                 p.vy = 0;
                 if (alpha < 0.3) alpha = 0.3;
+                graphCanvas.setPointerCapture(e.pointerId);
               });
 
               g.appendChild(circle);
@@ -6354,6 +6356,7 @@
             graphCanvas.removeEventListener("pointerdown", h.pointerdown);
             graphCanvas.removeEventListener("pointermove", h.pointermove);
             graphCanvas.removeEventListener("pointerup", h.pointerup);
+            graphCanvas.removeEventListener("pointercancel", h.pointercancel);
             graphCanvas.removeEventListener("wheel", h.wheel);
           }
 
@@ -6426,12 +6429,14 @@
             pointerdown: onPointerDown,
             pointermove: onPointerMove,
             pointerup: onPointerUp,
+            pointercancel: onPointerUp,
             wheel: onWheel,
           };
 
           graphCanvas.addEventListener("pointerdown", onPointerDown);
           graphCanvas.addEventListener("pointermove", onPointerMove);
           graphCanvas.addEventListener("pointerup", onPointerUp);
+          graphCanvas.addEventListener("pointercancel", onPointerUp);
           graphCanvas.addEventListener("wheel", onWheel, { passive: false });
         });
       }
@@ -6475,6 +6480,7 @@
             graphCanvas.removeEventListener("pointerdown", h.pointerdown);
             graphCanvas.removeEventListener("pointermove", h.pointermove);
             graphCanvas.removeEventListener("pointerup", h.pointerup);
+            graphCanvas.removeEventListener("pointercancel", h.pointercancel);
             graphCanvas.removeEventListener("wheel", h.wheel);
             graphCanvas._graphHandlers = null;
           }
