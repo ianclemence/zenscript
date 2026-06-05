@@ -987,10 +987,6 @@
         flex: 1;
         overflow-x: auto;
         scrollbar-width: none;
-        margin: 0 8px;
-        padding: 0 8px;
-        border-left: 1px solid var(--border);
-        border-right: 1px solid var(--border);
       }
       .toolbar::-webkit-scrollbar {
         display: none;
@@ -3183,12 +3179,11 @@
         </div>
 
         <header class="workspace-header no-print">
-          <!-- File label -->
-          <div class="file-label">
+          <!-- Hidden file-label for JS references -->
+          <div class="file-label" style="display:none">
             <span class="filename" id="current-filename">Untitled.md</span>
             <div class="unsaved-dot" id="unsaved-indicator"></div>
           </div>
-
           <!-- Toolbar -->
           <div class="toolbar" id="toolbar-container">
             <button
@@ -8359,34 +8354,42 @@
         nameSpan.appendChild(input);
         input.focus();
 
+        const blurHandler = () => finishCreate(true);
         const finishCreate = async (commit) => {
           if (!isCreating) return;
-          let name = input.value.trim().replace(/\s+/g, "-");
-          if (commit && name) {
-            if (type === "file" && !name.endsWith(".md")) name += ".md";
-            const path = parentPath ? `${parentPath}/${name}` : name;
-            const existing = await loadFromDB(path);
-            if (existing) {
-              alert(
-                `The name "${name}" already exists. Please choose a different name.`,
-              );
-              li.remove();
+          isCreating = false;
+          input.removeEventListener("blur", blurHandler);
+          try {
+            let name = input.value.trim().replace(/\s+/g, "-");
+            if (commit && name) {
+              if (type === "file" && !name.endsWith(".md")) name += ".md";
+              const path = parentPath ? `${parentPath}/${name}` : name;
+              const existing = await loadFromDB(path);
+              if (existing) {
+                alert(
+                  `The name "${name}" already exists. Please choose a different name.`,
+                );
+                li.remove();
+              } else {
+                await saveToDB(path, "", type);
+                if (type === "file") await openFileFromDB(path);
+                refreshExplorer();
+              }
             } else {
-              await saveToDB(path, "", type);
-              if (type === "file") await openFileFromDB(path);
-              refreshExplorer();
+              li.remove();
             }
-          } else {
+          } catch (e) {
+            console.error(e);
+            notify("Error creating file");
             li.remove();
           }
-          isCreating = false;
         };
 
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") finishCreate(true);
           if (e.key === "Escape") finishCreate(false);
         });
-        input.addEventListener("blur", () => finishCreate(true));
+        input.addEventListener("blur", blurHandler);
       }
 
       async function openFileFromDB(path) {

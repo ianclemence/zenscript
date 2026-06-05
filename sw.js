@@ -47,7 +47,7 @@ self.addEventListener("activate", (event) => {
         clients.map((client) => {
           if (!client.url || !client.url.startsWith(self.registration.scope))
             return Promise.resolve();
-          return client.navigate(client.url).catch(() => {});
+          return Promise.resolve();
         }),
       );
     })(),
