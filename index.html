@@ -1682,6 +1682,52 @@
         color: var(--text-tertiary);
         font-style: italic;
       }
+      .transclusion {
+        display: block;
+        margin: 12px 0;
+        padding: 10px 14px;
+        background: var(--surface-input);
+        border: 1px var(--border-style) var(--border-faint);
+        border-left: 3px solid var(--accent);
+        border-radius: var(--radius-md);
+        font-size: 0.94em;
+      }
+      .transclusion.transclusion-loading .transclusion-body {
+        color: var(--text-tertiary);
+        font-style: italic;
+      }
+      .transclusion-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--accent);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        user-select: none;
+      }
+      .transclusion-header i {
+        font-size: 10px;
+      }
+      .transclusion-header:hover {
+        text-decoration: underline;
+      }
+      .transclusion-body {
+        color: var(--text-primary);
+      }
+      .transclusion-body > *:first-child {
+        margin-top: 0;
+      }
+      .transclusion-body > *:last-child {
+        margin-bottom: 0;
+      }
+      .transclusion-missing,
+      .transclusion-error {
+        border-left-color: var(--text-tertiary);
+        opacity: 0.7;
+      }
       #backlinks-panel {
         display: none;
         flex-direction: column;
@@ -2340,6 +2386,151 @@
       .palette-item:hover i,
       .palette-item.active i {
         opacity: 1;
+      }
+
+      /* ============================================================
+       QUICK SWITCHER  (Ctrl+P / Ctrl+O)
+    ============================================================ */
+      #quick-switcher {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 600;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 14vh;
+      }
+      #quick-switcher.open {
+        display: flex;
+      }
+      .quick-switcher-box {
+        width: 100%;
+        max-width: 540px;
+        background: var(--surface-panel);
+        border: 1px var(--border-style) var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        display: flex;
+        flex-direction: column;
+        max-height: 60vh;
+        overflow: hidden;
+      }
+      .quick-switcher-input-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px var(--border-style) var(--border-faint);
+        background: var(--surface-input);
+      }
+      .quick-switcher-icon {
+        color: var(--text-tertiary);
+        font-size: 12px;
+      }
+      .quick-switcher-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 14px;
+      }
+      .quick-switcher-input::placeholder {
+        color: var(--text-tertiary);
+      }
+      .quick-switcher-hint {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        font-family: var(--font-mono);
+        letter-spacing: 0.04em;
+      }
+      .quick-switcher-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 0;
+      }
+      .quick-switcher-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        cursor: pointer;
+        color: var(--text-primary);
+        font-size: 13px;
+        user-select: none;
+      }
+      .quick-switcher-item:hover,
+      .quick-switcher-item.active {
+        background: var(--accent-muted);
+        color: var(--text-primary);
+      }
+      .quick-switcher-item i {
+        width: 14px;
+        text-align: center;
+        color: var(--text-tertiary);
+        font-size: 11px;
+      }
+      .quick-switcher-item.active i {
+        color: var(--accent);
+      }
+      .quick-switcher-item-title {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .quick-switcher-item-title mark {
+        background: var(--accent-muted);
+        color: inherit;
+        font-weight: 600;
+        padding: 0 1px;
+        border-radius: 2px;
+      }
+      .quick-switcher-item-meta {
+        color: var(--text-tertiary);
+        font-size: 11px;
+        font-family: var(--font-mono);
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .quick-switcher-item-kind-heading .quick-switcher-item-meta {
+        color: var(--accent);
+      }
+      .quick-switcher-item-kind-create i {
+        color: var(--accent);
+      }
+      .quick-switcher-empty {
+        padding: 18px;
+        text-align: center;
+        color: var(--text-tertiary);
+        font-size: 12px;
+        font-style: italic;
+      }
+      .quick-switcher-footer {
+        padding: 8px 14px;
+        border-top: 1px var(--border-style) var(--border-faint);
+        background: var(--surface-input);
+        color: var(--text-tertiary);
+        font-size: 11px;
+        font-family: var(--font-mono);
+        letter-spacing: 0.02em;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .quick-switcher-footer kbd {
+        background: var(--surface-panel);
+        border: 1px var(--border-style) var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1px 5px;
+        font-size: 10px;
+        font-family: var(--font-mono);
       }
 
       /* ============================================================
@@ -3683,6 +3874,26 @@
         <!-- Command palette -->
         <div id="command-palette"></div>
 
+        <!-- Quick switcher -->
+        <div id="quick-switcher">
+          <div class="quick-switcher-box">
+            <div class="quick-switcher-input-row">
+              <i class="fas fa-search quick-switcher-icon"></i>
+              <input
+                type="text"
+                class="quick-switcher-input"
+                id="quick-switcher-input"
+                placeholder="Jump to note, heading, or create new…"
+                spellcheck="false"
+                autocomplete="off"
+              />
+              <span class="quick-switcher-hint">↑↓ Enter · Esc</span>
+            </div>
+            <div class="quick-switcher-list" id="quick-switcher-list"></div>
+            <div class="quick-switcher-footer" id="quick-switcher-footer"></div>
+          </div>
+        </div>
+
         <!-- Emoji menu -->
         <div id="emoji-menu"></div>
 
@@ -4224,6 +4435,10 @@
       const clearSearchBtn = document.getElementById("clear-search");
       const searchResults = document.getElementById("search-results");
       const commandPalette = document.getElementById("command-palette");
+      const quickSwitcher = document.getElementById("quick-switcher");
+      const qsInput = document.getElementById("quick-switcher-input");
+      const qsList = document.getElementById("quick-switcher-list");
+      const qsFooter = document.getElementById("quick-switcher-footer");
       const explorer = document.getElementById("explorer");
       const workspace = document.getElementById("workspace");
       const explorerContextMenu = document.getElementById(
@@ -5466,6 +5681,26 @@
             e.preventDefault();
             createNewFile();
           }
+          if (mod && (e.key === "p" || e.key === "P") && !e.shiftKey) {
+            e.preventDefault();
+            openQuickSwitcher();
+            return;
+          }
+          if (mod && (e.key === "o" || e.key === "O") && !e.shiftKey) {
+            e.preventDefault();
+            openQuickSwitcher();
+            return;
+          }
+          if (mod && e.shiftKey && (e.key === "d" || e.key === "D")) {
+            e.preventDefault();
+            openOrCreateDailyNote();
+            return;
+          }
+          if (mod && e.shiftKey && (e.key === "r" || e.key === "R")) {
+            e.preventDefault();
+            openRandomNote();
+            return;
+          }
           if (mod && e.key === "j") {
             e.preventDefault();
             toggleZenMode();
@@ -5509,6 +5744,49 @@
           if (e.key === "Delete" && selectedFilePaths.size) {
             e.preventDefault();
             deleteSelectedFiles();
+          }
+        });
+
+        // Quick switcher input listeners
+        qsInput.addEventListener("input", () => {
+          renderQuickSwitcher();
+        });
+        qsInput.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            moveQsSelection(1);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            moveQsSelection(-1);
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            applySelectedQuickSwitcher();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeQuickSwitcher();
+          } else if (e.key === "Tab") {
+            e.preventDefault();
+            moveQsSelection(e.shiftKey ? -1 : 1);
+          }
+        });
+        quickSwitcher.addEventListener("click", (e) => {
+          if (e.target === quickSwitcher) closeQuickSwitcher();
+        });
+        // Persist the most recently opened file path so it can be the first
+        // suggestion in the quick switcher when no query is entered.
+        window.addEventListener("beforeunload", () => {
+          if (currentFilePath) {
+            qsRecent = qsRecent.filter(
+              (p) => p.toLowerCase() !== currentFilePath.toLowerCase(),
+            );
+            qsRecent.unshift(currentFilePath);
+            if (qsRecent.length > 20) qsRecent.pop();
+            try {
+              localStorage.setItem(
+                "md-recent-files",
+                JSON.stringify(qsRecent),
+              );
+            } catch {}
           }
         });
 
@@ -5710,7 +5988,7 @@
         for (const node of textNodes) {
           const text = node.textContent;
           if (!text.includes("[[")) continue;
-          const regex = /\[\[([^\]]+)\]\]/g;
+          const regex = /\[\[(!?)([^\]]+)\]\]/g;
           if (!regex.test(text)) continue;
           const span = document.createElement("span");
           let last = 0;
@@ -5720,10 +5998,27 @@
             span.appendChild(
               document.createTextNode(text.slice(last, match.index)),
             );
+            const isTransclusion = match[1] === "!";
+            const target = cleanWikiTarget(match[2]);
+            const display = wikiDisplayText(match[2]) || target;
+            if (isTransclusion) {
+              // ![[Note]] — inline embed. Replace the wiki-link with a
+              // placeholder; the actual content is rendered asynchronously
+              // (transclusionAsync) and swapped in when ready.
+              const placeholder = document.createElement("span");
+              placeholder.className = "transclusion transclusion-loading";
+              placeholder.dataset.target = target;
+              placeholder.innerHTML =
+                `<span class="transclusion-header"><i class="fas fa-file-import"></i>${escapeHtml(display)}</span>` +
+                `<span class="transclusion-body"><span class="transclusion-placeholder">Loading ${escapeHtml(display)}…</span></span>`;
+              span.appendChild(placeholder);
+              transclusionAsync(target, placeholder);
+              last = match.index + match[0].length;
+              continue;
+            }
             const link = document.createElement("a");
             link.className = "wiki-link";
-            const target = cleanWikiTarget(match[1]);
-            link.textContent = wikiDisplayText(match[1]) || target;
+            link.textContent = display;
             const existing = resolveWikiPath(target);
             if (existing) {
               link.classList.remove("missing");
@@ -5745,6 +6040,145 @@
           span.appendChild(document.createTextNode(text.slice(last)));
           node.parentNode.replaceChild(span, node);
         }
+      }
+
+      function escapeHtml(s) {
+        if (typeof s !== "string") s = String(s == null ? "" : s);
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      // Render a transcluded note's content inline. Re-runs the standard
+      // preview pipeline (minus transclusion recursion) on the target's
+      // markdown and swaps the result into the placeholder.
+      const __transclusionInFlight = new Map();
+      async function transclusionAsync(target, placeholder) {
+        if (!placeholder || placeholder.dataset.resolved === "1") return;
+        const key = target.toLowerCase();
+        if (__transclusionInFlight.has(key)) {
+          await __transclusionInFlight.get(key);
+          return;
+        }
+        const work = (async () => {
+          try {
+            const path = resolveWikiPath(target) ||
+              (target.endsWith(".md") ? target : target + ".md");
+            let content = null;
+            if (path) {
+              const entry = await loadFromDB(path);
+              if (entry) content = entry.content;
+              else if (fsEntryMap.has(path)) {
+                try {
+                  const e = fsEntryMap.get(path);
+                  if (e && e.handle) {
+                    const f = await e.handle.getFile();
+                    content = await f.text();
+                  }
+                } catch {}
+              } else {
+                // Try mounted folders with prefixed path
+                for (const mount of mountedFolders) {
+                  const prefixed = `${mount.name}/${path}`;
+                  if (fsEntryMap.has(prefixed)) {
+                    try {
+                      const e = fsEntryMap.get(prefixed);
+                      if (e && e.handle) {
+                        const f = await e.handle.getFile();
+                        content = await f.text();
+                        break;
+                      }
+                    } catch {}
+                  }
+                }
+              }
+            }
+            if (!content) {
+              const body = placeholder.querySelector(".transclusion-body");
+              if (body)
+                body.innerHTML =
+                  `<span class="transclusion-missing">Note "${escapeHtml(target)}" not found</span>`;
+              placeholder.classList.remove("transclusion-loading");
+              placeholder.classList.add("transclusion-missing");
+              return;
+            }
+            // Strip any inner transclusions to prevent infinite recursion.
+            const sanitized = content.replace(/\[\[!/g, "[[");
+            const html = window.marked ? marked.parse(sanitized) : "";
+            const safe = window.DOMPurify
+              ? DOMPurify.sanitize(html, DOMPURIFY_CONFIG)
+              : html;
+            const tmp = document.createElement("div");
+            tmp.innerHTML = safe;
+            // Don't recurse wikilinks inside transclusion content (avoids
+            // linking the same note within itself).
+            const header = placeholder.querySelector(".transclusion-header");
+            placeholder.innerHTML = "";
+            if (header) placeholder.appendChild(header);
+            const body = document.createElement("div");
+            body.className = "transclusion-body transclusion-content";
+            body.appendChild(tmp);
+            placeholder.appendChild(body);
+            // Run non-recursive previews: code blocks, math, callouts,
+            // tables, footnotes, task lists. Skip processWikiLinks to
+            // avoid double-injection and applyAutolinks on the embed.
+            try {
+              if (window.hljs) {
+                tmp.querySelectorAll("pre code").forEach((block) => {
+                  if (block.classList.contains("language-mermaid")) {
+                    const div = document.createElement("div");
+                    div.className = "mermaid";
+                    div.textContent = block.textContent;
+                    block.parentElement.replaceWith(div);
+                  } else hljs.highlightElement(block);
+                });
+              }
+              if (window.renderMathInElement) {
+                renderMathInElement(tmp, {
+                  delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\(", right: "\\)", display: false },
+                    { left: "\\[", right: "\\]", display: true },
+                  ],
+                  throwOnError: false,
+                });
+              }
+              if (typeof applyCallouts === "function") applyCallouts.call(tmp);
+              if (typeof wrapTables === "function") wrapTables(tmp);
+              if (typeof enhanceCodeBlocks === "function") enhanceCodeBlocks(tmp);
+              if (typeof enhanceTaskLists === "function")
+                enhanceTaskLists(tmp, content);
+            } catch (err) {
+              console.warn("[transclusion] sub-preview failed", err);
+            }
+            placeholder.classList.remove("transclusion-loading");
+            placeholder.classList.add("transclusion-ready");
+            placeholder.dataset.resolved = "1";
+            // Allow click on header to navigate to the source note.
+            const head = placeholder.querySelector(".transclusion-header");
+            if (head) {
+              head.style.cursor = "pointer";
+              head.title = `Open: ${target}`;
+              head.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openWikiLink(target);
+              };
+            }
+          } catch (err) {
+            console.warn("[transclusion] failed for", target, err);
+            placeholder.classList.remove("transclusion-loading");
+            placeholder.classList.add("transclusion-error");
+          } finally {
+            __transclusionInFlight.delete(key);
+          }
+        })();
+        __transclusionInFlight.set(key, work);
+        await work;
       }
 
       async function openWikiLink(name) {
@@ -10331,6 +10765,409 @@ self.onmessage = (e) => {
           );
         } else format(cmd.id);
         closeCommandPalette();
+      }
+
+      // ─── Quick Switcher (Ctrl+P / Ctrl+O) ───
+      let qsOpen = false,
+        qsItems = [],
+        qsSelected = 0,
+        qsRecent = [];
+
+      function loadQsRecent() {
+        try {
+          const raw = localStorage.getItem("md-recent-files");
+          if (raw) qsRecent = JSON.parse(raw);
+        } catch {
+          qsRecent = [];
+        }
+      }
+      function pushQsRecent(path) {
+        if (!path) return;
+        qsRecent = qsRecent.filter(
+          (p) => p.toLowerCase() !== path.toLowerCase(),
+        );
+        qsRecent.unshift(path);
+        if (qsRecent.length > 20) qsRecent.pop();
+        try {
+          localStorage.setItem("md-recent-files", JSON.stringify(qsRecent));
+        } catch {}
+      }
+
+      function fuzzyScore(query, text) {
+        if (!query) return 0;
+        const q = query.toLowerCase();
+        const t = text.toLowerCase();
+        if (t === q) return 1000;
+        if (t.startsWith(q)) return 500;
+        // Subsequence match
+        let qi = 0,
+          score = 0,
+          run = 0;
+        for (let i = 0; i < t.length && qi < q.length; i++) {
+          if (t[i] === q[qi]) {
+            score += 1 + run;
+            run++;
+            qi++;
+          } else {
+            run = 0;
+          }
+        }
+        if (qi < q.length) return 0;
+        return score;
+      }
+
+      function highlightMatch(query, text) {
+        if (!query) return escapeHtml(text);
+        const q = query.toLowerCase();
+        const t = text;
+        const lc = text.toLowerCase();
+        let qi = 0;
+        let out = "";
+        for (let i = 0; i < t.length; i++) {
+          if (qi < q.length && lc[i] === q[qi]) {
+            out += `<mark>${escapeHtml(t[i])}</mark>`;
+            qi++;
+          } else {
+            out += escapeHtml(t[i]);
+          }
+        }
+        return out;
+      }
+
+      function getQuickSwitcherEntries() {
+        const entries = [];
+        const seen = new Set();
+        for (const path of Object.keys(wikiLinkMap || {})) {
+          if (seen.has(path)) continue;
+          seen.add(path);
+          entries.push({
+            kind: "file",
+            path,
+            title: basename(path).replace(/\.md$/i, ""),
+            folder: getParentPath(path),
+            recency: qsRecent.indexOf(path),
+          });
+        }
+        // Headings — pull from a lazy session cache that maps each file
+        // path to an array of heading text strings.
+        for (const path of Object.keys(wikiLinkMap || {})) {
+          if (qsHeadingCache.has(path)) {
+            for (const h of qsHeadingCache.get(path)) {
+              entries.push({
+                kind: "heading",
+                path,
+                title: h.text,
+                anchor: h.anchor,
+                folder: getParentPath(path),
+              });
+            }
+          }
+        }
+        return entries;
+      }
+
+      const qsHeadingCache = new Map();
+      let qsHeadingIndexBuilt = false;
+      async function buildQuickSwitcherHeadingIndex() {
+        if (qsHeadingIndexBuilt) return;
+        qsHeadingIndexBuilt = true;
+        const paths = Object.keys(wikiLinkMap || {});
+        for (const path of paths) {
+          if (qsHeadingCache.has(path)) continue;
+          try {
+            let content = null;
+            const entry = await loadFromDB(path);
+            if (entry) content = entry.content;
+            else if (fsEntryMap && fsEntryMap.has(path)) {
+              try {
+                const e = fsEntryMap.get(path);
+                if (e && e.handle) {
+                  const f = await e.handle.getFile();
+                  content = await f.text();
+                }
+              } catch {}
+            } else {
+              for (const mount of mountedFolders) {
+                const prefixed = `${mount.name}/${path}`;
+                if (fsEntryMap && fsEntryMap.has(prefixed)) {
+                  try {
+                    const e = fsEntryMap.get(prefixed);
+                    if (e && e.handle) {
+                      const f = await e.handle.getFile();
+                      content = await f.text();
+                      break;
+                    }
+                  } catch {}
+                }
+              }
+            }
+            if (!content) continue;
+            const used = new Set();
+            const headings = [];
+            for (const line of content.split("\n")) {
+              const m = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+              if (!m) continue;
+              const text = m[2].trim();
+              let base = text
+                .toLowerCase()
+                .replace(/[\u200B-\u200D\uFEFF]/g, "")
+                .replace(/[^\p{L}\p{N}\s-]/gu, "")
+                .replace(/\s+/g, "-")
+                .replace(/-+/g, "-")
+                .replace(/^-|-$/g, "") || "section";
+              let id = base;
+              let n = 1;
+              while (used.has(id)) id = `${base}-${n++}`;
+              used.add(id);
+              headings.push({ text, anchor: id });
+            }
+            qsHeadingCache.set(path, headings);
+          } catch {}
+        }
+      }
+
+      function renderQuickSwitcher() {
+        const query = qsInput.value.trim();
+        const list = qsList;
+        list.innerHTML = "";
+        let results = getQuickSwitcherEntries();
+        if (query) {
+          results = results
+            .map((r) => ({ r, s: fuzzyScore(query, r.title) }))
+            .filter((x) => x.s > 0)
+            .sort((a, b) => {
+              if (a.r.kind !== b.r.kind) return a.r.kind === "file" ? -1 : 1;
+              if (a.r.kind === "file" && a.r.recency !== b.r.recency) {
+                if (a.r.recency === -1) return 1;
+                if (b.r.recency === -1) return -1;
+                return a.r.recency - b.r.recency;
+              }
+              return b.s - a.s;
+            })
+            .slice(0, 30)
+            .map((x) => x.r);
+        } else {
+          // No query: show recent files first.
+          results = results
+            .map((r) => ({
+              r,
+              s: r.kind === "file" && r.recency !== -1 ? 1000 - r.recency : 0,
+            }))
+            .filter((x) => x.s > 0)
+            .sort((a, b) => b.s - a.s)
+            .slice(0, 15)
+            .map((x) => x.r);
+        }
+        if (query) {
+          // Always append a "Create new note" entry at the end.
+          results.push({
+            kind: "create",
+            path: query,
+            title: query,
+            folder: "Create new",
+          });
+        }
+        qsItems = results;
+        qsSelected = 0;
+        if (!results.length) {
+          const empty = document.createElement("div");
+          empty.className = "quick-switcher-empty";
+          empty.textContent = query
+            ? "No matches. Press Enter to create."
+            : "No notes yet.";
+          list.appendChild(empty);
+          updateQsFooter();
+          return;
+        }
+        for (let i = 0; i < results.length; i++) {
+          const it = results[i];
+          const row = document.createElement("div");
+          row.className = `quick-switcher-item quick-switcher-item-kind-${it.kind} ${
+            i === 0 ? "active" : ""
+          }`;
+          row.dataset.idx = i;
+          const icon = it.kind === "heading"
+            ? "fa-hashtag"
+            : it.kind === "create"
+              ? "fa-plus"
+              : "fa-file-lines";
+          const folder = it.folder || "";
+          row.innerHTML = `<i class="fas ${icon}"></i>` +
+            `<span class="quick-switcher-item-title">${highlightMatch(query, it.title)}</span>` +
+            (folder ? `<span class="quick-switcher-item-meta">${escapeHtml(folder)}</span>` : "");
+          row.onclick = () => {
+            qsSelected = i;
+            applySelectedQuickSwitcher();
+          };
+          list.appendChild(row);
+        }
+        updateQsFooter();
+      }
+
+      function updateQsFooter() {
+        const sel = qsItems[qsSelected];
+        if (!sel) {
+          qsFooter.innerHTML = "";
+          return;
+        }
+        if (sel.kind === "heading") {
+          qsFooter.innerHTML =
+            `<span><kbd>Heading</kbd> ${escapeHtml(sel.path)}</span>` +
+            `<span>Enter to jump · Esc to close</span>`;
+        } else if (sel.kind === "create") {
+          qsFooter.innerHTML =
+            `<span><kbd>Create</kbd> ${escapeHtml(sel.path)}.md</span>` +
+            `<span>Enter to create · Esc to close</span>`;
+        } else {
+          qsFooter.innerHTML =
+            `<span><kbd>File</kbd> ${escapeHtml(sel.path)}</span>` +
+            `<span>Enter to open · Esc to close</span>`;
+        }
+      }
+
+      function moveQsSelection(delta) {
+        if (!qsItems.length) return;
+        qsSelected =
+          (qsSelected + delta + qsItems.length) % qsItems.length;
+        qsList
+          .querySelectorAll(".quick-switcher-item")
+          .forEach((el, i) =>
+            el.classList.toggle("active", i === qsSelected),
+          );
+        const active = qsList.querySelector(".quick-switcher-item.active");
+        active?.scrollIntoView({ block: "nearest" });
+        updateQsFooter();
+      }
+
+      async function applySelectedQuickSwitcher() {
+        const sel = qsItems[qsSelected];
+        if (!sel) return;
+        closeQuickSwitcher();
+        if (sel.kind === "create") {
+          await createNoteFromLink(sel.path);
+          pushQsRecent(sel.path + ".md");
+        } else {
+          pushQsRecent(sel.path);
+          await openWikiLink(sel.path);
+          if (sel.kind === "heading" && sel.anchor) {
+            requestAnimationFrame(() =>
+              scrollToSectionInPreview(sel.anchor, "auto"),
+            );
+          }
+        }
+      }
+
+      function openQuickSwitcher() {
+        qsOpen = true;
+        loadQsRecent();
+        qsInput.value = "";
+        quickSwitcher.classList.add("open");
+        renderQuickSwitcher();
+        requestAnimationFrame(() => {
+          qsInput.focus();
+        });
+        // Build the heading index in the background; results will appear
+        // the next time the user types.
+        buildQuickSwitcherHeadingIndex().then(() => {
+          if (qsOpen) renderQuickSwitcher();
+        });
+      }
+      function closeQuickSwitcher() {
+        qsOpen = false;
+        quickSwitcher.classList.remove("open");
+      }
+      function toggleQuickSwitcher() {
+        if (qsOpen) closeQuickSwitcher();
+        else openQuickSwitcher();
+      }
+
+      // ─── Daily Note (Ctrl+Shift+D) ───
+      function todayDateStr() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      }
+      function pad2(n) {
+        return String(n).padStart(2, "0");
+      }
+      function buildDailyJournalBody(dateStr) {
+        const [y, m, d] = dateStr.split("-").map((s) => parseInt(s, 10));
+        const date = new Date(y, m - 1, d);
+        const weekday = ["Sunday", "Monday", "Tuesday", "Wednesday",
+          "Thursday", "Friday", "Saturday"][date.getDay()];
+        return [
+          `# ${dateStr}`,
+          "",
+          `*${weekday}*`,
+          "",
+          "## Today",
+          "",
+          "- ",
+          "",
+          "## Notes",
+          "",
+          "## Reflections",
+          "",
+          "",
+        ].join("\n");
+      }
+      async function openOrCreateDailyNote() {
+        const folder = "Journal";
+        const dateStr = todayDateStr();
+        const path = `${folder}/${dateStr}.md`;
+        // If already open, just switch to it.
+        const existing = tabs.find(
+          (t) => t.filePath && t.filePath.toLowerCase() === path.toLowerCase(),
+        );
+        if (existing) {
+          activateTab(existing.id);
+          return;
+        }
+        // Try to load existing from DB.
+        let entry = null;
+        if (window.idbKeyval) {
+          entry = await loadFromDB(path);
+        }
+        if (!entry) {
+          // Create the folder row first (so it shows in the explorer)
+          // then save the empty daily note.
+          try {
+            await saveToDB(path, buildDailyJournalBody(dateStr));
+            registerWikiPath(path);
+            refreshExplorer();
+          } catch (e) {
+            console.warn("Failed to create daily note", e);
+            return;
+          }
+          entry = await loadFromDB(path);
+        }
+        if (entry) {
+          newTab(path, entry.content, { name: path, path }, "db");
+          notify(`Daily: ${dateStr}`);
+        }
+      }
+
+      // ─── Random Note (Ctrl+Shift+R) ───
+      async function openRandomNote() {
+        await buildWikiLinkIndex();
+        const paths = Object.keys(wikiLinkMap || {});
+        if (!paths.length) {
+          notify("No notes to pick from");
+          return;
+        }
+        // Prefer picking a different note than the one currently open.
+        let pool = paths;
+        if (currentFilePath && paths.length > 1) {
+          pool = paths.filter(
+            (p) => p.toLowerCase() !== currentFilePath.toLowerCase(),
+          );
+          if (!pool.length) pool = paths;
+        }
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        pushQsRecent(pick);
+        await openWikiLink(pick);
       }
 
       // ─── Emoji ───
