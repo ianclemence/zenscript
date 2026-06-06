@@ -7772,6 +7772,7 @@
             );
             row.addEventListener("drop", async (e) => {
               e.preventDefault();
+              e.stopPropagation();
               row.classList.remove("drop-target");
               if (!draggedEntryPath || draggedEntryPath === node.path) return;
               await moveEntryToFolder(
@@ -7808,32 +7809,33 @@
               if (node.source !== "db") return;
               startInlineRename(node, li, nameSpan);
             });
-            row.draggable = true;
-            row.addEventListener("dragstart", (e) => {
-              draggedEntryPath = node.path;
-              draggedEntrySource = node.source || "db";
-              row.classList.add("dragging");
-              if (e.dataTransfer) {
-                e.dataTransfer.setData(
-                  "application/x-zenscript-path",
-                  node.path,
-                );
-                e.dataTransfer.setData(
-                  "application/x-zenscript-source",
-                  node.source || "db",
-                );
-                e.dataTransfer.effectAllowed = "copy";
-              }
-            });
-            row.addEventListener("dragend", () => {
-              draggedEntryPath = null;
-              draggedEntrySource = null;
-              row.classList.remove("dragging");
-              document
-                .querySelectorAll(".drop-target")
-                .forEach((el) => el.classList.remove("drop-target"));
-            });
           }
+
+          row.draggable = true;
+          row.addEventListener("dragstart", (e) => {
+            draggedEntryPath = node.path;
+            draggedEntrySource = node.source || "db";
+            row.classList.add("dragging");
+            if (e.dataTransfer) {
+              e.dataTransfer.setData(
+                "application/x-zenscript-path",
+                node.path,
+              );
+              e.dataTransfer.setData(
+                "application/x-zenscript-source",
+                node.source || "db",
+              );
+              e.dataTransfer.effectAllowed = "copy";
+            }
+          });
+          row.addEventListener("dragend", () => {
+            draggedEntryPath = null;
+            draggedEntrySource = null;
+            row.classList.remove("dragging");
+            document
+              .querySelectorAll(".drop-target")
+              .forEach((el) => el.classList.remove("drop-target"));
+          });
 
           row.addEventListener("contextmenu", (e) => {
             e.preventDefault();
@@ -8665,7 +8667,10 @@
         newTab("Untitled.md", "");
       }
       async function createNewFileInExplorer(targetFolderPath) {
-        const folder = targetFolderPath || currentFolderPath;
+        // Only create inside a folder when the caller explicitly passes a
+        // path (e.g. via the folder context menu). Header button and blank
+        // area context menu should always create at the root.
+        const folder = targetFolderPath || null;
         if (directoryHandle) {
           let name = "";
           const dir =
@@ -8707,7 +8712,10 @@
         await startInlineCreate("file", folder || null);
       }
       async function createNewFolderInExplorer(targetFolderPath) {
-        const folder = targetFolderPath || currentFolderPath;
+        // Only create inside a folder when the caller explicitly passes a
+        // path (e.g. via the folder context menu). Header button and blank
+        // area context menu should always create at the root.
+        const folder = targetFolderPath || null;
         if (directoryHandle) {
           let name = "";
           const dir =
@@ -8918,7 +8926,7 @@
               label: "Paste",
               icon: "fas fa-paste",
               disabled: !clipboard || isFs,
-              action: () => pasteEntry(currentFolderPath || ""),
+              action: () => pasteEntry(""),
             },
           );
         } else if (type === "history") {
@@ -8987,7 +8995,7 @@
           notify(`Copied: ${path.split("/").pop()}`);
         }
       }
-      async function pasteEntry(parentPath = currentFolderPath || "") {
+      async function pasteEntry(parentPath = "") {
         if (!clipboard || rightClickedEntrySource === "fs") return;
         const parent = parentPath;
         const name = clipboard.entry.path.split("/").pop();
