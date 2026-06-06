@@ -6239,15 +6239,41 @@
         await buildWikiLinkIndex();
         const fileEntries = new Map();
 
-        if (directoryHandle) {
+        // Scan ALL mounted folders with mount-prefixed paths so they match
+        // the canonical keys in wikiLinkMap / currentFilePath. Previously
+        // only the primary directoryHandle was scanned, which left files in
+        // secondary mounts (and any foldered files whose path included a
+        // prefix) unable to resolve their inbound/outbound wiki links.
+        for (const mount of mountedFolders) {
+          try {
+            const entries = await scanFsRecursive(mount.handle);
+            for (const entry of entries) {
+              if (entry.type !== "file" || !isMarkdownDocPath(entry.path))
+                continue;
+              const file = await entry.handle.getFile();
+              const fullPath = `${mount.name}/${entry.path}`;
+              fileEntries.set(fullPath, await file.text());
+              registerWikiPath(fullPath);
+            }
+          } catch {}
+        }
+        // Defensive: include the primary directoryHandle even if it isn't
+        // in mountedFolders (shouldn't normally happen, but be safe).
+        if (
+          directoryHandle &&
+          !mountedFolders.find((m) => m.handle === directoryHandle)
+        ) {
           try {
             const entries = await scanFsRecursive(directoryHandle);
             for (const entry of entries) {
               if (entry.type !== "file" || !isMarkdownDocPath(entry.path))
                 continue;
               const file = await entry.handle.getFile();
-              fileEntries.set(entry.path, await file.text());
-              registerWikiPath(entry.path);
+              const fullPath = `${directoryHandle.name}/${entry.path}`;
+              if (!fileEntries.has(fullPath)) {
+                fileEntries.set(fullPath, await file.text());
+                registerWikiPath(fullPath);
+              }
             }
           } catch {}
         }
@@ -6256,6 +6282,7 @@
           const dbFiles = await listDBFiles();
           for (const f of dbFiles) {
             if (!f.path || !isMarkdownDocPath(f.path)) continue;
+            if (fileEntries.has(f.path)) continue; // FS entry takes precedence
             fileEntries.set(f.path, f.content || "");
             registerWikiPath(f.path);
           }
@@ -6384,17 +6411,19 @@
           const cx = w / 2;
           const cy = h / 2;
           const angleStep = (2 * Math.PI) / Math.max(nodes.length, 1);
-          const spreadR = Math.min(w, h) * 0.3;
+          const spreadR = Math.min(w, h) * 0.42;
 
           const particles = nodes.map((n, i) => {
             const cached = graphPositionCache[n.id];
+            const angle = i * angleStep + (i % 2) * 0.15; // slight jitter
+            const radius = spreadR * (0.7 + ((i * 37) % 100) / 100) * 0.55;
             return {
               ...n,
-              x: cached ? cached.x : cx + Math.cos(i * angleStep) * spreadR,
-              y: cached ? cached.y : cy + Math.sin(i * angleStep) * spreadR,
+              x: cached ? cached.x : cx + Math.cos(angle) * radius,
+              y: cached ? cached.y : cy + Math.sin(angle) * radius,
               vx: 0,
               vy: 0,
-              pinned: false,
+              pinned: cached ? !!cached.pinned : false,
             };
           });
 
@@ -6413,13 +6442,16 @@
           }
 
           const LINK_DIST = Math.max(
-            80,
-            Math.min(160, 400 / Math.sqrt(nodes.length)),
+            140,
+            Math.min(280, 720 / Math.sqrt(nodes.length)),
           );
-          const REPEL_K = Math.min(6000, 800 * Math.max(1, nodes.length / 10));
-          const CENTER_K = 0.008;
-          const ALPHA_MIN = 0.004;
-          const ALPHA_DECAY = 0.022;
+          const REPEL_K = Math.min(
+            16000,
+            2600 * Math.max(1, nodes.length / 8),
+          );
+          const CENTER_K = 0.0028;
+          const ALPHA_MIN = 0.0035;
+          const ALPHA_DECAY = 0.018;
           let alpha = 1.0;
 
           function physicsStep() {
@@ -6538,9 +6570,20 @@
               );
               circle.setAttribute(
                 "stroke",
-                isActive ? "var(--accent-hover)" : "var(--surface-app)",
+                p.pinned
+                  ? "var(--success)"
+                  : isActive
+                    ? "var(--accent-hover)"
+                    : "var(--surface-app)",
               );
-              circle.setAttribute("stroke-width", isActive ? "2" : "1.5");
+              circle.setAttribute(
+                "stroke-width",
+                p.pinned ? "2.2" : isActive ? "2" : "1.5",
+              );
+              circle.setAttribute(
+                "stroke-dasharray",
+                p.pinned ? "3 2" : "",
+              );
 
               const labelText =
                 p.name.length > 20 ? p.name.slice(0, 18) + "…" : p.name;
@@ -6614,21 +6657,32 @@
                   activateTab(existingTab.id);
                   return;
                 }
+                // DB and IDB-keyed files use unprefixed paths; the graph
+                // uses these for those sources. Try the direct lookup first.
                 const entry = await loadFromDB(p.id);
                 if (entry) {
-                  newTab(p.id, entry.content, { name: p.id, path: p.id }, "db");
+                  newTab(
+                    p.id,
+                    entry.content,
+                    { name: basename(p.id), path: p.id },
+                    "db",
+                  );
                   refreshExplorer();
                   refreshTabBar();
-                } else if (fsEntryMap.has(p.id)) {
+                  return;
+                }
+                // FS files live under the mount-prefixed path (e.g.
+                // "vault1/daily/morning.md") which is what `p.id` is for
+                // them — open directly.
+                if (fsEntryMap.has(p.id)) {
                   await openFileFromFsInTab(p.id);
-                } else {
-                  for (const mount of mountedFolders) {
-                    const prefixed = `${mount.name}/${p.id}`;
-                    if (fsEntryMap.has(prefixed)) {
-                      await openFileFromFsInTab(prefixed);
-                      break;
-                    }
-                  }
+                  return;
+                }
+                // Last-resort: re-resolve via the wiki index in case the
+                // stored id is a basename that collides with another file.
+                const resolved = resolveWikiPath(p.id);
+                if (resolved && resolved !== p.id && fsEntryMap.has(resolved)) {
+                  await openFileFromFsInTab(resolved);
                 }
               });
 
@@ -6641,6 +6695,21 @@
                 p.vy = 0;
                 if (alpha < 0.3) alpha = 0.3;
                 graphCanvas.setPointerCapture(e.pointerId);
+              });
+
+              // Double-click a pinned node to release it back to the
+              // simulation (Obsidian / VS Code parity). On non-pinned
+              // nodes this is a no-op so the file-open click still works.
+              g.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
+                if (!p.pinned) return;
+                p.pinned = false;
+                if (graphPositionCache[p.id]) {
+                  graphPositionCache[p.id].pinned = false;
+                }
+                if (alpha < 0.5) alpha = 0.5;
+                if (!graphAnimFrameId)
+                  graphAnimFrameId = requestAnimationFrame(animate);
               });
 
               g.appendChild(circle);
@@ -6712,10 +6781,15 @@
             panStart = null;
             graphCanvas.classList.remove("panning");
             if (graphIsDraggingNode && graphDragTarget) {
-              graphDragTarget.pinned = false;
+              // Keep the node pinned at the dropped position so it stays
+              // exactly where the user placed it. The cache stores the
+              // pinned flag so the position (and the pin) survives any
+              // subsequent re-render.
+              graphDragTarget.pinned = true;
               graphPositionCache[graphDragTarget.id] = {
                 x: graphDragTarget.x,
                 y: graphDragTarget.y,
+                pinned: true,
               };
               graphDragTarget = null;
             }
