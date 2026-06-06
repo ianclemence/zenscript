@@ -11,6 +11,35 @@
           document.documentElement.setAttribute("data-theme", storedTheme);
       })();
     </script>
+    <script type="importmap">
+      {
+        "imports": {
+          "codemirror": "https://esm.sh/codemirror@6.0.1",
+          "@codemirror/state": "https://esm.sh/@codemirror/state@6.5.2",
+          "@codemirror/view": "https://esm.sh/@codemirror/view@6.36.5",
+          "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.7.1",
+          "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.6",
+          "@codemirror/lang-markdown": "https://esm.sh/@codemirror/lang-markdown@6.3.1",
+          "@codemirror/lang-javascript": "https://esm.sh/@codemirror/lang-javascript@6.2.2",
+          "@codemirror/lang-python": "https://esm.sh/@codemirror/lang-python@6.1.6",
+          "@codemirror/lang-html": "https://esm.sh/@codemirror/lang-html@6.4.9",
+          "@codemirror/lang-css": "https://esm.sh/@codemirror/lang-css@6.3.0",
+          "@codemirror/lang-xml": "https://esm.sh/@codemirror/lang-xml@6.1.0",
+          "@codemirror/lang-sql": "https://esm.sh/@codemirror/lang-sql@6.8.0",
+          "@codemirror/lang-java": "https://esm.sh/@codemirror/lang-java@6.0.1",
+          "@codemirror/lang-cpp": "https://esm.sh/@codemirror/lang-cpp@6.0.2",
+          "@codemirror/lang-rust": "https://esm.sh/@codemirror/lang-rust@6.0.1",
+          "@codemirror/lang-go": "https://esm.sh/@codemirror/lang-go@6.0.1",
+          "@codemirror/lang-json": "https://esm.sh/@codemirror/lang-json@6.0.1",
+          "@codemirror/lang-yaml": "https://esm.sh/@codemirror/lang-yaml@6.1.1",
+          "@codemirror/language-data": "https://esm.sh/@codemirror/language-data@6.5.1",
+          "@codemirror/search": "https://esm.sh/@codemirror/search@6.5.8",
+          "@codemirror/autocomplete": "https://esm.sh/@codemirror/autocomplete@6.18.3",
+          "@lezer/highlight": "https://esm.sh/@lezer/highlight@1.2.1"
+        }
+      }
+    </script>
+    <script type="module" src="./cm-host.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -1181,34 +1210,42 @@
         text-transform: uppercase;
       }
 
-      /* Editor */
+      /* Editor (CodeMirror 6) */
       #editor {
         flex: 1;
-        padding: 28px 32px;
-        font-family: var(--font-mono);
-        font-size: 14px;
-        line-height: 1.75;
-        color: var(--text-primary);
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
         background: transparent;
-        border: none;
-        resize: none;
+        overflow: hidden;
+        position: relative;
+        line-height: 1.75;
+      }
+      #editor .cm-editor {
+        flex: 1;
+        min-height: 0;
+        background: transparent;
+        color: var(--text-primary);
+        height: 100%;
+      }
+      #editor .cm-editor.cm-focused {
         outline: none;
-        caret-color: var(--accent);
-        transition: color var(--duration-fast) var(--ease);
       }
-      #editor::placeholder {
-        color: var(--text-tertiary);
+      #editor .cm-content {
+        color: var(--text-primary);
       }
-      #editor.drag-over {
+      #editor.drag-over .cm-editor {
         background: var(--accent-muted);
         outline: 2px dashed var(--accent);
         outline-offset: -8px;
       }
-      #editor.focus-mode {
+      #editor.focus-mode .cm-content {
         color: transparent;
         text-shadow: 0 0 0 var(--text-tertiary);
+        caret-color: var(--accent);
       }
-      #editor.focus-mode::selection {
+      #editor.focus-mode .cm-content ::selection,
+      #editor.focus-mode .cm-content::selection {
         background: var(--preview-selection);
         color: var(--text-primary);
         text-shadow: none;
@@ -3640,13 +3677,8 @@
           </div>
         </div>
 
-        <!-- Editor -->
-        <textarea
-          id="editor"
-          placeholder="Start writing…"
-          spellcheck="true"
-          autocomplete="off"
-        ></textarea>
+        <!-- Editor (CodeMirror 6) -->
+        <div id="editor"></div>
 
         <!-- Command palette -->
         <div id="command-palette"></div>
@@ -4019,6 +4051,142 @@
 
       // ─── DOM refs ───
       const editor = document.getElementById("editor");
+
+      // ─── CodeMirror 6 textarea shim ───
+      // The legacy code reads editor.value / selectionStart / selectionEnd /
+      // scrollTop / scrollHeight / clientHeight, calls focus(),
+      // setSelectionRange(a,b), and addEventListener(type,fn). We patch the
+      // real <div> element so the rest of the app keeps working unchanged
+      // while the actual editing happens inside a CodeMirror 6 view that
+      // is asynchronously created by ./cm-host.js.
+      (() => {
+        const __pendingListeners = [];
+        let __initialValue = "";
+        let __view = null;
+
+        const __cmAttach = (type, fn, opts) => {
+          if (type === "input") {
+            // CM's emitInput plugin dispatches "cm-input" on view.dom; map
+            // that to a real input event on the editor element.
+            const handler = (e) => fn(e);
+            __view.dom.addEventListener("cm-input", handler, opts);
+            return;
+          }
+          if (type === "scroll") {
+            __view.scrollDOM.addEventListener("scroll", fn, opts);
+            return;
+          }
+          if (type === "selectionchange") {
+            // CM doesn't fire a DOM selectionchange on content, but the
+            // emitInput plugin dispatches "cm-selection" on view.dom.
+            __view.dom.addEventListener("cm-selection", fn, opts);
+            return;
+          }
+          // keydown needs capture so inline-script intercepts (palette,
+          // emoji menu) run before CodeMirror's internal keymap processes
+          // the same key. For everything else, normal bubble is fine.
+          if (type === "keydown") {
+            const o = typeof opts === "boolean" ? { capture: opts } : (opts || {});
+            __view.contentDOM.addEventListener(type, fn, { ...o, capture: true });
+            return;
+          }
+          __view.contentDOM.addEventListener(type, fn, opts);
+        };
+
+        Object.defineProperty(editor, "value", {
+          configurable: true,
+          get() {
+            return __view ? __view.state.doc.toString() : __initialValue;
+          },
+          set(v) {
+            v = v == null ? "" : String(v);
+            if (__view) {
+              const len = __view.state.doc.length;
+              const sel = __view.state.selection.main;
+              __view.dispatch({
+                changes: { from: 0, to: len, insert: v },
+                selection: sel.from <= v.length
+                  ? { anchor: sel.from, head: sel.to }
+                  : undefined,
+              });
+            } else {
+              __initialValue = v;
+            }
+          },
+        });
+        Object.defineProperty(editor, "selectionStart", {
+          configurable: true,
+          get() {
+            return __view ? __view.state.selection.main.from : 0;
+          },
+          set(v) {
+            if (!__view) return;
+            const sel = __view.state.selection.main;
+            __view.dispatch({
+              selection: { anchor: v, head: v },
+            });
+          },
+        });
+        Object.defineProperty(editor, "selectionEnd", {
+          configurable: true,
+          get() {
+            return __view ? __view.state.selection.main.to : 0;
+          },
+          set(v) {
+            if (!__view) return;
+            __view.dispatch({
+              selection: { anchor: v, head: v },
+            });
+          },
+        });
+        editor.setSelectionRange = function (a, b) {
+          if (!__view) return;
+          __view.dispatch({ selection: { anchor: a, head: b } });
+        };
+        editor.focus = function () {
+          if (__view) __view.focus();
+        };
+        Object.defineProperty(editor, "scrollTop", {
+          configurable: true,
+          get() {
+            return __view ? __view.scrollDOM.scrollTop : 0;
+          },
+          set(v) {
+            if (__view) __view.scrollDOM.scrollTop = v;
+          },
+        });
+        Object.defineProperty(editor, "scrollHeight", {
+          configurable: true,
+          get() {
+            return __view ? __view.scrollDOM.scrollHeight : 0;
+          },
+        });
+        Object.defineProperty(editor, "clientHeight", {
+          configurable: true,
+          get() {
+            return __view ? __view.scrollDOM.clientHeight : 0;
+          },
+        });
+        editor.addEventListener = function (type, fn, opts) {
+          if (__view) __cmAttach(type, fn, opts);
+          else __pendingListeners.push({ type, fn, opts });
+        };
+
+        window.__cmReady.then((view) => {
+          if (!view) return;
+          __view = view;
+          if (__initialValue != null && __initialValue !== "") {
+            view.dispatch({
+              changes: { from: 0, to: view.state.doc.length, insert: __initialValue },
+            });
+            __initialValue = "";
+          }
+          for (const { type, fn, opts } of __pendingListeners) {
+            __cmAttach(type, fn, opts);
+          }
+          __pendingListeners.length = 0;
+        });
+      })();
       const previewContent = document.getElementById("preview-content");
       const fileList = document.getElementById("file-list");
       const currentFilenameDisplay =
@@ -5380,47 +5548,28 @@
         });
 
         editor.addEventListener("keydown", (e) => {
+          // The shim forwards keydown in the capture phase, so this runs
+          // before CodeMirror's internal keymap. We use
+          // stopImmediatePropagation() to keep CM from also reacting to
+          // the key (which would, e.g., move the cursor AND advance the
+          // palette selection at the same time).
+          // Tab and pair-completion are handled by CodeMirror's
+          // indentWithTab and closeBrackets extensions.
           if (emojiMenuOpen) {
             handleEmojiKeydown(e);
+            e.stopImmediatePropagation();
             return;
           }
           if (paletteOpen) {
             if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
               e.preventDefault();
+              e.stopImmediatePropagation();
               if (e.key === "ArrowDown") movePaletteSelection(1);
               if (e.key === "ArrowUp") movePaletteSelection(-1);
               if (e.key === "Enter") applySelectedPaletteCommand();
               if (e.key === "Escape") closeCommandPalette();
               return;
             }
-          }
-          if (e.key === "Tab") {
-            e.preventDefault();
-            const s = editor.selectionStart,
-              end = editor.selectionEnd;
-            editor.value =
-              editor.value.substring(0, s) + "  " + editor.value.substring(end);
-            editor.selectionStart = editor.selectionEnd = s + 2;
-            updatePreview();
-            return;
-          }
-          const pairs = {
-            "(": ")",
-            "[": "]",
-            "{": "}",
-            '"': '"',
-            "'": "'",
-            "`": "`",
-          };
-          if (pairs[e.key]) {
-            e.preventDefault();
-            const s = editor.selectionStart,
-              end = editor.selectionEnd;
-            const val = editor.value;
-            editor.value =
-              val.substring(0, s) + e.key + pairs[e.key] + val.substring(end);
-            editor.selectionStart = editor.selectionEnd = s + 1;
-            updatePreview();
           }
         });
       }
@@ -11271,7 +11420,7 @@ self.onmessage = (e) => {
       window.toggleDropdown = toggleDropdown;
 
       // ─── Boot ───
-      init();
+      window.__cmReady.then(() => init());
     </script>
   </body>
 </html>
