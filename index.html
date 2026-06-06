@@ -8080,6 +8080,32 @@
           notify("Folder opened");
         } catch {}
       }
+      function isMountRoot(path) {
+        if (!path) return false;
+        return mountedFolders.some((m) => m.name === path);
+      }
+      async function unmountFolder(name) {
+        if (!name) return;
+        // Close any open tabs for files in this mount
+        closeTabsForPathPrefix(name, "fs");
+        // Remove from in-memory list
+        mountedFolders = mountedFolders.filter((m) => m.name !== name);
+        // Update primary directoryHandle if it pointed at this mount
+        if (directoryHandle?.name === name) {
+          directoryHandle =
+            mountedFolders.length > 0 ? mountedFolders[0].handle : null;
+          if (!directoryHandle) currentFileSource = "db";
+        }
+        // Remove from persisted IDB list
+        if (window.idbKeyval) {
+          const saved = (await idbKeyval.get("mounted-folder-handles")) || [];
+          const filtered = saved.filter((e) => e.name !== name);
+          await idbKeyval.set("mounted-folder-handles", filtered);
+        }
+        clearFileSelection();
+        refreshExplorer();
+        notify(`Unmounted: ${name}`);
+      }
       function renderMountRestorePrompt() {
         const prompt = document.getElementById("mount-restore-prompt");
         const label = document.getElementById("mount-restore-label");
@@ -8993,6 +9019,11 @@
         );
       }
       async function deleteEntry(path, source = "db") {
+        if (source === "fs" && isMountRoot(path)) {
+          if (!confirm(`Unmount folder "${path}"? The folder itself will remain on disk; it will be removed from the workspace.`)) return;
+          await unmountFolder(path);
+          return;
+        }
         if (!confirm(`Delete "${path}"?`)) return;
         if (source === "db") {
           const allEntries = await listDBFiles();
@@ -9032,17 +9063,58 @@
           const li = document.querySelector(`.file-item[data-path="${CSS.escape(p)}"]`);
           sources.set(p, li?.dataset?.source || "db");
         }
-        const fsPaths = [...sources.keys()].filter((p) => sources.get(p) === "fs");
+        const mountRoots = paths.filter(
+          (p) => sources.get(p) === "fs" && isMountRoot(p),
+        );
+        // Filter out FS files that live inside a mount root that is also being
+        // removed — unmountFolder already closes those tabs and they should
+        // not also be deleted from disk.
+        const removedMountPrefixes = new Set(mountRoots);
+        const fsPaths = [...sources.keys()].filter((p) => {
+          if (sources.get(p) !== "fs") return false;
+          if (isMountRoot(p)) return false;
+          for (const m of removedMountPrefixes) {
+            if (p === m || p.startsWith(m + "/")) return false;
+          }
+          return true;
+        });
         const dbPaths = [...sources.keys()].filter((p) => sources.get(p) === "db");
-        let ok = false;
-        if (fsPaths.length && dbPaths.length) {
-          ok = confirm(`Delete ${paths.length} selected items?`);
-        } else if (fsPaths.length) {
-          ok = confirm(`Delete ${fsPaths.length} selected file${fsPaths.length > 1 ? "s" : ""}?`);
+        const remaining = fsPaths.length + dbPaths.length;
+        if (mountRoots.length && !remaining) {
+          if (
+            !confirm(
+              `Unmount ${mountRoots.length} folder${
+                mountRoots.length > 1 ? "s" : ""
+              } (${mountRoots.join(", ")})? The folders will remain on disk; they will be removed from the workspace.`,
+            )
+          )
+            return;
         } else {
-          ok = confirm(`Delete ${dbPaths.length} selected file${dbPaths.length > 1 ? "s" : ""}?`);
+          let ok = false;
+          if (mountRoots.length) {
+            ok = confirm(
+              `Process ${paths.length} selected items? ${mountRoots.length} folder${
+                mountRoots.length === 1 ? "" : "s"
+              } will be unmounted, ${fsPaths.length + dbPaths.length} file${
+                fsPaths.length + dbPaths.length === 1 ? "" : "s"
+              } will be deleted.`,
+            );
+          } else if (fsPaths.length && dbPaths.length) {
+            ok = confirm(`Delete ${paths.length} selected items?`);
+          } else if (fsPaths.length) {
+            ok = confirm(
+              `Delete ${fsPaths.length} selected file${fsPaths.length > 1 ? "s" : ""}?`,
+            );
+          } else {
+            ok = confirm(
+              `Delete ${dbPaths.length} selected file${dbPaths.length > 1 ? "s" : ""}?`,
+            );
+          }
+          if (!ok) return;
         }
-        if (!ok) return;
+        for (const p of mountRoots) {
+          await unmountFolder(p);
+        }
         for (const p of fsPaths) {
           const parentPath = getParentPath(p);
           const parentDir = parentPath ? fsEntryMap.get(parentPath) : directoryHandle;
@@ -9069,7 +9141,13 @@
         if (anyCurrent) createNewFile();
         clearFileSelection();
         refreshExplorer();
-        notify(`Deleted ${paths.length} item${paths.length > 1 ? "s" : ""}`);
+        const deletedCount = fsPaths.length + dbPaths.length;
+        if (mountRoots.length && deletedCount)
+          notify(
+            `Unmounted ${mountRoots.length} folder${mountRoots.length === 1 ? "" : "s"}, deleted ${deletedCount} item${deletedCount === 1 ? "" : "s"}`,
+          );
+        else if (!mountRoots.length)
+          notify(`Deleted ${paths.length} item${paths.length > 1 ? "s" : ""}`);
       }
       async function deleteSelectedFiles() {
         if (!selectedFilePaths.size) return;
