@@ -113,6 +113,48 @@
         color: var(--text-tertiary);
         transition: transform var(--duration-fast);
       }
+      .mount-restore-prompt {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        margin: 6px 8px;
+        background: var(--surface-input);
+        border: 1px solid var(--accent);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .mount-restore-prompt i {
+        color: var(--accent);
+      }
+      .mount-restore-prompt span {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .btn-mini {
+        padding: 3px 8px;
+        background: var(--accent);
+        color: var(--text-on-accent);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .btn-mini:hover {
+        opacity: 0.85;
+      }
+      .btn-mini.btn-ghost {
+        background: transparent;
+        color: var(--text-tertiary);
+        padding: 3px 6px;
+      }
+      .btn-mini.btn-ghost:hover {
+        color: var(--text-primary);
+      }
       .file-row .file-caret.hidden {
         visibility: hidden;
       }
@@ -3083,6 +3125,15 @@
           </div>
         </header>
 
+        <div id="mount-restore-prompt" class="mount-restore-prompt" style="display:none">
+          <i class="fas fa-folder-tree"></i>
+          <span id="mount-restore-label"></span>
+          <button class="btn-mini" id="mount-restore-btn">Restore</button>
+          <button class="btn-mini btn-ghost" id="mount-restore-dismiss" title="Dismiss">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
         <div class="explorer-search">
           <div class="search-wrap">
             <i class="fas fa-search"></i>
@@ -4032,6 +4083,7 @@
       // ─── State ───
       let directoryHandle = null;
       let mountedFolders = []; // { name, handle }[] — additional opened folders shown in tree
+      let pendingMountRestores = []; // entries awaiting user-gesture permission request
       let currentFileHandle = null;
       let currentFilePath = null;
       let isUnsaved = false;
@@ -4827,32 +4879,41 @@
           newTab("Untitled.md", "");
         }
 
-        // Restore mounted folders from IndexedDB so they survive refresh
-        try {
-          if (window.idbKeyval) {
-            const saved = await idbKeyval.get("mounted-folder-handles");
-            if (saved && saved.length) {
-              for (const entry of saved) {
-                try {
-                  const handle = entry.handle;
-                  if (!handle || typeof handle.queryPermission !== 'function') continue;
-                  const mode = await handle.queryPermission({ mode: 'readwrite' });
-                  if (mode !== 'granted') {
-                    const result = await handle.requestPermission({ mode: 'readwrite' });
-                    if (result !== 'granted') continue;
-                  }
-                  mountedFolders.push({ name: entry.name, handle });
+        // Restore mounted folders from IndexedDB so they survive refresh.
+        // Note: requestPermission() requires a user gesture and will silently
+        // reject on page load. We only call queryPermission() here; the
+        // restoreMountedFolders() helper (triggered by a button) requests
+        // permission with a user gesture.
+        pendingMountRestores = [];
+        if (window.idbKeyval) {
+          const saved = await idbKeyval.get("mounted-folder-handles");
+          if (saved && saved.length) {
+            for (const entry of saved) {
+              try {
+                const mode = await entry.handle.queryPermission({
+                  mode: "readwrite",
+                });
+                if (mode === "granted") {
+                  mountedFolders.push({ name: entry.name, handle: entry.handle });
                   if (!directoryHandle) {
-                    directoryHandle = handle;
+                    directoryHandle = entry.handle;
                     currentFileSource = "fs";
-                    startDeletionWatcher();
                   }
-                } catch {}
+                } else {
+                  // Permission needs a user gesture — queue for restore
+                  pendingMountRestores.push(entry);
+                }
+              } catch {
+                pendingMountRestores.push(entry);
               }
-              if (mountedFolders.length) await scanDirectory();
             }
+            if (mountedFolders.length) {
+              if (!deletionWatcher) startDeletionWatcher();
+              await scanDirectory();
+            }
+            if (pendingMountRestores.length) renderMountRestorePrompt();
           }
-        } catch {} // If serialization fails, folders won't persist — acceptable degradation
+        }
 
         await handleRouteFromLocation({ initial: true });
 
@@ -4870,6 +4931,15 @@
         newFolderBtn.addEventListener("click", () =>
           createNewFolderInExplorer(),
         );
+
+        const mountRestoreBtn = document.getElementById("mount-restore-btn");
+        const mountRestoreDismiss = document.getElementById("mount-restore-dismiss");
+        if (mountRestoreBtn) mountRestoreBtn.addEventListener("click", restorePendingMounts);
+        if (mountRestoreDismiss)
+          mountRestoreDismiss.addEventListener("click", () => {
+            pendingMountRestores = [];
+            renderMountRestorePrompt();
+          });
 
         const toolbar = document.getElementById("toolbar-container");
         if (toolbar) {
@@ -7983,17 +8053,21 @@
         try {
           const handle = await window.showDirectoryPicker();
           const name = handle.name;
+          // Skip if already mounted
+          if (
+            mountedFolders.some((m) => m.name === name) ||
+            pendingMountRestores.some((p) => p.name === name)
+          ) {
+            notify(`Folder "${name}" is already mounted`);
+            return;
+          }
           // Add to mounted folders so it appears as a tree node alongside existing content
           mountedFolders.push({ name, handle });
           // Persist the handle so it survives refresh
-          try {
-            if (window.idbKeyval) {
-              const saved = (await idbKeyval.get("mounted-folder-handles")) || [];
-              saved.push({ name, handle });
-              await idbKeyval.set("mounted-folder-handles", saved);
-            }
-          } catch {
-            notify("Folder opened but won't persist across page refresh");
+          if (window.idbKeyval) {
+            const saved = (await idbKeyval.get("mounted-folder-handles")) || [];
+            saved.push({ name, handle });
+            await idbKeyval.set("mounted-folder-handles", saved);
           }
           // Set as primary directory for file system operations
           directoryHandle = handle;
@@ -8005,6 +8079,51 @@
           statusBar.textContent = `Opened: ${name}`;
           notify("Folder opened");
         } catch {}
+      }
+      function renderMountRestorePrompt() {
+        const prompt = document.getElementById("mount-restore-prompt");
+        const label = document.getElementById("mount-restore-label");
+        if (!prompt || !label) return;
+        if (!pendingMountRestores.length) {
+          prompt.style.display = "none";
+          return;
+        }
+        const names = pendingMountRestores.map((e) => e.name).join(", ");
+        label.textContent = `Restore ${pendingMountRestores.length} folder${
+          pendingMountRestores.length > 1 ? "s" : ""
+        }: ${names}`;
+        label.title = names;
+        prompt.style.display = "flex";
+      }
+      async function restorePendingMounts() {
+        const stillPending = [];
+        for (const entry of pendingMountRestores) {
+          try {
+            const result = await entry.handle.requestPermission({
+              mode: "readwrite",
+            });
+            if (result === "granted") {
+              mountedFolders.push({ name: entry.name, handle: entry.handle });
+              if (!directoryHandle) {
+                directoryHandle = entry.handle;
+                currentFileSource = "fs";
+              }
+            } else {
+              stillPending.push(entry);
+            }
+          } catch {
+            stillPending.push(entry);
+          }
+        }
+        pendingMountRestores = stillPending;
+        if (mountedFolders.length) {
+          if (!deletionWatcher) startDeletionWatcher();
+          await scanDirectory();
+        }
+        renderMountRestorePrompt();
+        if (!pendingMountRestores.length && mountedFolders.length) {
+          notify(`Restored ${mountedFolders.length} folder${mountedFolders.length > 1 ? "s" : ""}`);
+        }
       }
       function isMarkdownFileName(name) {
         const n = (name || "").toLowerCase().trim();
@@ -8996,6 +9115,25 @@
       }
 
       // ─── Local History ───
+      async function isFileInWorkspace(path, source) {
+        if (!path) return false;
+        if (source === "fs") {
+          // Check if file is in any mounted folder
+          if (fsEntryMap.has(path)) return true;
+          for (const mount of mountedFolders) {
+            if (fsEntryMap.has(`${mount.name}/${path}`)) return true;
+          }
+          return false;
+        }
+        // source === "db" — check IndexedDB
+        if (!window.idbKeyval) return true; // assume yes if we can't check
+        try {
+          const entry = await loadFromDB(path);
+          return !!entry;
+        } catch {
+          return false;
+        }
+      }
       async function deleteHistoryForPath(path, source) {
         if (!window.idbKeyval) return;
         try {
@@ -9053,14 +9191,14 @@
 
       async function saveSnapshot() {
         if (!currentFileHandle || !currentFilePath) return;
-        // Only track DB files in history, not mounted folder files
-        if (currentFileSource === "fs") return;
         const content = editor.value;
         const now = Date.now();
         const source = currentFileSource || "db";
         const filePath = currentFilePath;
         const fileId = `${source}:${filePath}`;
         if (!window.idbKeyval) return;
+        // Only track history for files that exist in the current workspace
+        if (!(await isFileInWorkspace(filePath, source))) return;
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
           const filtered = history.filter(
@@ -9089,20 +9227,37 @@
         if (!window.idbKeyval) return;
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
-          // Only show DB files in history — filter out mounted folder entries
-          const dbHistory = history.filter((item) => (item.fileSource || "db") !== "fs");
           const currentId =
             currentFilePath && currentFileSource
               ? `${currentFileSource}:${currentFilePath}`
               : null;
+          // Build per-file workspace presence map (cached per render)
+          const presence = new Map();
+          for (const item of history) {
+            const fileSource = item.fileSource || "db";
+            const filePath = item.filePath || item.name;
+            const fileId = item.fileId || `${fileSource}:${filePath}`;
+            if (presence.has(fileId)) continue;
+            presence.set(fileId, await isFileInWorkspace(filePath, fileSource));
+          }
+          // Drop history entries whose files are not in the current workspace
+          const inWorkspace = history.filter((item) => {
+            const fileSource = item.fileSource || "db";
+            const filePath = item.filePath || item.name;
+            const fileId = item.fileId || `${fileSource}:${filePath}`;
+            return presence.get(fileId) === true;
+          });
+          if (inWorkspace.length !== history.length) {
+            await idbKeyval.set("md-local-history", inWorkspace);
+          }
           historyList.innerHTML = "";
-          if (!dbHistory.length) {
+          if (!inWorkspace.length) {
             historyList.innerHTML =
               '<div style="text-align:center;padding:20px 12px;font-size:11px;color:var(--text-tertiary);font-style:italic;">No history yet</div>';
             return;
           }
           const groups = new Map();
-          dbHistory.forEach((item, idx) => {
+          inWorkspace.forEach((item, idx) => {
             const fileSource = item.fileSource || "db";
             const filePath = item.filePath || item.name;
             const fileId = item.fileId || `${fileSource}:${filePath}`;
@@ -10836,6 +10991,7 @@ self.onmessage = (e) => {
         const file = await handle.getFile();
         const content = await file.text();
         handle.path = path;
+        // Show mount folder prefix in tab name (e.g. "vault1/foo.md")
         newTab(path, content, handle, "fs");
         statusBar.textContent = `Opened ${path}`;
         syncExplorerActiveState();
