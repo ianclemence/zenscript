@@ -94,6 +94,15 @@
         color: var(--accent);
         font-weight: 500;
       }
+      .file-row.selected {
+        background: var(--surface-hover);
+        outline: 1px solid var(--accent);
+        outline-offset: -1px;
+      }
+      .file-row.selected.active {
+        background: var(--surface-active);
+        outline-color: var(--accent);
+      }
       .file-row .file-caret {
         width: 16px;
         height: 16px;
@@ -4031,6 +4040,7 @@
       let wikiLinkMap = {};
       let currentFileSource = "db";
       let currentFolderPath = null;
+      const selectedFilePaths = new Set();
       let clipboard = null;
       let rightClickedEntry = null;
       let rightClickedHistoryIndex = null;
@@ -4890,6 +4900,7 @@
           e.preventDefault();
           const fileItem = e.target.closest(".file-item");
           if (fileItem && fileItem.dataset.type) {
+            if (!(e.ctrlKey || e.metaKey)) clearFileSelection();
             rightClickedEntry = {
               path: fileItem.dataset.path,
               type: fileItem.dataset.type,
@@ -4897,6 +4908,7 @@
             rightClickedEntrySource = fileItem.dataset.source || "db";
             showCtxMenu(e.pageX, e.pageY, fileItem.dataset.type);
           } else if (!fileItem) {
+            clearFileSelection();
             rightClickedEntry = null;
             rightClickedEntrySource = directoryHandle ? "fs" : "db";
             showCtxMenu(e.pageX, e.pageY, "blank");
@@ -4914,6 +4926,7 @@
             const startY = touch.pageY;
 
             explorerTouchTimer = setTimeout(() => {
+              clearFileSelection();
               rightClickedEntry = null;
               rightClickedEntrySource = directoryHandle ? "fs" : "db";
               showCtxMenu(touch.pageX, touch.pageY, "blank");
@@ -5426,6 +5439,10 @@
           if (e.shiftKey && e.altKey && (e.key === "f" || e.key === "F")) {
             e.preventDefault();
             formatDocument();
+          }
+          if (e.key === "Delete" && selectedFilePaths.size) {
+            e.preventDefault();
+            deleteSelectedFiles();
           }
         });
 
@@ -7681,6 +7698,11 @@
             row.onclick = async (e) => {
               e.stopPropagation();
               if (isRenaming || isCreating) return;
+              if (e.ctrlKey || e.metaKey) {
+                toggleFileSelection(node.path);
+                return;
+              }
+              if (selectedFilePaths.size) clearFileSelection();
               if (node.source !== "fs") {
                 const existingTab = tabs.find(
                   (t) =>
@@ -7728,6 +7750,8 @@
           row.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             e.stopPropagation();
+            // If clicked item isn't in selection, clear selection
+            if (!selectedFilePaths.has(node.path)) clearFileSelection();
             rightClickedEntry = { path: node.path, type: node.type };
             rightClickedEntrySource = node.source || "db";
             currentFolderPath =
@@ -8152,8 +8176,19 @@
           el.classList.toggle("active", itemPath === path);
         });
       }
+      function toggleFileSelection(path) {
+        if (selectedFilePaths.has(path)) selectedFilePaths.delete(path);
+        else selectedFilePaths.add(path);
+        const el = document.querySelector(`.file-row[data-path="${CSS.escape(path)}"]`);
+        if (el) el.classList.toggle("selected", selectedFilePaths.has(path));
+      }
+      function clearFileSelection() {
+        selectedFilePaths.clear();
+        document.querySelectorAll(".file-row.selected").forEach((el) => el.classList.remove("selected"));
+      }
 
       async function refreshExplorer() {
+        clearFileSelection();
         fileSystemTree = await buildFileTree();
         renderExplorer();
         updateKnownPathsFromTree();
@@ -8581,6 +8616,7 @@
           badge.textContent = `${tag} (${handles.length})`;
           badge.onclick = () => {
             activeTag = activeTag === tag ? null : tag;
+            clearFileSelection();
             renderTags();
             filterFileList();
           };
@@ -8613,33 +8649,45 @@
         const items = [];
         const isFs = rightClickedEntrySource === "fs";
         if (type === "file") {
-          items.push(
-            {
-              label: "Cut",
-              icon: "fas fa-cut",
-              disabled: isFs,
-              action: () => cutEntry(rightClickedEntry.path),
-            },
-            {
-              label: "Copy",
-              icon: "fas fa-copy",
-              disabled: isFs,
-              action: () => copyEntry(rightClickedEntry.path),
-            },
-            {
-              label: "Rename",
-              icon: "fas fa-pen",
-              action: () => renameEntry(rightClickedEntry.path),
-            },
-            { sep: true },
-            {
-              label: "Delete",
-              icon: "fas fa-trash",
-              danger: true,
-              action: () =>
-                deleteEntry(rightClickedEntry.path, rightClickedEntrySource),
-            },
-          );
+          const multi = selectedFilePaths.has(rightClickedEntry?.path) && selectedFilePaths.size > 1;
+          if (multi) {
+            items.push(
+              {
+                label: `Delete ${selectedFilePaths.size} items`,
+                icon: "fas fa-trash",
+                danger: true,
+                action: () => deleteSelectedFiles(),
+              },
+            );
+          } else {
+            items.push(
+              {
+                label: "Cut",
+                icon: "fas fa-cut",
+                disabled: isFs,
+                action: () => cutEntry(rightClickedEntry.path),
+              },
+              {
+                label: "Copy",
+                icon: "fas fa-copy",
+                disabled: isFs,
+                action: () => copyEntry(rightClickedEntry.path),
+              },
+              {
+                label: "Rename",
+                icon: "fas fa-pen",
+                action: () => renameEntry(rightClickedEntry.path),
+              },
+              { sep: true },
+              {
+                label: "Delete",
+                icon: "fas fa-trash",
+                danger: true,
+                action: () =>
+                  deleteEntry(rightClickedEntry.path, rightClickedEntrySource),
+              },
+            );
+          }
         } else if (type === "folder") {
           items.push(
             {
@@ -8830,6 +8878,55 @@
         closeTabsForPathPrefix(path, source);
         refreshExplorer();
         notify(`Deleted`);
+      }
+      async function deleteMultipleEntries(paths) {
+        const sources = new Map();
+        for (const p of paths) {
+          const li = document.querySelector(`.file-item[data-path="${CSS.escape(p)}"]`);
+          sources.set(p, li?.dataset?.source || "db");
+        }
+        const fsPaths = [...sources.keys()].filter((p) => sources.get(p) === "fs");
+        const dbPaths = [...sources.keys()].filter((p) => sources.get(p) === "db");
+        let ok = false;
+        if (fsPaths.length && dbPaths.length) {
+          ok = confirm(`Delete ${paths.length} selected items?`);
+        } else if (fsPaths.length) {
+          ok = confirm(`Delete ${fsPaths.length} selected file${fsPaths.length > 1 ? "s" : ""}?`);
+        } else {
+          ok = confirm(`Delete ${dbPaths.length} selected file${dbPaths.length > 1 ? "s" : ""}?`);
+        }
+        if (!ok) return;
+        for (const p of fsPaths) {
+          const parentPath = getParentPath(p);
+          const parentDir = parentPath ? fsEntryMap.get(parentPath) : directoryHandle;
+          const name = p.split("/").pop();
+          if (parentDir?.removeEntry) {
+            await parentDir.removeEntry(name, { recursive: true }).catch(() => {});
+          }
+          await deleteHistoryForPath(p, "fs");
+          closeTabsForPathPrefix(p, "fs");
+        }
+        for (const p of dbPaths) {
+          const allEntries = await listDBFiles();
+          const targets = [p];
+          allEntries.forEach((entry) => {
+            if (entry.path.startsWith(p + "/")) targets.push(entry.path);
+          });
+          await Promise.all(targets.map((target) => deleteFromDB(target)));
+          await deleteHistoryForPath(p, "db");
+          closeTabsForPathPrefix(p, "db");
+        }
+        const anyCurrent = paths.some(
+          (p) => currentFilePath === p || currentFilePath?.startsWith(p + "/"),
+        );
+        if (anyCurrent) createNewFile();
+        clearFileSelection();
+        refreshExplorer();
+        notify(`Deleted ${paths.length} item${paths.length > 1 ? "s" : ""}`);
+      }
+      async function deleteSelectedFiles() {
+        if (!selectedFilePaths.size) return;
+        await deleteMultipleEntries([...selectedFilePaths]);
       }
       async function downloadFolderAsZip(folderPath, source) {
         if (!window.JSZip) return notify("ZIP library unavailable");
