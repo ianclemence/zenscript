@@ -54,7 +54,6 @@
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-markdown.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <style id="custom-preview-style"></style>
 
     <style>
       /* Refactored Explorer Styles */
@@ -3081,51 +3080,8 @@
       }
 
       /* ============================================================
-       CUSTOM CSS PANEL
-    ============================================================ */
-      #custom-css-panel {
-        position: absolute;
-        top: 58px;
-        right: 14px;
-        background: var(--surface-overlay);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-xl);
-        padding: 16px;
-        z-index: 50;
-        width: 320px;
-        display: none;
-      }
-      #custom-css-panel.open {
-        display: block;
-      }
-      #custom-css-input {
-        width: 100%;
-        height: 160px;
-        background: var(--surface-input);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 10px 12px;
-        font-family: var(--font-mono);
-        font-size: 11px;
-        color: var(--text-primary);
-        outline: none;
-        resize: vertical;
-        line-height: 1.6;
-        transition: border-color var(--duration-fast) var(--ease);
-      }
-      #custom-css-input:focus {
-        border-color: var(--accent);
-      }
-      #custom-css-input::placeholder {
-        color: var(--text-tertiary);
-      }
-
-      /* ============================================================
        MOBILE
-    ============================================================ */
+     ============================================================ */
       @media (max-width: 768px) {
         body {
           height: 100dvh;
@@ -3786,13 +3742,6 @@
               <option value="matrix">⬡ Matrix</option>
             </select>
             <div class="divider-v"></div>
-            <button
-              class="icon-btn"
-              id="custom-css-btn"
-              title="Custom Preview CSS"
-            >
-              <i class="fas fa-palette"></i>
-            </button>
             <button class="icon-btn" id="toggle-toc" title="Table of Contents">
               <i class="fas fa-list-ul"></i>
             </button>
@@ -3889,27 +3838,6 @@
             </div>
           </div>
           <div id="backlinks-list" class="backlinks-list"></div>
-        </div>
-
-        <!-- Custom CSS panel (lives inside viewer, positioned like TOC) -->
-        <div id="custom-css-panel">
-          <div class="overlay-title">
-            Custom Preview CSS
-            <button class="icon-btn" id="custom-css-close-btn">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Inject CSS into preview</label>
-            <textarea
-              id="custom-css-input"
-              placeholder=".markdown-body h1 { color: #e74c3c; }&#10;.markdown-body { font-family: Georgia, serif; }"
-            ></textarea>
-          </div>
-          <div class="btn-row">
-            <button class="btn-primary" id="apply-custom-css">Apply</button>
-            <button class="btn-ghost" id="clear-custom-css">Clear</button>
-          </div>
         </div>
       </aside>
     </div>
@@ -4260,14 +4188,9 @@
       );
       const exportImageBtn = document.getElementById("export-image");
       const templatesBtnEl = document.getElementById("templates-btn");
-      const customCssBtnEl = document.getElementById("custom-css-btn");
       const livePreviewToggleBtn = document.getElementById(
         "live-preview-toggle",
       );
-      const customCssPanel = document.getElementById("custom-css-panel");
-      const customCssInput = document.getElementById("custom-css-input");
-      const applyCustomCssBtn = document.getElementById("apply-custom-css");
-      const clearCustomCssBtn = document.getElementById("clear-custom-css");
       const goalWrap = document.getElementById("goal-wrap");
       const goalBar = document.getElementById("goal-bar");
       const goalText = document.getElementById("goal-text");
@@ -4323,8 +4246,6 @@
       let historyRetentionDays = 7;
       let isLivePreview = true;
       let previewUpdateTimer = null;
-      // Custom CSS state
-      let isCustomCSSOpen = false;
       // ─── Graph state ───
       let graphPositionCache = {}; // keyed by node id → {x, y}; survives modal close/reopen
       let graphTransform = { x: 0, y: 0, scale: 1 }; // current pan+zoom
@@ -5533,9 +5454,6 @@
           if (e.target === templatesModal)
             templatesModal.style.display = "none";
         });
-        customCssBtnEl.addEventListener("click", toggleCustomCSS);
-        applyCustomCssBtn.addEventListener("click", applyCustomCSS);
-        clearCustomCssBtn.addEventListener("click", clearCustomCSS);
         goalBtnEl.addEventListener("click", () => {
           goalModal.style.display = "flex";
           goalInput.value = writingGoal || "";
@@ -5581,9 +5499,6 @@
         document
           .getElementById("backlinks-close-btn")
           ?.addEventListener("click", toggleBacklinksPanel);
-        document
-          .getElementById("custom-css-close-btn")
-          ?.addEventListener("click", toggleCustomCSS);
         document
           .getElementById("graph-close-btn")
           ?.addEventListener("click", toggleGraphPanel);
@@ -5668,14 +5583,6 @@
           ) {
             isMetaOpen = false;
             metaPanel.classList.remove("open");
-          }
-          if (
-            !e.target.closest("#custom-css-btn") &&
-            !e.target.closest("#custom-css-panel")
-          ) {
-            isCustomCSSOpen = false;
-            customCssPanel.classList.remove("open");
-            customCssBtnEl?.classList.remove("active");
           }
           if (emojiMenuOpen && !e.target.closest("#emoji-menu"))
             hideEmojiMenu();
@@ -7575,12 +7482,6 @@
           "active",
           tocPanel.classList.contains("open"),
         );
-        // Close custom CSS panel if open
-        if (tocPanel.classList.contains("open")) {
-          isCustomCSSOpen = false;
-          customCssPanel.classList.remove("open");
-          customCssBtnEl.classList.remove("active");
-        }
       }
       async function copyAsHTML() {
         try {
@@ -11178,15 +11079,12 @@ self.onmessage = (e) => {
           const a = await idbKeyval.get("md-autosave");
           const g = await idbKeyval.get("md-writing-goal");
           const h = await idbKeyval.get("md-history-retention-days");
-          const css = await idbKeyval.get("md-custom-css");
+          // Purge any leftover custom CSS from previous versions — feature removed.
+          await idbKeyval.delete("md-custom-css");
           if (t) theme = t;
           if (a !== undefined) autosave = a;
           if (g) writingGoal = g;
           if (h) historyRetentionDays = parseInt(h, 10) || 7;
-          if (css) {
-            customCssInput.value = css;
-            document.getElementById("custom-preview-style").textContent = css;
-          }
         }
         themeSelect.value = theme;
         autosaveToggle.checked = autosave;
@@ -11586,36 +11484,6 @@ self.onmessage = (e) => {
         notify("Writing goal cleared");
       }
 
-      // ─── Custom Preview CSS ───
-      function toggleCustomCSS() {
-        isCustomCSSOpen = !isCustomCSSOpen;
-        customCssPanel.classList.toggle("open", isCustomCSSOpen);
-        customCssBtnEl.classList.toggle("active", isCustomCSSOpen);
-        // Close TOC if open
-        if (isCustomCSSOpen) {
-          tocPanel.classList.remove("open");
-          toggleTocBtn.classList.remove("active");
-        }
-      }
-
-      function applyCustomCSS() {
-        const css = customCssInput.value.trim();
-        document.getElementById("custom-preview-style").textContent = css
-          ? `#preview-content { ${""} } ${css}`
-          : "";
-        if (window.idbKeyval) idbKeyval.set("md-custom-css", css);
-        notify("Custom CSS applied");
-        toggleCustomCSS();
-      }
-
-      function clearCustomCSS() {
-        customCssInput.value = "";
-        document.getElementById("custom-preview-style").textContent = "";
-        if (window.idbKeyval) idbKeyval.set("md-custom-css", "");
-        notify("Custom CSS cleared");
-        toggleCustomCSS();
-      }
-
       // ─── Export as Image ───
       // ─── Helpers ───
       const TEMPLATES = [
@@ -11746,7 +11614,6 @@ self.onmessage = (e) => {
       window.toggleMeta = toggleMeta;
       window.toggleTOC = toggleTOC;
       window.toggleDropdown = toggleDropdown;
-      window.toggleCustomCSS = toggleCustomCSS;
 
       // ─── Boot ───
       init();
