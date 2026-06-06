@@ -3226,6 +3226,17 @@
           height: 44px;
           border-bottom: 1px solid var(--border-faint);
           flex-shrink: 0;
+          gap: 8px;
+        }
+        .mobile-bar .filename {
+          flex: 1;
+          text-align: center;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          direction: ltr;
+          unicode-bidi: plaintext;
         }
         .mobile-bar-btn {
           display: inline-flex;
@@ -3401,11 +3412,6 @@
           <span
             class="filename"
             id="mobile-filename"
-            style="
-              font-size: 13px;
-              font-weight: 500;
-              color: var(--text-primary);
-            "
             >Untitled.md</span
           >
           <button
