@@ -138,6 +138,7 @@ const fixedFontTheme = EditorView.theme({
   ".cm-md-meta": { color: "var(--text-tertiary)" },
 });
 
+window.__cmReadyCbs = window.__cmReadyCbs || [];
 let _resolver;
 window.__cmReady = new Promise((res) => { _resolver = res; });
 
@@ -165,6 +166,9 @@ const host = document.getElementById("editor");
 if (!host) {
   console.error("[cm-host] #editor host element missing");
   _resolver(null);
+  const cbs = window.__cmReadyCbs;
+  window.__cmReadyCbs = [];
+  cbs.forEach((cb) => cb(null));
 } else {
   const state = EditorState.create({
     doc: "",
@@ -200,4 +204,7 @@ if (!host) {
   const view = new EditorView({ state, parent: host });
   window.__cmView = view;
   _resolver(view);
+  const cbs = window.__cmReadyCbs;
+  window.__cmReadyCbs = [];
+  cbs.forEach((cb) => cb(view));
 }
