@@ -2162,6 +2162,18 @@
       .markdown-body ::selection {
         background: var(--preview-selection);
       }
+      .markdown-body mark {
+        background: var(--accent-muted);
+        color: var(--text-primary);
+        padding: 0 3px;
+        border-radius: var(--radius-sm);
+      }
+      [data-theme="dark"] .markdown-body mark,
+      [data-theme="dusk"] .markdown-body mark,
+      [data-theme="forest"] .markdown-body mark,
+      [data-theme="matrix"] .markdown-body mark {
+        color: inherit;
+      }
       .markdown-body .mermaid {
         margin: 1.2em 0;
         padding: 12px;
@@ -4056,6 +4068,7 @@
               <option value="1">1 hop</option>
               <option value="2" selected>2 hops</option>
               <option value="3">3 hops</option>
+              <option value="L">Local (downstream)</option>
             </select>
             <button
               class="icon-btn"
@@ -5048,13 +5061,66 @@
         registerServiceWorker();
         await initDB();
         updateAllPathDisplays();
-        if (window.marked)
+        if (window.marked) {
           marked.setOptions({
             gfm: true,
             breaks: true,
             headerIds: true,
             mangle: false,
           });
+          // Custom inline extensions: ==highlight== and %%comment%%.
+          // Comments are stripped from the rendered output (they live in
+          // the source for author notes that don't appear to readers).
+          marked.use({
+            extensions: [
+              {
+                name: "highlight",
+                level: "inline",
+                start(src) {
+                  const i = src.indexOf("==");
+                  return i === -1 ? undefined : i;
+                },
+                tokenizer(src) {
+                  const m = /^(==+)([^=]+?)\1/.exec(src);
+                  if (!m) return undefined;
+                  // Reject when surrounded by word characters on the left
+                  // to avoid colliding with ===, ==inside==, etc.
+                  return {
+                    type: "highlight",
+                    raw: m[0],
+                    text: m[2],
+                    tokens: [],
+                  };
+                },
+                renderer(token) {
+                  return `<mark>${this.parser.parseInline(
+                    token.tokens || [],
+                  )}</mark>`;
+                },
+              },
+              {
+                name: "comment",
+                level: "inline",
+                start(src) {
+                  const i = src.indexOf("%%");
+                  return i === -1 ? undefined : i;
+                },
+                tokenizer(src) {
+                  const m = /^%%([\s\S]+?)%%/.exec(src);
+                  if (!m) return undefined;
+                  return {
+                    type: "comment",
+                    raw: m[0],
+                    text: m[1],
+                  };
+                },
+                renderer() {
+                  return "";
+                },
+              },
+            ],
+          });
+        }
         setupEventListeners();
         setupResizers();
         setupTemplates();
@@ -5415,6 +5481,27 @@
         editor.addEventListener("drop", async (e) => {
           e.preventDefault();
           editor.classList.remove("drag-over");
+          // Explorer → editor: insert a [[wiki-link]] at the cursor.
+          const mdPath =
+            e.dataTransfer.getData("application/x-zenscript-path") ||
+            e.dataTransfer.getData("text/x-zen-file-path");
+          if (mdPath) {
+            const link = `[[${mdPath.replace(/\.md$/i, "")}]]`;
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const before = editor.value.substring(0, start);
+            const after = editor.value.substring(end);
+            const padBefore = before.length && !before.endsWith("\n") && !before.endsWith(" ") ? " " : "";
+            const padAfter = after.length && !after.startsWith("\n") && !after.startsWith(" ") ? " " : "";
+            editor.value = before + padBefore + link + padAfter + after;
+            const pos = start + padBefore.length + link.length;
+            editor.setSelectionRange(pos, pos);
+            updatePreview();
+            markAsUnsaved(true);
+            pushToHistory();
+            editor.focus();
+            return;
+          }
           if (e.dataTransfer.files) {
             for (const f of Array.from(e.dataTransfer.files)) {
               await insertFileReference(f);
@@ -6494,6 +6581,30 @@
         let includedPaths;
         if (!depthFilter || depthFilter === 0 || !currentFilePath) {
           includedPaths = new Set(allPaths);
+        } else if (depthFilter === "L") {
+          // Local graph — only follow outgoing links from the current
+          // file (downstream only). No depth limit, but cap at 6 hops
+          // so a runaway recursion can't bring the canvas to a halt.
+          includedPaths = new Set();
+          const queue = [[currentFilePath, 0]];
+          const MAX_LOCAL_DEPTH = 6;
+          while (queue.length) {
+            const [p, d] = queue.shift();
+            if (includedPaths.has(p)) continue;
+            includedPaths.add(p);
+            if (d < MAX_LOCAL_DEPTH) {
+              const out = fileEntries.get(p) || "";
+              for (const ref of getWikiRefs(out)) {
+                const tp = resolveWikiPath(ref.target);
+                if (
+                  tp &&
+                  fileEntries.has(tp) &&
+                  !includedPaths.has(tp)
+                )
+                  queue.push([tp, d + 1]);
+              }
+            }
+          }
         } else {
           includedPaths = new Set();
           const queue = [[currentFilePath, 0]];
@@ -7001,14 +7112,20 @@
         toggleGraphBtn.classList.toggle("active", open);
         if (open) {
           const sel = document.getElementById("graph-depth-select");
-          graphDepthFilter = sel ? parseInt(sel.value, 10) : 2;
+          graphDepthFilter = sel
+            ? sel.value === "L"
+              ? "L"
+              : parseInt(sel.value, 10)
+            : 2;
           graphTransform = { x: 0, y: 0, scale: 1 };
           renderGraph();
 
           if (sel && !sel._graphWired) {
             sel._graphWired = true;
             sel.addEventListener("change", () => {
-              graphDepthFilter = parseInt(sel.value, 10);
+              graphDepthFilter = sel.value === "L"
+                ? "L"
+                : parseInt(sel.value, 10);
               graphTransform = { x: 0, y: 0, scale: 1 };
               renderGraph();
             });
@@ -9412,14 +9529,134 @@
           const badge = document.createElement("button");
           badge.className = `tag-badge ${activeTag === tag ? "active" : ""}`;
           badge.textContent = `${tag} (${handles.length})`;
-          badge.onclick = () => {
+          badge.onclick = (e) => {
+            // Ctrl/Cmd/Shift + click (or middle-click) opens a tag page
+            // in its own tab. Plain click toggles the file-list filter
+            // as before.
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) {
+              e.preventDefault();
+              openTagPage(tag);
+              return;
+            }
             activeTag = activeTag === tag ? null : tag;
             clearFileSelection();
             renderTags();
             filterFileList();
           };
+          // Middle-click also opens the tag page
+          badge.onauxclick = (e) => {
+            if (e.button === 1) {
+              e.preventDefault();
+              openTagPage(tag);
+            }
+          };
+          badge.title = `${tag} — click to filter · Ctrl/Shift+click to open as page`;
           tagsContainer.appendChild(badge);
         });
+      }
+
+      // ─── Tag Pages (Ctrl+Click a tag badge) ───
+      async function openTagPage(tag) {
+        const handles = allTags.get(tag) || [];
+        if (!handles.length) {
+          notify(`No notes tagged "${tag}"`);
+          return;
+        }
+        // Resolve each handle to {path, name, mtime, excerpt}. We need to
+        // pull content from the FS or DB to build excerpts.
+        const items = [];
+        for (const h of handles) {
+          const path = h.path || h.name;
+          let content = "";
+          let mtime = 0;
+          try {
+            const entry = await loadFromDB(path);
+            if (entry) {
+              content = entry.content || "";
+              mtime = entry.mtime || 0;
+            } else if (fsEntryMap && fsEntryMap.has(path)) {
+              const e = fsEntryMap.get(path);
+              if (e && e.handle) {
+                const f = await e.handle.getFile();
+                content = await f.text();
+                mtime = f.lastModified || 0;
+              }
+            } else {
+              for (const mount of mountedFolders) {
+                const prefixed = `${mount.name}/${path}`;
+                if (fsEntryMap && fsEntryMap.has(prefixed)) {
+                  const e = fsEntryMap.get(prefixed);
+                  if (e && e.handle) {
+                    const f = await e.handle.getFile();
+                    content = await f.text();
+                    mtime = f.lastModified || 0;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch {}
+          // Excerpt: first 180 chars, ignoring markdown noise
+          const stripped = (content || "")
+            .replace(/^---\s*\n[\s\S]*?\n---\s*/m, "")
+            .replace(/^#+\s+.*$/gm, "")
+            .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, "$2$1")
+            .replace(/[*_`~]/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+          const excerpt = stripped.slice(0, 180).trim() +
+            (stripped.length > 180 ? "…" : "");
+          items.push({
+            path,
+            name: basename(path).replace(/\.md$/i, ""),
+            mtime,
+            excerpt,
+          });
+        }
+        items.sort((a, b) => b.mtime - a.mtime);
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const body = [
+          `# Tag: ${tag}`,
+          ``,
+          `*${items.length} note${items.length === 1 ? "" : "s"} · ${dateStr}*`,
+          ``,
+          ...items.map((it) => {
+            const date = it.mtime
+              ? new Date(it.mtime).toISOString().slice(0, 10)
+              : "";
+            return [
+              `## [[${it.path}|${it.name}]]`,
+              date ? `*${date}*` : "",
+              it.excerpt ? `> ${it.excerpt}` : "",
+              ``,
+            ].filter(Boolean).join("\n\n");
+          }),
+        ].join("\n");
+
+        const tabName = `#tag:${tag}`;
+        const virtualPath = `__tag__/${tag}.md`;
+        // Check if a tag tab for this tag is already open.
+        const existing = tabs.find(
+          (t) => t.filePath && t.filePath.toLowerCase() === virtualPath.toLowerCase(),
+        );
+        if (existing) {
+          existing.content = body;
+          activateTab(existing.id);
+          return;
+        }
+        // Tag pages are unsaved by definition (regenerated each open).
+        newTab(tabName, body, { name: virtualPath, path: virtualPath }, "db");
+        // Mark tab as synthetic so it isn't persisted into the regular
+        // tab restore list (it'll be regenerated next time).
+        if (activeTabId !== null) {
+          const tab = tabs.find((t) => t.id === activeTabId);
+          if (tab) {
+            tab.synthetic = true;
+            tab.fileHandle = null;
+            tab.filePath = virtualPath;
+          }
+        }
       }
       function filterFileList() {
         if (!activeTag) {
