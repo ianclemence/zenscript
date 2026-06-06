@@ -2210,36 +2210,6 @@
       #toc-panel.open {
         display: block;
       }
-      .links-dropdown-panel {
-        position: absolute;
-        top: 58px;
-        right: 14px;
-        background: var(--surface-overlay);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px var(--border-style) var(--border);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-xl);
-        padding: 12px;
-        z-index: 50;
-        width: 240px;
-        max-height: 65%;
-        overflow-y: auto;
-        display: none;
-      }
-      .links-dropdown-panel.open {
-        display: block;
-      }
-      #links-dropdown-list {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        margin-top: 4px;
-      }
-      #links-dropdown-list .dropdown-item {
-        padding: 6px 8px;
-        font-size: 12px;
-      }
       #toc-list {
         display: flex;
         flex-direction: column;
@@ -3764,16 +3734,6 @@
             <button class="icon-btn" id="toggle-toc" title="Table of Contents">
               <i class="fas fa-list-ul"></i>
             </button>
-            <button
-              class="icon-btn"
-              id="toggle-backlinks"
-              title="Links from this note"
-            >
-              <i class="fas fa-link"></i>
-            </button>
-            <div id="links-dropdown" class="links-dropdown-panel">
-              <div id="links-dropdown-list"></div>
-            </div>
             <button class="icon-btn" id="toggle-graph" title="Knowledge Graph">
               <i class="fas fa-share-nodes"></i>
             </button>
@@ -3809,9 +3769,6 @@
                 </button>
                 <button class="dropdown-item" id="copy-link-menu">
                   <i class="fas fa-link"></i>Copy Link
-                </button>
-                <button class="dropdown-item" id="copy-share-link-menu">
-                  <i class="fas fa-lock"></i>Copy Share Link
                 </button>
               </div>
             </div>
@@ -4114,7 +4071,6 @@
       const backlinksPanel = document.getElementById("backlinks-panel");
       const backlinksList = document.getElementById("backlinks-list");
       const graphCanvas = document.getElementById("graph-canvas");
-      const toggleBacklinksBtn = document.getElementById("toggle-backlinks");
       const toggleGraphBtn = document.getElementById("toggle-graph");
       const tagsContainer = document.getElementById("tags-container");
       const globalSearchInput = document.getElementById("global-search-input");
@@ -4202,9 +4158,6 @@
       const tabNewBtn = document.getElementById("tab-new");
       const copyHtmlMenuBtn = document.getElementById("copy-html-menu");
       const copyLinkMenuBtn = document.getElementById("copy-link-menu");
-      const copyShareLinkMenuBtn = document.getElementById(
-        "copy-share-link-menu",
-      );
       const exportImageBtn = document.getElementById("export-image");
       const templatesBtnEl = document.getElementById("templates-btn");
       const livePreviewToggleBtn = document.getElementById(
@@ -4672,7 +4625,6 @@
       function parseSectionIdFromLocation() {
         const raw = (location.hash || "").slice(1);
         if (!raw) return "";
-        if (raw.startsWith("share=")) return "";
         return decodeURIComponent(raw);
       }
 
@@ -4684,76 +4636,6 @@
         if (!target) return false;
         target.scrollIntoView({ behavior, block: "start" });
         return true;
-      }
-
-      function base64UrlEncodeBytes(bytes) {
-        let bin = "";
-        const chunk = 0x8000;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-        }
-        return btoa(bin)
-          .replace(/\+/g, "-")
-          .replace(/\//g, "_")
-          .replace(/=+$/g, "");
-      }
-
-      function base64UrlDecodeToBytes(str) {
-        const s = (str || "").replace(/-/g, "+").replace(/_/g, "/");
-        const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
-        const bin = atob(s + pad);
-        const out = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-        return out;
-      }
-
-      async function gzipCompressBytes(bytes) {
-        if (!("CompressionStream" in window))
-          return { bytes, encoding: "none" };
-        try {
-          const cs = new CompressionStream("gzip");
-          const stream = new Blob([bytes]).stream().pipeThrough(cs);
-          const ab = await new Response(stream).arrayBuffer();
-          return { bytes: new Uint8Array(ab), encoding: "gzip" };
-        } catch {
-          return { bytes, encoding: "none" };
-        }
-      }
-
-      async function gzipDecompressBytes(bytes) {
-        if (!("DecompressionStream" in window))
-          return { bytes, encoding: "none" };
-        try {
-          const ds = new DecompressionStream("gzip");
-          const stream = new Blob([bytes]).stream().pipeThrough(ds);
-          const ab = await new Response(stream).arrayBuffer();
-          return { bytes: new Uint8Array(ab), encoding: "gzip" };
-        } catch {
-          return { bytes, encoding: "none" };
-        }
-      }
-
-      async function deriveKeyFromPassphrase(passphrase, salt, iterations) {
-        const enc = new TextEncoder();
-        const baseKey = await crypto.subtle.importKey(
-          "raw",
-          enc.encode(passphrase),
-          "PBKDF2",
-          false,
-          ["deriveKey"],
-        );
-        return crypto.subtle.deriveKey(
-          {
-            name: "PBKDF2",
-            salt,
-            iterations,
-            hash: "SHA-256",
-          },
-          baseKey,
-          { name: "AES-GCM", length: 256 },
-          false,
-          ["encrypt", "decrypt"],
-        );
       }
 
       async function copyCanonicalLink(sectionId) {
@@ -4774,171 +4656,9 @@
         }
       }
 
-      async function copyEncryptedShareLink() {
-        const docPath = getCurrentDocPath();
-        const name =
-          (docPath && docPath.split("/").pop()) ||
-          currentFilenameDisplay.textContent ||
-          "document.md";
-        const sectionId = parseSectionIdFromLocation();
-        const passphrase = prompt(
-          "Passphrase (leave blank to generate an encrypted link key inside the URL):",
-          "",
-        );
-        const payload = {
-          v: 1,
-          docPath: docPath || name,
-          name,
-          sectionId: sectionId || "",
-          markdown: editor.value || "",
-          ts: Date.now(),
-        };
-        const enc = new TextEncoder();
-        const jsonBytes = enc.encode(JSON.stringify(payload));
-        const { bytes: plainBytes, encoding } =
-          await gzipCompressBytes(jsonBytes);
-
-        let key = null;
-        let keyBytes = null;
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const iterations = 150000;
-        let salt = null;
-
-        if (passphrase && passphrase.trim()) {
-          salt = crypto.getRandomValues(new Uint8Array(16));
-          key = await deriveKeyFromPassphrase(
-            passphrase.trim(),
-            salt,
-            iterations,
-          );
-        } else {
-          keyBytes = crypto.getRandomValues(new Uint8Array(32));
-          key = await crypto.subtle.importKey(
-            "raw",
-            keyBytes,
-            { name: "AES-GCM" },
-            false,
-            ["encrypt", "decrypt"],
-          );
-        }
-
-        let ctAb;
-        try {
-          ctAb = await crypto.subtle.encrypt(
-            { name: "AES-GCM", iv },
-            key,
-            plainBytes,
-          );
-        } catch {
-          notify("Share link encryption failed");
-          return;
-        }
-        const shareObj = {
-          v: 1,
-          enc: "A256GCM",
-          kdf: passphrase && passphrase.trim() ? "PBKDF2" : "RAW",
-          iter: passphrase && passphrase.trim() ? iterations : 0,
-          salt: salt ? base64UrlEncodeBytes(salt) : "",
-          iv: base64UrlEncodeBytes(iv),
-          key: keyBytes ? base64UrlEncodeBytes(keyBytes) : "",
-          c: encoding,
-          ct: base64UrlEncodeBytes(new Uint8Array(ctAb)),
-        };
-        const shareStr = base64UrlEncodeBytes(
-          enc.encode(JSON.stringify(shareObj)),
-        );
-        const base = getAppBasePath();
-        const url = `${location.origin}${base}#share=${shareStr}`;
-        if (url.length > 12000) {
-          notify("Share link is too large");
-          return;
-        }
-        try {
-          await navigator.clipboard.writeText(url);
-          notify("Share link copied");
-        } catch {
-          notify("Copy failed");
-        }
-      }
-
-      async function handleShareLinkFromLocation() {
-        const raw = (location.hash || "").slice(1);
-        if (!raw.startsWith("share=")) return false;
-        const encoded = raw.slice("share=".length);
-        try {
-          const bytes = base64UrlDecodeToBytes(encoded);
-          const dec = new TextDecoder();
-          const shareObj = JSON.parse(dec.decode(bytes));
-          if (!shareObj || shareObj.v !== 1) return false;
-          const iv = base64UrlDecodeToBytes(shareObj.iv || "");
-          const ct = base64UrlDecodeToBytes(shareObj.ct || "");
-          let key;
-          if (shareObj.kdf === "PBKDF2") {
-            const passphrase = prompt(
-              "Enter passphrase to open this link:",
-              "",
-            );
-            if (!passphrase || !passphrase.trim()) return true;
-            const salt = base64UrlDecodeToBytes(shareObj.salt || "");
-            key = await deriveKeyFromPassphrase(
-              passphrase.trim(),
-              salt,
-              parseInt(shareObj.iter, 10) || 150000,
-            );
-          } else {
-            const keyBytes = base64UrlDecodeToBytes(shareObj.key || "");
-            if (!keyBytes.length) return false;
-            key = await crypto.subtle.importKey(
-              "raw",
-              keyBytes,
-              { name: "AES-GCM" },
-              false,
-              ["decrypt"],
-            );
-          }
-          const ptAb = await crypto.subtle.decrypt(
-            { name: "AES-GCM", iv },
-            key,
-            ct,
-          );
-          let ptBytes = new Uint8Array(ptAb);
-          if (shareObj.c === "gzip") {
-            const res = await gzipDecompressBytes(ptBytes);
-            ptBytes = res.bytes;
-          }
-          const payload = JSON.parse(new TextDecoder().decode(ptBytes));
-          const filePath = payload.docPath || payload.name || "shared.md";
-          newTab(
-            filePath,
-            payload.markdown || "",
-            { name: filePath, path: filePath },
-            "db",
-          );
-          setCanonicalUrl({
-            docPath: filePath,
-            sectionId: payload.sectionId || "",
-            replace: true,
-          });
-          if (payload.sectionId) {
-            requestAnimationFrame(() =>
-              requestAnimationFrame(() =>
-                scrollToSectionInPreview(payload.sectionId, "auto"),
-              ),
-            );
-          }
-          notify("Shared doc opened");
-          return true;
-        } catch {
-          notify("Invalid share link");
-          return true;
-        }
-      }
-
       let pendingInitialSectionId = "";
 
       async function handleRouteFromLocation({ initial = false } = {}) {
-        const handledShare = await handleShareLinkFromLocation();
-        if (handledShare) return;
         const docPath = parseDocPathFromLocation();
         const sectionId = parseSectionIdFromLocation();
         if (docPath && window.idbKeyval) {
@@ -5386,10 +5106,6 @@
           await copyCanonicalLink(parseSectionIdFromLocation());
           toggleDropdown("download-menu", false);
         });
-        copyShareLinkMenuBtn?.addEventListener("click", async () => {
-          await copyEncryptedShareLink();
-          toggleDropdown("download-menu", false);
-        });
         undoBtn.addEventListener("click", undo);
         redoBtn.addEventListener("click", redo);
         const bindFormat = (id, type) => {
@@ -5434,14 +5150,6 @@
         zenModeBtn.addEventListener("click", toggleZenMode);
         focusModeBtn.addEventListener("click", toggleFocusMode);
         toggleTocBtn.addEventListener("click", toggleTOC);
-        toggleBacklinksBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const panel = document.getElementById("links-dropdown");
-          const isOpen = panel.classList.contains("open");
-          panel.classList.toggle("open", !isOpen);
-          toggleBacklinksBtn.classList.toggle("active", !isOpen);
-          if (!isOpen) populateLinksDropdown();
-        });
         toggleGraphBtn.addEventListener("click", toggleGraphPanel);
         if (livePreviewToggleBtn)
           livePreviewToggleBtn.addEventListener("click", toggleLivePreview);
@@ -5582,14 +5290,6 @@
           ) {
             tocPanel.classList.remove("open");
             toggleTocBtn.classList.remove("active");
-          }
-          if (
-            !e.target.closest("#toggle-backlinks") &&
-            !e.target.closest("#links-dropdown")
-          ) {
-            const panel = document.getElementById("links-dropdown");
-            panel.classList.remove("open");
-            toggleBacklinksBtn.classList.remove("active");
           }
           if (
             !e.target.closest("#download-toggle") &&
@@ -6132,39 +5832,7 @@
       }
 
       function toggleBacklinksPanel() {
-        const open = backlinksPanel.classList.toggle("open");
-        toggleBacklinksBtn.classList.toggle("active", open);
-        if (open) refreshBacklinks();
-      }
-
-      function populateLinksDropdown() {
-        const list = document.getElementById("links-dropdown-list");
-        if (!currentFilePath) {
-          list.innerHTML =
-            '<div class="dropdown-item" style="color:var(--text-tertiary);cursor:default;">No file open</div>';
-          return;
-        }
-        const content = editor.value;
-        const refs = content.match(/\[\[([^\]]+)\]\]/g) || [];
-        if (!refs.length) {
-          list.innerHTML =
-            '<div class="dropdown-item" style="color:var(--text-tertiary);cursor:default;">No links in this note</div>';
-          return;
-        }
-        list.innerHTML = "";
-        for (const ref of refs) {
-          const name = ref.slice(2, -2).trim();
-          const key = name.toLowerCase();
-          const exists = !!resolveWikiPath(name);
-          const div = document.createElement("div");
-          div.className = "dropdown-item" + (exists ? "" : " missing-link");
-          div.innerHTML = `<i class="fas fa-link" style="width:14px;text-align:center;"></i>${name}${exists ? "" : " <span style='font-size:10px;color:var(--text-tertiary);'>(create)</span>"}`;
-          div.onclick = () => {
-            toggleDropdown("links-dropdown", false);
-            openWikiLink(name);
-          };
-          list.appendChild(div);
-        }
+        backlinksPanel.classList.toggle("open");
       }
 
       async function getAllNodesAndLinks(depthFilter) {
