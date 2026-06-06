@@ -2222,27 +2222,6 @@
         align-items: center;
         gap: 6px;
       }
-      .toc-copy-btn {
-        appearance: none;
-        border: 1px var(--border-style) var(--border-faint);
-        background: transparent;
-        color: var(--text-tertiary);
-        border-radius: var(--radius-sm);
-        width: 22px;
-        height: 22px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition:
-          background var(--duration-fast) var(--ease),
-          color var(--duration-fast) var(--ease);
-        flex-shrink: 0;
-      }
-      .toc-copy-btn:hover {
-        background: var(--surface-hover);
-        color: var(--text-primary);
-      }
 
       .toc-link {
         display: inline-block;
@@ -7078,18 +7057,7 @@
             if (docPath)
               setCanonicalUrl({ docPath, sectionId: h.id, replace: false });
           };
-          const copyBtn = document.createElement("button");
-          copyBtn.type = "button";
-          copyBtn.className = "toc-copy-btn";
-          copyBtn.title = "Copy link";
-          copyBtn.innerHTML = '<i class="fas fa-link"></i>';
-          copyBtn.onclick = async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            await copyCanonicalLink(h.id);
-          };
           row.appendChild(link);
-          row.appendChild(copyBtn);
           tocList.appendChild(row);
         });
       }
