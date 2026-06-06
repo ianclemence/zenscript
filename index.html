@@ -103,6 +103,19 @@
         background: var(--surface-active);
         outline-color: var(--accent);
       }
+      .file-row.reveal-flash {
+        animation: reveal-flash 1.2s var(--ease);
+      }
+      @keyframes reveal-flash {
+        0% {
+          background: var(--accent);
+          color: var(--text-on-accent);
+        }
+        100% {
+          background: transparent;
+          color: inherit;
+        }
+      }
       .file-row .file-caret {
         width: 16px;
         height: 16px;
@@ -1005,19 +1018,44 @@
       }
 
       .file-label {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 6px;
+        padding: 4px 9px 4px 8px;
+        border-radius: var(--radius-md);
+        background: var(--accent-muted);
+        color: var(--accent);
         flex-shrink: 0;
+        min-width: 0;
+        max-width: 240px;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .file-label:hover {
+        background: var(--accent-glow);
+      }
+      .file-label::before {
+        content: "\f15b";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 10px;
+        flex-shrink: 0;
+        opacity: 0.85;
       }
       .filename {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
-        color: var(--text-primary);
-        max-width: 200px;
+        color: inherit;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        direction: rtl;
+        text-align: left;
+        unicode-bidi: plaintext;
+        max-width: 200px;
+        min-width: 0;
+        flex: 1;
       }
       .unsaved-dot {
         width: 6px;
@@ -1178,6 +1216,52 @@
         display: flex;
         align-items: center;
         gap: 12px;
+      }
+      .status-path {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 360px;
+        padding: 2px 8px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-input);
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        cursor: pointer;
+        user-select: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        direction: rtl;
+        text-align: left;
+        unicode-bidi: plaintext;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .status-path:hover {
+        background: var(--accent-muted);
+        color: var(--accent);
+      }
+      .status-path::before {
+        content: "\f07c";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 9px;
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .status-path:empty {
+        display: none;
+      }
+      .status-path.copied {
+        background: var(--success);
+        color: white;
+      }
+      .status-path.copied::before {
+        content: "\f00c";
+        opacity: 1;
       }
 
       /* ============================================================
@@ -2755,6 +2839,10 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        direction: rtl;
+        text-align: left;
+        unicode-bidi: plaintext;
+        max-width: 160px;
       }
       .tab-dirty {
         width: 6px;
@@ -2810,6 +2898,105 @@
       .tab-new:hover {
         background: var(--surface-hover);
         color: var(--text-primary);
+      }
+
+      /* ============================================================
+       BREADCRUMB BAR (IDE-style path between tabs and editor)
+     ============================================================ */
+      .breadcrumb-bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        min-height: 30px;
+        padding: 4px 14px;
+        border-bottom: 1px solid var(--border-faint);
+        background: var(--surface-sidebar);
+        flex-shrink: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        scroll-behavior: smooth;
+      }
+      .breadcrumb-bar::-webkit-scrollbar {
+        height: 4px;
+      }
+      .breadcrumb-bar:empty,
+      .breadcrumb-bar.empty {
+        display: none;
+      }
+      .breadcrumb-seg {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: transparent;
+        color: var(--text-tertiary);
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 400;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition:
+          background var(--duration-fast) var(--ease),
+          color var(--duration-fast) var(--ease);
+      }
+      .breadcrumb-seg:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+      .breadcrumb-seg:active {
+        transform: scale(0.97);
+      }
+      .breadcrumb-seg.root {
+        color: var(--text-secondary);
+        font-weight: 500;
+        max-width: 120px;
+      }
+      .breadcrumb-seg.root::before {
+        content: "\f07b";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 10px;
+        color: var(--accent);
+        opacity: 0.8;
+      }
+      .breadcrumb-seg.leaf {
+        color: var(--text-primary);
+        font-weight: 500;
+        cursor: default;
+        background: var(--accent-muted);
+      }
+      .breadcrumb-seg.leaf:hover {
+        background: var(--accent-muted);
+        color: var(--text-primary);
+      }
+      .breadcrumb-seg.leaf::before {
+        content: "\f15b";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 10px;
+        color: var(--accent);
+      }
+      .breadcrumb-sep {
+        color: var(--text-tertiary);
+        font-size: 10px;
+        user-select: none;
+        flex-shrink: 0;
+        opacity: 0.6;
+        padding: 0 1px;
+      }
+      .breadcrumb-empty {
+        color: var(--text-tertiary);
+        font-size: 11px;
+        font-style: italic;
+        padding: 2px 4px;
+        user-select: none;
       }
 
       /* ============================================================
@@ -3238,9 +3425,14 @@
           </button>
         </div>
 
+        <!-- Breadcrumb bar (IDE-style path for the open file) -->
+        <nav class="breadcrumb-bar" id="breadcrumb-bar" aria-label="File path">
+          <!-- segments injected by JS -->
+        </nav>
+
         <header class="workspace-header no-print">
-          <!-- Hidden file-label for JS references -->
-          <div class="file-label" style="display:none">
+          <!-- File label: compact filename badge (mirrors breadcrumb leaf) -->
+          <div class="file-label" id="file-label" title="">
             <span class="filename" id="current-filename">Untitled.md</span>
             <div class="unsaved-dot" id="unsaved-indicator"></div>
           </div>
@@ -3536,6 +3728,11 @@
         <footer class="status-bar no-print">
           <span class="status-text" id="status-bar">Ready</span>
           <div class="status-meta">
+            <span
+              class="status-path"
+              id="status-path"
+              title="Click to copy full path"
+            ></span>
             <span class="status-text" id="autosave-status"></span>
             <span class="status-text" id="reading-time">0 min read</span>
             <span class="status-text" id="char-count">0 chars</span>
@@ -3938,7 +4135,10 @@
       const currentFilenameDisplay =
         document.getElementById("current-filename");
       const mobileFilenameDisplay = document.getElementById("mobile-filename");
+      const fileLabel = document.getElementById("file-label");
       const unsavedIndicator = document.getElementById("unsaved-indicator");
+      const breadcrumbBar = document.getElementById("breadcrumb-bar");
+      const statusPath = document.getElementById("status-path");
 
       // Sync current-filename text to mobile-filename
       if (currentFilenameDisplay && mobileFilenameDisplay) {
@@ -4819,6 +5019,7 @@
         persistAppBasePath();
         registerServiceWorker();
         await initDB();
+        updateAllPathDisplays();
         if (window.marked)
           marked.setOptions({
             gfm: true,
@@ -7574,6 +7775,204 @@
         parts.pop();
         return parts.join("/");
       }
+      // ─── IDE-style path helpers ───
+      function basename(path) {
+        if (!path) return "";
+        const parts = path.split("/");
+        return parts[parts.length - 1] || "";
+      }
+      function getPathSegments(path) {
+        if (!path) return [];
+        return path.split("/").filter(Boolean);
+      }
+      function getWorkspaceRoots() {
+        const roots = new Set();
+        if (directoryHandle?.name) roots.add(directoryHandle.name);
+        mountedFolders.forEach((m) => roots.add(m.name));
+        return roots;
+      }
+      function isWorkspaceRootSegment(seg) {
+        if (!seg) return false;
+        return getWorkspaceRoots().has(seg);
+      }
+
+      // ─── Breadcrumb (IDE-style path strip) ───
+      function renderBreadcrumb(path) {
+        if (!breadcrumbBar) return;
+        breadcrumbBar.innerHTML = "";
+        if (!path) {
+          breadcrumbBar.classList.add("empty");
+          const empty = document.createElement("span");
+          empty.className = "breadcrumb-empty";
+          empty.textContent = "No file open";
+          breadcrumbBar.appendChild(empty);
+          return;
+        }
+        breadcrumbBar.classList.remove("empty");
+        const segments = getPathSegments(path);
+        // Collapse the leading workspace/mount root into a single root chip
+        // so the bar shows <root> › <folder›…> › <file>, matching modern IDEs.
+        let startIdx = 0;
+        if (segments.length > 0 && isWorkspaceRootSegment(segments[0])) {
+          startIdx = 1;
+        }
+        const visible = segments.slice(startIdx);
+        if (visible.length === 0) {
+          // Path is just the root (shouldn't happen for files, but be safe)
+          visible.push(segments[0] || "");
+        }
+        // Root chip
+        if (startIdx === 1) {
+          const rootSeg = document.createElement("button");
+          rootSeg.className = "breadcrumb-seg root";
+          rootSeg.textContent = segments[0];
+          rootSeg.title = segments[0];
+          rootSeg.addEventListener("click", () =>
+            revealInExplorer(segments[0], { focus: true }),
+          );
+          breadcrumbBar.appendChild(rootSeg);
+        } else {
+          const rootSeg = document.createElement("button");
+          rootSeg.className = "breadcrumb-seg root";
+          rootSeg.textContent = "Vault";
+          rootSeg.title = "Vault";
+          rootSeg.addEventListener("click", () =>
+            revealInExplorer("", { focus: true }),
+          );
+          breadcrumbBar.appendChild(rootSeg);
+        }
+        // Build cumulative path for each intermediate segment
+        const cumulativeBase = startIdx === 1 ? segments[0] : "";
+        for (let i = 0; i < visible.length; i++) {
+          if (i > 0 || startIdx === 1) {
+            const sep = document.createElement("span");
+            sep.className = "breadcrumb-sep";
+            sep.textContent = "›";
+            sep.setAttribute("aria-hidden", "true");
+            breadcrumbBar.appendChild(sep);
+          }
+          const segName = visible[i];
+          const isLeaf = i === visible.length - 1;
+          const cumulative = cumulativeBase
+            ? cumulativeBase + "/" + visible.slice(0, i + 1).join("/")
+            : visible.slice(0, i + 1).join("/");
+          const chip = document.createElement(isLeaf ? "span" : "button");
+          chip.className = "breadcrumb-seg" + (isLeaf ? " leaf" : "");
+          chip.textContent = segName;
+          chip.title = cumulative;
+          if (!isLeaf) {
+            chip.addEventListener("click", () =>
+              revealInExplorer(cumulative, { focus: true }),
+            );
+            chip.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              rightClickedEntry = { path: cumulative, type: "folder" };
+              rightClickedEntrySource = "db";
+              currentFolderPath = getParentPath(cumulative);
+              showCtxMenu(e.pageX, e.pageY, "folder");
+            });
+          } else {
+            chip.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              rightClickedEntry = { path: cumulative, type: "file" };
+              rightClickedEntrySource =
+                currentFileSource === "fs" ? "fs" : "db";
+              currentFolderPath = getParentPath(cumulative);
+              showCtxMenu(e.pageX, e.pageY, "file");
+            });
+          }
+          breadcrumbBar.appendChild(chip);
+        }
+        // Scroll the leaf into view (within the breadcrumb only, not the page)
+        const leaf = breadcrumbBar.querySelector(".breadcrumb-seg.leaf");
+        if (leaf && breadcrumbBar.scrollWidth > breadcrumbBar.clientWidth) {
+          requestAnimationFrame(() => {
+            breadcrumbBar.scrollLeft = breadcrumbBar.scrollWidth;
+          });
+        }
+      }
+
+      // ─── Reveal a path in the explorer (expand parents, focus row) ───
+      async function revealInExplorer(path, opts = {}) {
+        const focus = opts.focus !== false;
+        // Expand all parent folders along the path
+        if (path) {
+          const parts = path.split("/").filter(Boolean);
+          let acc = "";
+          for (let i = 0; i < parts.length - 1; i++) {
+            acc = acc ? `${acc}/${parts[i]}` : parts[i];
+            collapsedExplorerFolders.delete(acc);
+          }
+          // Also ensure mount root is expanded
+          if (parts.length && isWorkspaceRootSegment(parts[0])) {
+            collapsedExplorerFolders.delete(parts[0]);
+          }
+        }
+        // Re-render the explorer so the expanded state takes effect
+        await refreshExplorer();
+        if (!focus || !path) return;
+        // Find the row and focus/scroll to it
+        const row = document.querySelector(
+          `.file-row[data-path="${CSS.escape(path)}"]`,
+        );
+        if (row) {
+          row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          row.classList.add("reveal-flash");
+          setTimeout(() => row.classList.remove("reveal-flash"), 1200);
+        }
+      }
+
+      // ─── Status bar persistent full path (click → copy) ───
+      function updateStatusPath(path) {
+        if (!statusPath) return;
+        if (!path) {
+          statusPath.textContent = "";
+          statusPath.removeAttribute("data-full-path");
+          return;
+        }
+        statusPath.textContent = path;
+        statusPath.setAttribute("data-full-path", path);
+      }
+      if (statusPath) {
+        statusPath.addEventListener("click", async () => {
+          const p = statusPath.getAttribute("data-full-path");
+          if (!p) return;
+          try {
+            await navigator.clipboard.writeText(p);
+            statusPath.classList.add("copied");
+            notify("Path copied");
+            setTimeout(
+              () => statusPath.classList.remove("copied"),
+              1400,
+            );
+          } catch {
+            // Fallback: select the text
+            const range = document.createRange();
+            range.selectNodeContents(statusPath);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            notify("Copy failed — text selected");
+          }
+        });
+      }
+
+      // ─── Master update: header badge, breadcrumb, status path ───
+      function updateAllPathDisplays() {
+        const path = currentFilePath || "";
+        const name = basename(path) || (currentFilePath ? "" : "Untitled.md");
+        // Header badge (compact filename pill)
+        if (currentFilenameDisplay) {
+          currentFilenameDisplay.textContent = name || "Untitled.md";
+        }
+        if (fileLabel) {
+          fileLabel.title = path || "";
+        }
+        // Breadcrumb
+        renderBreadcrumb(path);
+        // Status bar persistent path
+        updateStatusPath(path);
+      }
 
       async function buildFileTree() {
         let entries = [];
@@ -7960,13 +8359,12 @@
               targetPath,
             );
             tab.fileHandle.path = movedPath;
-            tab.fileHandle.name = movedPath.split("/").pop();
+            tab.fileHandle.name = basename(movedPath);
             tab.filePath = movedPath;
-            tab.name = movedPath;
+            tab.name = basename(movedPath);
             if (tab.id === activeTabId) {
-              currentFilenameDisplay.textContent = movedPath;
-              if (window.mobileFilenameDisplay)
-                mobileFilenameDisplay.textContent = movedPath;
+              currentFilePath = movedPath;
+              updateAllPathDisplays();
             }
           }
         });
@@ -7982,11 +8380,9 @@
             targetPath,
           );
           currentFileHandle.path = movedPath;
-          currentFileHandle.name = movedPath.split("/").pop();
+          currentFileHandle.name = basename(movedPath);
           currentFilePath = movedPath;
-          currentFilenameDisplay.textContent = movedPath;
-          if (window.mobileFilenameDisplay)
-            mobileFilenameDisplay.textContent = movedPath;
+          updateAllPathDisplays();
         }
 
         notify(`Moved to ${folderPath || "root"}`);
@@ -8079,6 +8475,7 @@
           await scanDirectory();
           startDeletionWatcher();
           statusBar.textContent = `Opened: ${name}`;
+          updateAllPathDisplays();
           notify("Folder opened");
         } catch {}
       }
@@ -8106,6 +8503,7 @@
         }
         clearFileSelection();
         refreshExplorer();
+        updateAllPathDisplays();
         notify(`Unmounted: ${name}`);
       }
       function renderMountRestorePrompt() {
@@ -8212,7 +8610,7 @@
           currentFileHandle = handle;
           currentFilePath = filePath;
           currentFileSource = "fs";
-          currentFilenameDisplay.textContent = filePath;
+          updateAllPathDisplays();
           autosaveToggle.checked = false;
           updatePreview();
           updateWordCount();
@@ -8251,14 +8649,13 @@
               }
               break;
             }
-            currentFileHandle = { name: path, path };
+            currentFileHandle = { name: basename(path), path };
             currentFilePath = path;
-            const displayPath = path.split("/").pop();
-            currentFilenameDisplay.textContent = displayPath;
+            updateAllPathDisplays();
             if (activeTabId !== null) {
               const tab = tabs.find((t) => t.id === activeTabId);
               if (tab) {
-                tab.name = displayPath;
+                tab.name = basename(path);
                 tab.filePath = path;
                 tab.fileHandle = currentFileHandle;
                 refreshTabBar();
@@ -8301,11 +8698,11 @@
             create: true,
           });
           currentFilePath = name;
-          currentFilenameDisplay.textContent = name;
+          currentFilenameDisplay.textContent = basename(name);
           if (activeTabId !== null) {
             const tab = tabs.find((t) => t.id === activeTabId);
             if (tab) {
-              tab.name = name;
+              tab.name = basename(name);
               tab.filePath = name;
               tab.fileHandle = currentFileHandle;
               refreshTabBar();
@@ -8445,13 +8842,12 @@
             ) {
               const movedPath = tab.fileHandle.path.replace(oldPath, newPath);
               tab.fileHandle.path = movedPath;
-              tab.fileHandle.name = movedPath.split("/").pop();
+              tab.fileHandle.name = basename(movedPath);
               tab.filePath = movedPath;
-              tab.name = movedPath;
+              tab.name = basename(movedPath);
               if (tab.id === activeTabId) {
-                currentFilenameDisplay.textContent = movedPath;
-                if (window.mobileFilenameDisplay)
-                  mobileFilenameDisplay.textContent = movedPath;
+                currentFilePath = movedPath;
+                updateAllPathDisplays();
               }
             }
           });
@@ -8464,11 +8860,9 @@
           ) {
             const movedPath = currentFileHandle.path.replace(oldPath, newPath);
             currentFileHandle.path = movedPath;
-            currentFileHandle.name = movedPath.split("/").pop();
+            currentFileHandle.name = basename(movedPath);
             currentFilePath = movedPath;
-            currentFilenameDisplay.textContent = movedPath;
-            if (window.mobileFilenameDisplay)
-              mobileFilenameDisplay.textContent = movedPath;
+            updateAllPathDisplays();
           }
 
           await updateHistoryForPathRename(oldPath, newPath, "db");
@@ -8543,10 +8937,14 @@
             if (tabPath === oldPath || tabPath.startsWith(oldPath + "/")) {
               const movedPath = tabPath.replace(oldPath, newPath);
               tab.filePath = movedPath;
-              tab.name = movedPath.split("/").pop();
-              // Note: fileHandle needs update? For FS, we'll let openFile handle it or just rely on scan
+              tab.name = basename(movedPath);
+              if (tab.fileHandle) {
+                tab.fileHandle.path = movedPath;
+                tab.fileHandle.name = basename(movedPath);
+              }
               if (tab.id === activeTabId) {
-                currentFilenameDisplay.textContent = movedPath;
+                currentFilePath = movedPath;
+                updateAllPathDisplays();
               }
             }
           });
@@ -8649,10 +9047,10 @@
         const entry = await loadFromDB(path);
         if (entry) {
           editor.value = entry.content;
-          currentFileHandle = { name: path, path };
+          currentFileHandle = { name: basename(path), path };
           currentFilePath = path;
           currentFileSource = "db";
-          currentFilenameDisplay.textContent = path;
+          updateAllPathDisplays();
           autosaveToggle.checked = true;
           updatePreview();
           updateWordCount();
@@ -10819,14 +11217,15 @@ self.onmessage = (e) => {
         // Save current tab state first
         if (activeTabId !== null) saveActiveTabState();
         const id = ++tabIdCounter;
+        const filePath = fileHandle
+          ? fileHandle.path || fileHandle.name || null
+          : null;
         const tab = {
           id,
-          name: name || "Untitled.md",
+          name: basename(filePath) || basename(name) || name || "Untitled.md",
           content: content !== undefined ? content : "",
           fileHandle: fileHandle || null,
-          filePath: fileHandle
-            ? fileHandle.path || fileHandle.name || null
-            : null,
+          filePath,
           fileSource: fileSource || "db",
           unsaved: false,
           historyStack: [
@@ -10844,9 +11243,10 @@ self.onmessage = (e) => {
         const tab = tabs.find((t) => t.id === activeTabId);
         if (!tab) return;
         tab.content = editor.value;
-        tab.name = currentFileHandle
-          ? currentFileHandle.name
-          : currentFilenameDisplay.textContent;
+        tab.name =
+          basename(currentFilePath) ||
+          (currentFileHandle ? basename(currentFileHandle.path) : "") ||
+          "Untitled.md";
         tab.fileHandle = currentFileHandle;
         tab.filePath = currentFilePath;
         tab.fileSource = currentFileSource;
@@ -10867,7 +11267,7 @@ self.onmessage = (e) => {
           tab.filePath ||
           (tab.fileHandle ? tab.fileHandle.path || tab.fileHandle.name : null);
         currentFileSource = tab.fileSource;
-        currentFilenameDisplay.textContent = tab.name;
+        updateAllPathDisplays();
         isUnsaved = tab.unsaved;
         unsavedIndicator.classList.toggle("visible", isUnsaved);
         // Restore history
@@ -10981,7 +11381,7 @@ self.onmessage = (e) => {
         tabs.forEach((tab) => {
           const el = document.createElement("div");
           el.className = "tab" + (tab.id === activeTabId ? " active" : "");
-          el.title = tab.name;
+          el.title = tab.filePath || tab.name;
           el.innerHTML = `
         ${tab.unsaved ? '<div class="tab-dirty"></div>' : ""}
         <span class="tab-name">${tab.name}</span>
@@ -11032,13 +11432,13 @@ self.onmessage = (e) => {
             activateTab(existing.id);
             return;
           }
-          newTab(path, entry.content, { name: path, path }, "db");
+          newTab(path, entry.content, { name: basename(path), path }, "db");
         } else {
           editor.value = entry.content;
-          currentFileHandle = { name: path, path };
+          currentFileHandle = { name: basename(path), path };
           currentFilePath = path;
           currentFileSource = "db";
-          currentFilenameDisplay.textContent = path;
+          updateAllPathDisplays();
           autosaveToggle.checked = true;
           updatePreview();
           updateWordCount();
@@ -11046,7 +11446,7 @@ self.onmessage = (e) => {
           if (activeTabId !== null) {
             const tab = tabs.find((t) => t.id === activeTabId);
             if (tab) {
-              tab.name = path;
+              tab.name = basename(path);
               tab.fileHandle = currentFileHandle;
               tab.filePath = path;
               tab.fileSource = "db";
@@ -11216,7 +11616,8 @@ self.onmessage = (e) => {
                 refreshTabBar();
               }
             }
-            currentFilenameDisplay.textContent = t.name + ".md";
+            currentFilenameDisplay.textContent = basename(t.name + ".md");
+            updateAllPathDisplays();
             updatePreview();
             updateWordCount();
             pushToHistory();
