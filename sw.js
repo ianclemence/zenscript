@@ -1,6 +1,6 @@
-const CACHE_NAME = "zenscript-cache-v4";
+const CACHE_NAME = "zenscript-cache-v5";
 
-const CORE_ASSETS = ["./", "./index.html", "./cm-host.js"];
+const CORE_ASSETS = ["./", "./index.html"];
 
 const CDN_ASSETS = [
   "https://cdn.jsdelivr.net/npm/marked/marked.min.js",
