@@ -4838,6 +4838,31 @@
           newTab("Untitled.md", "");
         }
 
+        // Restore mounted folders from IndexedDB so they survive refresh
+        if (window.idbKeyval) {
+          const saved = await idbKeyval.get("mounted-folder-handles");
+          if (saved && saved.length) {
+            for (const entry of saved) {
+              try {
+                const handle = entry.handle;
+                // Request permission — may prompt the user
+                const mode = await handle.queryPermission({ mode: 'readwrite' });
+                if (mode !== 'granted') {
+                  const result = await handle.requestPermission({ mode: 'readwrite' });
+                  if (result !== 'granted') continue;
+                }
+                mountedFolders.push({ name: entry.name, handle });
+                if (!directoryHandle) {
+                  directoryHandle = handle;
+                  currentFileSource = "fs";
+                  startDeletionWatcher();
+                }
+              } catch {}
+            }
+            if (mountedFolders.length) await scanDirectory();
+          }
+        }
+
         await handleRouteFromLocation({ initial: true });
 
         updateWordCount();
@@ -7703,16 +7728,18 @@
                 return;
               }
               if (selectedFilePaths.size) clearFileSelection();
-              if (node.source !== "fs") {
-                const existingTab = tabs.find(
-                  (t) =>
-                    (t.fileHandle && t.fileHandle.path === node.path) ||
-                    t.filePath === node.path,
-                );
-                if (existingTab) activateTab(existingTab.id);
-                else await openFileFromDB(node.path);
+              // Use tab system for both DB and FS files
+              const existingTab = tabs.find(
+                (t) =>
+                  (t.fileHandle && t.fileHandle.path === node.path) ||
+                  t.filePath === node.path,
+              );
+              if (existingTab) {
+                activateTab(existingTab.id);
+              } else if (node.source === "fs") {
+                await openFileFromFsInTab(node.path);
               } else {
-                await openFile(node.handle, node.path);
+                await openFileFromDB(node.path, true);
               }
             };
             row.addEventListener("dblclick", (e) => {
@@ -7967,6 +7994,12 @@
           const name = handle.name;
           // Add to mounted folders so it appears as a tree node alongside existing content
           mountedFolders.push({ name, handle });
+          // Persist the handle so it survives refresh
+          if (window.idbKeyval) {
+            const saved = (await idbKeyval.get("mounted-folder-handles")) || [];
+            saved.push({ name, handle });
+            await idbKeyval.set("mounted-folder-handles", saved);
+          }
           // Set as primary directory for file system operations
           directoryHandle = handle;
           currentFileSource = "fs";
@@ -10804,7 +10837,8 @@ self.onmessage = (e) => {
         const file = await handle.getFile();
         const content = await file.text();
         handle.path = path;
-        newTab(path, content, handle, "fs");
+        const displayName = path.split("/").pop();
+        newTab(displayName, content, handle, "fs");
         statusBar.textContent = `Opened ${path}`;
         syncExplorerActiveState();
         renderHistory();
