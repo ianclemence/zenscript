@@ -12478,7 +12478,7 @@ self.onmessage = (e) => {
           const g = await idbKeyval.get("md-writing-goal");
           const h = await idbKeyval.get("md-history-retention-days");
           // Purge any leftover custom CSS from previous versions — feature removed.
-          await idbKeyval.delete("md-custom-css");
+          await idbKeyval.del("md-custom-css");
           if (t) theme = t;
           if (a !== undefined) autosave = a;
           if (g) writingGoal = g;
