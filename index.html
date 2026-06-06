@@ -2924,6 +2924,123 @@
         line-height: 1.8;
       }
 
+      /* ─── Help modal (tabbed) ─── */
+      .help-modal-box {
+        max-width: 720px;
+        width: 100%;
+        max-height: 78vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .help-tabs {
+        display: flex;
+        gap: 0;
+        padding: 0 18px;
+        border-bottom: 1px var(--border-style) var(--border-faint);
+        background: var(--surface-input);
+        flex-shrink: 0;
+        overflow-x: auto;
+      }
+      .help-tab {
+        background: transparent;
+        border: none;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-family: var(--font-sans);
+        color: var(--text-tertiary);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: color var(--duration-fast) var(--ease),
+          border-color var(--duration-fast) var(--ease);
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .help-tab:hover {
+        color: var(--text-primary);
+      }
+      .help-tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+      .help-tab i {
+        font-size: 11px;
+      }
+      .help-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 18px 22px;
+      }
+      .help-panel {
+        display: none;
+      }
+      .help-panel.active {
+        display: block;
+      }
+      .help-section {
+        margin-bottom: 18px;
+      }
+      .help-section-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px var(--border-style) var(--border-faint);
+      }
+      .help-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .help-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+      .help-row:hover {
+        background: var(--accent-muted);
+        color: var(--text-primary);
+      }
+      .help-row span {
+        flex: 1;
+      }
+      .help-row code {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-primary);
+        background: var(--surface-input);
+        padding: 1px 5px;
+        border-radius: var(--radius-sm);
+        border: 1px var(--border-style) var(--border-faint);
+      }
+      .help-row kbd {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-primary);
+        background: var(--surface-panel);
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        border: 1px var(--border-style) var(--border);
+        box-shadow: 0 1px 0 var(--border);
+        min-width: 14px;
+        text-align: center;
+        display: inline-block;
+      }
+      .help-row .help-note {
+        color: var(--text-tertiary);
+        font-style: italic;
+        font-size: 11px;
+      }
+
       /* ============================================================
        NOTIFICATIONS
     ============================================================ */
@@ -4129,60 +4246,226 @@
 
     <!-- ─── HELP MODAL ─── -->
     <div id="help-modal">
-      <div class="modal-box">
+      <div class="modal-box help-modal-box">
         <div class="modal-header">
-          <span class="modal-title">Markdown Syntax Guide</span>
+          <span class="modal-title">ZenScript Guide</span>
           <button class="icon-btn" id="help-close-btn">
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <div class="modal-body">
-          <div class="help-grid">
-            <div class="help-group">
-              <div class="help-label">Headers</div>
-              <div class="help-code">
-                # Heading 1<br />## Heading 2<br />### Heading 3
+        <div class="help-tabs">
+          <button class="help-tab active" data-help-tab="shortcuts">
+            <i class="fas fa-keyboard"></i> Shortcuts
+          </button>
+          <button class="help-tab" data-help-tab="markdown">
+            <i class="fas fa-markdown"></i> Markdown
+          </button>
+          <button class="help-tab" data-help-tab="wikilinks">
+            <i class="fas fa-link"></i> WikiLinks
+          </button>
+          <button class="help-tab" data-help-tab="editor">
+            <i class="fas fa-pen-fancy"></i> Editor
+          </button>
+          <button class="help-tab" data-help-tab="vault">
+            <i class="fas fa-folder-tree"></i> Vault
+          </button>
+        </div>
+        <div class="modal-body help-body">
+          <!-- Shortcuts -->
+          <div class="help-panel active" data-help-panel="shortcuts">
+            <div class="help-section">
+              <div class="help-section-title">Global</div>
+              <div class="help-list">
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>S</kbd><span>Save current file</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>N</kbd><span>New note</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>P</kbd><span>Quick switcher (jump to any note)</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>O</kbd><span>Quick switcher (alias of Ctrl+P)</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>F</kbd><span>Find &amp; replace</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>J</kbd><span>Zen mode</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>H</kbd><span>Focus mode</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>D</kbd><span>Open / create today's daily note</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>R</kbd><span>Open a random note</span></div>
+                <div class="help-row"><kbd>Shift</kbd><kbd>Alt</kbd><kbd>F</kbd><span>Format document (Prettier)</span></div>
               </div>
             </div>
-            <div class="help-group">
-              <div class="help-label">Emphasis</div>
-              <div class="help-code">
-                **Bold**<br />_Italic_<br />~~Strike~~
+            <div class="help-section">
+              <div class="help-section-title">Inline formatting</div>
+              <div class="help-list">
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>B</kbd><span>Bold</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>I</kbd><span>Italic</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>K</kbd><span>Insert link</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Z</kbd><span>Undo</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Y</kbd><span>Redo</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>Z</kbd><span>Redo (alternative)</span></div>
               </div>
             </div>
-            <div class="help-group">
-              <div class="help-label">Lists</div>
-              <div class="help-code">
-                - Bullet item<br />1. Ordered item<br />- [ ] Task item
+            <div class="help-section">
+              <div class="help-section-title">CodeMirror editor</div>
+              <div class="help-list">
+                <div class="help-row"><kbd>Tab</kbd><span>Indent (Shift+Tab to outdent)</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>D</kbd><span>Select next occurrence of current word/selection</span></div>
+                <div class="help-row"><kbd>Alt</kbd><span>Click to add a second cursor</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>/</kbd><span>Toggle line comment</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>F</kbd><span>Find within editor</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>F</kbd><span>Replace within editor</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>]</kbd><span>Indent line</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>[</kbd><span>Outdent line</span></div>
+                <div class="help-row"><kbd>Alt</kbd><span>↑/↓</span><span>Move line up/down</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>K</kbd><span>Delete line</span></div>
               </div>
             </div>
-            <div class="help-group">
-              <div class="help-label">Links & Images</div>
-              <div class="help-code">[Link](url)<br />![Alt](image.png)</div>
-            </div>
-            <div class="help-group">
-              <div class="help-label">Code & Math</div>
-              <div class="help-code">
-                `inline`<br />```block```<br />$E=mc^2$
+            <div class="help-section">
+              <div class="help-section-title">Quick switcher</div>
+              <div class="help-list">
+                <div class="help-row"><kbd>↑</kbd><kbd>↓</kbd><span>Move selection</span></div>
+                <div class="help-row"><kbd>Enter</kbd><span>Open / create</span></div>
+                <div class="help-row"><kbd>Tab</kbd><span>Move selection</span></div>
+                <div class="help-row"><kbd>Esc</kbd><span>Close</span></div>
               </div>
             </div>
-            <div class="help-group">
-              <div class="help-label">Callouts</div>
-              <div class="help-code">
-                > [!INFO] Title<br />> [!WARNING] Title<br />> [!SUCCESS]
+          </div>
+
+          <!-- Markdown -->
+          <div class="help-panel" data-help-panel="markdown">
+            <div class="help-section">
+              <div class="help-section-title">Structure</div>
+              <div class="help-list">
+                <div class="help-row"><code># H1 · ## H2 · ### H3</code><span>Headings</span></div>
+                <div class="help-row"><code>**bold**</code> <code>_italic_</code> <code>~~strike~~</code><span>Emphasis</span></div>
+                <div class="help-row"><code>==highlight==</code><span>Inline highlight</span></div>
+                <div class="help-row"><code>%%author comment%%</code><span>Hidden comment (not rendered)</span></div>
+                <div class="help-row"><code>- bullet</code> <code>1. ordered</code> <code>- [ ] task</code><span>Lists &amp; tasks</span></div>
+                <div class="help-row"><code>---</code><span>Horizontal rule</span></div>
+                <div class="help-row"><code>```lang</code>…<code>```</code><span>Fenced code block</span></div>
               </div>
             </div>
-            <div class="help-group">
-              <div class="help-label">Emoji</div>
-              <div class="help-code">
-                :smile: :rocket:<br />↑↓ navigate · Enter insert
+            <div class="help-section">
+              <div class="help-section-title">Links &amp; media</div>
+              <div class="help-list">
+                <div class="help-row"><code>[label](https://…)</code><span>External link</span></div>
+                <div class="help-row"><code>![alt](image.png)</code><span>Image (drag-drop to embed)</span></div>
+                <div class="help-row"><code>[label](attachment://id)</code><span>Saved attachment</span></div>
+                <div class="help-row"><code>$E=mc^2$</code> <code>$$\int f(x) dx$$</code><span>LaTeX math</span></div>
               </div>
             </div>
-            <div class="help-group">
-              <div class="help-label">Shortcuts</div>
-              <div class="help-code">
-                ⌘S Save · ⌘N New<br />⌘B Bold · ⌘I Italic<br />⌘K Link · ⌘F
-                Find<br />⌘J Zen · ⌘H Focus<br />⇧⌥F Format
+            <div class="help-section">
+              <div class="help-section-title">Callouts</div>
+              <div class="help-list">
+                <div class="help-row"><code>&gt; [!INFO] Title</code><span>Info callout</span></div>
+                <div class="help-row"><code>&gt; [!NOTE] Title</code><span>Note callout</span></div>
+                <div class="help-row"><code>&gt; [!WARNING] Title</code><span>Warning callout</span></div>
+                <div class="help-row"><code>&gt; [!SUCCESS] Title</code><span>Success callout</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Diagrams</div>
+              <div class="help-list">
+                <div class="help-row"><code>```mermaid</code><span>Flowcharts, sequence, gantt, ER, class, state, journey, mindmap, pie, timeline, git, sankey, xy</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Front matter</div>
+              <div class="help-list">
+                <div class="help-row"><code>---</code><span>YAML front matter — title, tags, author, date</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- WikiLinks -->
+          <div class="help-panel" data-help-panel="wikilinks">
+            <div class="help-section">
+              <div class="help-section-title">Linking notes</div>
+              <div class="help-list">
+                <div class="help-row"><code>[[Note Name]]</code><span>Wiki link (creates note on click if missing)</span></div>
+                <div class="help-row"><code>[[Note|Display]]</code><span>Aliased link</span></div>
+                <div class="help-row"><code>[[Folder/Note]]</code><span>Path-qualified link</span></div>
+                <div class="help-row"><code>[[#Heading]]</code><span>Link to a heading inside the current note</span></div>
+                <div class="help-row"><code>[[Note#Heading]]</code><span>Link to a heading inside another note</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Transclusion</div>
+              <div class="help-list">
+                <div class="help-row"><code>![[Note]]</code><span>Inline-embed another note's content</span></div>
+                <div class="help-row"><code>![[Note#Section]]</code><span>Embed a specific section</span></div>
+                <div class="help-row"><span class="help-note">Click the embed's header to open the source note. Recursion is auto-blocked.</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Tags</div>
+              <div class="help-list">
+                <div class="help-row"><span>Add tags via front matter: <code>tags: [writing, ideas]</code></span></div>
+                <div class="help-row"><span>Click a tag badge to filter the file list</span></div>
+                <div class="help-row"><span>Ctrl/Shift + click a tag to open a virtual tag page listing every matching note</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Backlinks</div>
+              <div class="help-list">
+                <div class="help-row"><span>Backlinks panel shows every note that links to the current note (bidirectional graph)</span></div>
+                <div class="help-row"><span>Knowledge graph modal (top-right icon) shows the full vault or a local neighborhood</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Editor -->
+          <div class="help-panel" data-help-panel="editor">
+            <div class="help-section">
+              <div class="help-section-title">What you get</div>
+              <div class="help-list">
+                <div class="help-row"><span>Markdown syntax highlighting in the source view</span></div>
+                <div class="help-row"><span>In-editor code-block highlighting (150+ languages)</span></div>
+                <div class="help-row"><span>Line numbers, code folding, current-line highlight</span></div>
+                <div class="help-row"><span>Multi-cursor (Ctrl/⌘+D, Alt+Click)</span></div>
+                <div class="help-row"><span>Bracket matching, auto-close brackets/quotes/backticks</span></div>
+                <div class="help-row"><span>Real undo/redo units (not textarea's line-based stack)</span></div>
+                <div class="help-row"><span>Soft-wrap, auto-indent, indent guides</span></div>
+                <div class="help-row"><span>Right-click in the editor for the command palette (H1, bold, callouts, mermaid, table…)</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Emoji autocomplete</div>
+              <div class="help-list">
+                <div class="help-row"><span>Type <code>:smile</code> to bring up the emoji picker. ↑↓ navigate, Enter inserts.</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vault -->
+          <div class="help-panel" data-help-panel="vault">
+            <div class="help-section">
+              <div class="help-section-title">Working with notes</div>
+              <div class="help-list">
+                <div class="help-row"><span><b>Open folder</b>: load an existing vault (read+write to the real filesystem via the File System Access API)</span></div>
+                <div class="help-row"><span><b>Mounted folders</b>: add additional folders to a single workspace</span></div>
+                <div class="help-row"><span><b>Local mode</b>: with no folder mounted, notes live in the browser's IndexedDB and persist locally</span></div>
+                <div class="help-row"><span><b>Drag-drop</b> a file from the explorer into the editor to insert a <code>[[wiki-link]]</code> at the cursor</span></div>
+                <div class="help-row"><span><b>Drag-drop</b> an image from your OS into the editor to attach it to the current note</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Tabs &amp; history</div>
+              <div class="help-list">
+                <div class="help-row"><span>Open notes in tabs (Ctrl+click to multi-select in the explorer)</span></div>
+                <div class="help-row"><span>Per-tab undo/redo history is preserved when you switch</span></div>
+                <div class="help-row"><span>Snapshots are auto-saved every 5 minutes; access via the History panel</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Daily &amp; random</div>
+              <div class="help-list">
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>D</kbd><span>Today's daily note (auto-created in <code>Journal/</code> with a fresh template)</span></div>
+                <div class="help-row"><kbd>Ctrl/⌘</kbd><kbd>Shift</kbd><kbd>R</kbd><span>Open a random note (serendipitous rediscovery)</span></div>
+              </div>
+            </div>
+            <div class="help-section">
+              <div class="help-section-title">Export</div>
+              <div class="help-list">
+                <div class="help-row"><span><b>.md</b> — download the raw markdown</span></div>
+                <div class="help-row"><span><b>Self-contained HTML</b> — single file with all styles &amp; attachments embedded</span></div>
+                <div class="help-row"><span><b>PDF</b> — print-to-PDF via the browser</span></div>
+                <div class="help-row"><span><b>PNG</b> — render preview to an image</span></div>
+                <div class="help-row"><span><b>Copy HTML / Copy Link</b> — paste into other apps</span></div>
               </div>
             </div>
           </div>
@@ -5609,6 +5892,18 @@
           ?.addEventListener("click", toggleHelp);
         helpModal.addEventListener("click", (e) => {
           if (e.target === helpModal) toggleHelp();
+        });
+        // Help modal tab switching
+        helpModal.querySelectorAll(".help-tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            const target = tab.dataset.helpTab;
+            helpModal
+              .querySelectorAll(".help-tab")
+              .forEach((t) => t.classList.toggle("active", t === tab));
+            helpModal.querySelectorAll(".help-panel").forEach((p) =>
+              p.classList.toggle("active", p.dataset.helpPanel === target),
+            );
+          });
         });
         downloadMdBtn.addEventListener("click", () => {
           downloadAsMarkdown();
