@@ -4458,18 +4458,7 @@
         return isMarkdownFileName(path);
       }
 
-      function setCanonicalUrl({ docPath, sectionId, replace = false } = {}) {
-        const base = getAppBasePath();
-        const encodedDoc = docPath ? encodePathForUrl(docPath) : "";
-        const pathname = encodedDoc ? `${base}${encodedDoc}` : base;
-        const hash = sectionId ? `#${encodeURIComponent(sectionId)}` : "";
-        const url = `${pathname}${hash}`;
-        try {
-          const state = { docPath: docPath || "", sectionId: sectionId || "" };
-          if (replace) history.replaceState(state, "", url);
-          else history.pushState(state, "", url);
-        } catch {}
-      }
+      function setCanonicalUrl() {}
 
       function parseDocPathFromLocation() {
         const base = getAppBasePath();
