@@ -4828,29 +4828,31 @@
         }
 
         // Restore mounted folders from IndexedDB so they survive refresh
-        if (window.idbKeyval) {
-          const saved = await idbKeyval.get("mounted-folder-handles");
-          if (saved && saved.length) {
-            for (const entry of saved) {
-              try {
-                const handle = entry.handle;
-                // Request permission — may prompt the user
-                const mode = await handle.queryPermission({ mode: 'readwrite' });
-                if (mode !== 'granted') {
-                  const result = await handle.requestPermission({ mode: 'readwrite' });
-                  if (result !== 'granted') continue;
-                }
-                mountedFolders.push({ name: entry.name, handle });
-                if (!directoryHandle) {
-                  directoryHandle = handle;
-                  currentFileSource = "fs";
-                  startDeletionWatcher();
-                }
-              } catch {}
+        try {
+          if (window.idbKeyval) {
+            const saved = await idbKeyval.get("mounted-folder-handles");
+            if (saved && saved.length) {
+              for (const entry of saved) {
+                try {
+                  const handle = entry.handle;
+                  if (!handle || typeof handle.queryPermission !== 'function') continue;
+                  const mode = await handle.queryPermission({ mode: 'readwrite' });
+                  if (mode !== 'granted') {
+                    const result = await handle.requestPermission({ mode: 'readwrite' });
+                    if (result !== 'granted') continue;
+                  }
+                  mountedFolders.push({ name: entry.name, handle });
+                  if (!directoryHandle) {
+                    directoryHandle = handle;
+                    currentFileSource = "fs";
+                    startDeletionWatcher();
+                  }
+                } catch {}
+              }
+              if (mountedFolders.length) await scanDirectory();
             }
-            if (mountedFolders.length) await scanDirectory();
           }
-        }
+        } catch {} // If serialization fails, folders won't persist — acceptable degradation
 
         await handleRouteFromLocation({ initial: true });
 
@@ -7984,10 +7986,14 @@
           // Add to mounted folders so it appears as a tree node alongside existing content
           mountedFolders.push({ name, handle });
           // Persist the handle so it survives refresh
-          if (window.idbKeyval) {
-            const saved = (await idbKeyval.get("mounted-folder-handles")) || [];
-            saved.push({ name, handle });
-            await idbKeyval.set("mounted-folder-handles", saved);
+          try {
+            if (window.idbKeyval) {
+              const saved = (await idbKeyval.get("mounted-folder-handles")) || [];
+              saved.push({ name, handle });
+              await idbKeyval.set("mounted-folder-handles", saved);
+            }
+          } catch {
+            notify("Folder opened but won't persist across page refresh");
           }
           // Set as primary directory for file system operations
           directoryHandle = handle;
@@ -9047,6 +9053,8 @@
 
       async function saveSnapshot() {
         if (!currentFileHandle || !currentFilePath) return;
+        // Only track DB files in history, not mounted folder files
+        if (currentFileSource === "fs") return;
         const content = editor.value;
         const now = Date.now();
         const source = currentFileSource || "db";
@@ -9081,18 +9089,20 @@
         if (!window.idbKeyval) return;
         try {
           const history = (await idbKeyval.get("md-local-history")) || [];
+          // Only show DB files in history — filter out mounted folder entries
+          const dbHistory = history.filter((item) => (item.fileSource || "db") !== "fs");
           const currentId =
             currentFilePath && currentFileSource
               ? `${currentFileSource}:${currentFilePath}`
               : null;
           historyList.innerHTML = "";
-          if (!history.length) {
+          if (!dbHistory.length) {
             historyList.innerHTML =
               '<div style="text-align:center;padding:20px 12px;font-size:11px;color:var(--text-tertiary);font-style:italic;">No history yet</div>';
             return;
           }
           const groups = new Map();
-          history.forEach((item, idx) => {
+          dbHistory.forEach((item, idx) => {
             const fileSource = item.fileSource || "db";
             const filePath = item.filePath || item.name;
             const fileId = item.fileId || `${fileSource}:${filePath}`;
@@ -10826,8 +10836,7 @@ self.onmessage = (e) => {
         const file = await handle.getFile();
         const content = await file.text();
         handle.path = path;
-        const displayName = path.split("/").pop();
-        newTab(displayName, content, handle, "fs");
+        newTab(path, content, handle, "fs");
         statusBar.textContent = `Opened ${path}`;
         syncExplorerActiveState();
         renderHistory();
